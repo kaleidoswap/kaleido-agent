@@ -10,7 +10,12 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:all": "vitest run",
+    "test:watch": "vitest tests/unit",
+    "coverage": "vitest run --coverage tests/unit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
@@ -18,8 +23,10 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.14",
+    "@vitest/coverage-v8": "^4.0.18",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^4.0.18"
   },
   "engines": {
     "node": ">=20"

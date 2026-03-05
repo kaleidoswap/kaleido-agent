@@ -1,0 +1,63 @@
+{
+  "agent": {
+    "model": "claude-opus-4-6",
+    "max_tokens": 4096,
+    "max_tool_calls_per_run": 20
+  },
+  "mcp": {
+    "kaleidoswap": {
+      "command": "node",
+      "args": ["../kaleidoswap-mcp/dist/index.js"],
+      "env": {
+        "KALEIDOSWAP_API_URL": "https://api.staging.kaleidoswap.com"
+      }
+    },
+    "wdk_wallet": {
+      "command": "node",
+      "args": ["../wdk-wallet-mcp/dist/index.js"],
+      "env": {
+        "RLN_NODE_URL": "http://localhost:3001"
+      }
+    },
+    "l402_gateway": {
+      "command": "node",
+      "args": ["../l402-gateway-mcp/dist/index.js"],
+      "env": {}
+    }
+  },
+  "portfolio": {
+    "targets": {
+      "BTC": 70,
+      "USDT": 20,
+      "XAUT": 10
+    },
+    "rebalance_threshold_pct": 5,
+    "max_swap_usd": 200,
+    "min_btc_reserve_sats": 50000,
+    "max_concurrent_orders": 3,
+    "stop_loss_btc_sats": 30000,
+    "dry_run": true,
+    "trading_mode": "atomic",
+    "lsp": {
+      "lsp_balance_sat": 100000,
+      "client_balance_sat": 0,
+      "channel_expiry_blocks": 4320,
+      "min_outbound_liquidity_sat": 20000,
+      "auto_buy_channel": false
+    }
+  },
+  "schedule": {
+    "rebalance_interval_sec": 300,
+    "heartbeat_interval_sec": 300,
+    "daily_summary_cron": "00:00"
+  },
+  "assets": {
+    "btc_asset_id": "BTC",
+    "usdt_asset_id": "rgb:2JEUOrsc-JsWuPGF-3cr9SSv-mqqRmaz-8waf0gl-8vAcOXw",
+    "xaut_asset_id": ""
+  },
+  "notifications": {
+    "log_file": "logs/kaleidoagent.log",
+    "log_level": "INFO"
+  }
+}

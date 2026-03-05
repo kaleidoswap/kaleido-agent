@@ -1,0 +1,27 @@
+{
+  "name": "kaleidoagent",
+  "version": "1.0.0",
+  "description": "Autonomous Bitcoin L2 market-making agent — uses Claude + KaleidoSwap MCP + WDK Wallet MCP + L402 Gateway MCP",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "kaleidoagent": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@modelcontextprotocol/sdk": "^1.10.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.14",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

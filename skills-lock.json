@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "kaleidoagent": {
+      "source": "/Users/walter/Lavoro/Kaleidoswap/kaleidoagent/skills/kaleidoagent",
+      "sourceType": "local",
+      "computedHash": "497b1ba3cb4b49488e305ff5a1fd625d7b1eac5dd765d8ead998d60aa29cb045"
+    }
+  }
+}

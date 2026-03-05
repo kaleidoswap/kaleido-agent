@@ -185,7 +185,10 @@ Use when `wdk_list_channels` shows insufficient outbound liquidity and `auto_buy
 
 ```
 wdk_get_node_info
-  ↓ {pubkey: <client_pubkey>}
+  ↓ {pubkey: <client_pubkey>, ...}
+
+wdk_connect_peer                    # ensure connected to LSP before ordering
+  peer_pubkey_and_addr: "<lsp_pubkey>@<host>:<port>"
 
 kaleidoswap_lsp_estimate_fees
   client_pubkey, lsp_balance_sat, client_balance_sat, channel_expiry_blocks

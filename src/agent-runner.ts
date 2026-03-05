@@ -17,12 +17,26 @@ export interface AgentConfig {
   dryRun: boolean
 }
 
+export interface TokenUsage {
+  input_tokens: number
+  output_tokens: number
+  estimated_cost_usd: number
+}
+
 export interface RunResult {
   loop: LoopType
   timestamp: string
   tool_calls: number
   final_response: string
   duration_ms: number
+  usage: TokenUsage
+}
+
+// Cost per token by model (USD)
+const COST_PER_TOKEN: Record<string, { input: number; output: number }> = {
+  'claude-opus-4-6':              { input: 15 / 1_000_000,   output: 75 / 1_000_000 },
+  'claude-sonnet-4-6':            { input: 3 / 1_000_000,    output: 15 / 1_000_000 },
+  'claude-haiku-4-5-20251001':    { input: 0.8 / 1_000_000,  output: 4 / 1_000_000 },
 }
 
 export class AgentRunner {
@@ -39,6 +53,9 @@ export class AgentRunner {
   async run(loop: LoopType, portfolioParams: Record<string, unknown>): Promise<RunResult> {
     const start = Date.now()
     let toolCallCount = 0
+    let totalInputTokens = 0
+    let totalOutputTokens = 0
+    const costs = COST_PER_TOKEN[this.config.model] ?? { input: 0, output: 0 }
 
     const userPrompt = this.buildPrompt(loop, portfolioParams)
     const messages: Anthropic.MessageParam[] = [
@@ -46,9 +63,15 @@ export class AgentRunner {
     ]
 
     let finalResponse = ''
+    let apiCallIndex = 0
+
+    this.log(`\n${'─'.repeat(60)}`)
+    this.log(`[${loop.toUpperCase()}] starting — model: ${this.config.model} | dry_run: ${this.config.dryRun}`)
+    this.log(`${'─'.repeat(60)}`)
 
     // Agentic loop
     while (toolCallCount < this.config.maxToolCallsPerRun) {
+      apiCallIndex++
       const response = await this.anthropic.messages.create({
         model: this.config.model,
         max_tokens: this.config.maxTokens,
@@ -57,10 +80,21 @@ export class AgentRunner {
         messages,
       })
 
-      // Collect any text responses
+      // Track token usage
+      totalInputTokens += response.usage.input_tokens
+      totalOutputTokens += response.usage.output_tokens
+      const callCost = response.usage.input_tokens * costs.input + response.usage.output_tokens * costs.output
+      this.log(
+        `  [api#${apiCallIndex}] tokens: in=${response.usage.input_tokens} out=${response.usage.output_tokens}` +
+        ` | cost: $${callCost.toFixed(4)} | stop: ${response.stop_reason}`
+      )
+
+      // Print any model text (reasoning between tool calls)
       const textBlocks = response.content.filter((b): b is Anthropic.TextBlock => b.type === 'text')
       if (textBlocks.length > 0) {
-        finalResponse = textBlocks.map((b) => b.text).join('\n')
+        const text = textBlocks.map((b) => b.text).join('\n')
+        finalResponse = text
+        this.log(`  [model] ${text}`)
       }
 
       if (response.stop_reason === 'end_turn') break
@@ -78,13 +112,17 @@ export class AgentRunner {
       const toolResults: Anthropic.ToolResultBlockParam[] = []
       for (const block of toolUseBlocks) {
         toolCallCount++
-        process.stderr.write(`[agent] tool_use: ${block.name} (${JSON.stringify(block.input)})\n`)
+        this.log(`  [tool→] ${block.name}(${JSON.stringify(block.input)})`)
 
         let result: string
         try {
           result = await this.mcp.callTool(block.name, block.input as Record<string, unknown>)
+          // Show a compact preview of the result (first 200 chars)
+          const preview = result.length > 200 ? result.slice(0, 200) + '…' : result
+          this.log(`  [tool←] ${preview}`)
         } catch (err) {
           result = JSON.stringify({ error: err instanceof Error ? err.message : String(err) })
+          this.log(`  [tool✗] ${result}`)
         }
 
         toolResults.push({
@@ -97,13 +135,31 @@ export class AgentRunner {
       messages.push({ role: 'user', content: toolResults })
     }
 
+    const totalCost = totalInputTokens * costs.input + totalOutputTokens * costs.output
+    this.log(`${'─'.repeat(60)}`)
+    this.log(
+      `[${loop.toUpperCase()}] done in ${Date.now() - start}ms | ` +
+      `tools=${toolCallCount} | tokens: in=${totalInputTokens} out=${totalOutputTokens} | ` +
+      `total cost: $${totalCost.toFixed(4)}`
+    )
+    this.log(`${'─'.repeat(60)}\n`)
+
     return {
       loop,
       timestamp: new Date().toISOString(),
       tool_calls: toolCallCount,
       final_response: finalResponse,
       duration_ms: Date.now() - start,
+      usage: {
+        input_tokens: totalInputTokens,
+        output_tokens: totalOutputTokens,
+        estimated_cost_usd: totalCost,
+      },
     }
+  }
+
+  private log(msg: string): void {
+    process.stderr.write(msg + '\n')
   }
 
   private buildPrompt(loop: LoopType, params: Record<string, unknown>): string {

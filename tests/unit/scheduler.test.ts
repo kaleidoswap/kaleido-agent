@@ -10,6 +10,7 @@ function makeRunResult(loop: string): RunResult {
     tool_calls: 2,
     final_response: '{"action":"balanced"}',
     duration_ms: 100,
+    usage: { input_tokens: 100, output_tokens: 50, estimated_cost_usd: 0.001 },
   }
 }
 

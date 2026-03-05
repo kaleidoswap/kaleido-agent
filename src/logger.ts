@@ -19,7 +19,10 @@ export class Logger {
       loop: result.loop,
       tool_calls: result.tool_calls,
       duration_ms: result.duration_ms,
-      response: result.final_response.slice(0, 2000), // cap at 2KB
+      tokens_in: result.usage?.input_tokens ?? 0,
+      tokens_out: result.usage?.output_tokens ?? 0,
+      cost_usd: result.usage?.estimated_cost_usd?.toFixed(4) ?? '0.0000',
+      response: result.final_response.slice(0, 2000),
     })
     this.write(line)
   }

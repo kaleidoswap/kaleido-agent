@@ -43,15 +43,15 @@ function endTurnResponse(text = '{"action":"balanced"}') {
   return {
     stop_reason: 'end_turn',
     content: [{ type: 'text', text }],
+    usage: { input_tokens: 100, output_tokens: 50 },
   }
 }
 
 function toolUseResponse(toolName: string, toolId = 'tu_1', input = {}) {
   return {
     stop_reason: 'tool_use',
-    content: [
-      { type: 'tool_use', id: toolId, name: toolName, input },
-    ],
+    content: [{ type: 'tool_use', id: toolId, name: toolName, input }],
+    usage: { input_tokens: 200, output_tokens: 30 },
   }
 }
 
@@ -114,6 +114,7 @@ describe('AgentRunner', () => {
     mockCreate.mockResolvedValueOnce({
       stop_reason: 'tool_use',
       content: [], // no tool use blocks despite stop reason
+      usage: { input_tokens: 50, output_tokens: 10 },
     })
     const runner = new AgentRunner(makeMcp(), makeConfig())
     const result = await runner.run('heartbeat', {})
@@ -157,11 +158,24 @@ describe('AgentRunner', () => {
     expect(msg).toContain('daily portfolio summary')
   })
 
-  it('result includes duration_ms and timestamp', async () => {
+  it('result includes duration_ms, timestamp, and usage', async () => {
     mockCreate.mockResolvedValueOnce(endTurnResponse('ok'))
     const runner = new AgentRunner(makeMcp(), makeConfig())
     const result = await runner.run('heartbeat', {})
     expect(result.duration_ms).toBeGreaterThanOrEqual(0)
     expect(result.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+    expect(result.usage.input_tokens).toBe(100)
+    expect(result.usage.output_tokens).toBe(50)
+    expect(result.usage.estimated_cost_usd).toBeGreaterThanOrEqual(0)
+  })
+
+  it('usage accumulates tokens across multiple API calls', async () => {
+    mockCreate
+      .mockResolvedValueOnce(toolUseResponse('wdk_get_node_info'))   // 200 in, 30 out
+      .mockResolvedValueOnce(endTurnResponse('ok'))                   // 100 in, 50 out
+    const runner = new AgentRunner(makeMcp(['wdk_get_node_info']), makeConfig())
+    const result = await runner.run('heartbeat', {})
+    expect(result.usage.input_tokens).toBe(300)
+    expect(result.usage.output_tokens).toBe(80)
   })
 })

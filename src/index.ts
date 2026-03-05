@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import 'dotenv/config'
 /**
  * KaleidoAgent — Autonomous Bitcoin L2 Portfolio Rebalancer
  *

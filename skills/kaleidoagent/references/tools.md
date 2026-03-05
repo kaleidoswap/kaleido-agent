@@ -41,8 +41,9 @@
 | `wdk_open_channel` | `peer_pubkey_and_addr, capacity_sat, push_msat?, asset_id?, asset_amount?, is_public?` | `{temporary_channel_id, status}` |
 | `wdk_list_payments` | `limit?, inbound_only?, outbound_only?` | `[{payment_hash, amount_msat, inbound, status, created_at}]` |
 | `wdk_refresh_transfers` | `skip_sync?` | `{refreshed}` |
+| `wdk_connect_peer` | `peer_pubkey_and_addr` | `{success}` — connect to Lightning peer (required before LSPS1) |
 | `wdk_atomic_taker` | `swapstring` | `{success}` — step 2: whitelist HTLC on RLN node before execute |
-| `wdk_list_swaps` | — | `{swaps:[{payment_hash, status, taker, ...}]}` |
+| `wdk_list_swaps` | — | `{maker:[...], taker:[...], total}` — all atomic swaps on node |
 | `wdk_get_swap` | `payment_hash, taker?` | `{swap:{payment_hash, status, ...}}` — node-side atomic swap state |
 
 ## L402 Gateway MCP (`l402_*`)

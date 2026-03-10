@@ -3,7 +3,7 @@ import 'dotenv/config'
 /**
  * KaleidoAgent — Autonomous Bitcoin L2 Portfolio Rebalancer
  *
- * Uses Claude AI + three MCP servers to autonomously rebalance a portfolio
+ * Uses Claude AI + two MCP servers to autonomously rebalance a portfolio
  * of BTC, USDT (RGB), and XAUT (RGB) on the Lightning Network via KaleidoSwap.
  *
  * Required env vars:
@@ -12,7 +12,6 @@ import 'dotenv/config'
  * Optional env vars:
  *   KALEIDOSWAP_API_URL   KaleidoSwap API (default: https://api.staging.kaleidoswap.com)
  *   RLN_NODE_URL          RLN daemon URL (default: http://localhost:3001)
- *   L402_GATEWAY_URL      L402 gateway URL (default: demo mode)
  *   DRY_RUN               Set to "false" to enable live trading (default: true)
  *   CONFIG_PATH           Path to agent.config.json (default: ./agent.config.json)
  */
@@ -24,6 +23,9 @@ import { McpManager } from './mcp-manager.js'
 import { AgentRunner } from './agent-runner.js'
 import { Scheduler } from './scheduler.js'
 import { Logger } from './logger.js'
+import { agentState } from './agent-state.js'
+import { startStatusServer } from './status-server.js'
+import { ChatRunner } from './chat-runner.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
@@ -77,12 +79,6 @@ if (process.env.RLN_NODE_URL) {
     RLN_NODE_URL: process.env.RLN_NODE_URL,
   }
 }
-if (process.env.L402_GATEWAY_URL) {
-  cfg.mcp.l402_gateway.env = {
-    ...cfg.mcp.l402_gateway.env,
-    L402_GATEWAY_URL: process.env.L402_GATEWAY_URL,
-  }
-}
 
 // Merge portfolio params + assets into agent context
 const portfolioParams = {
@@ -110,6 +106,9 @@ async function main() {
     `[kaleidoagent] Starting — model: ${cfg.agent.model} | dry_run: ${dryRun}\n`
   )
 
+  // Init state store — server starts after MCP connects so chat is ready immediately
+  agentState.init(dryRun, cfg.agent.model, cfg.portfolio.targets)
+
   const logger = new Logger(
     resolve(process.cwd(), cfg.notifications.log_file),
     cfg.notifications.log_level
@@ -118,6 +117,10 @@ async function main() {
   // Connect to all MCP servers
   const mcp = new McpManager()
   await mcp.connect(cfg.mcp)
+
+  // Start status + chat server now that MCP tools are available
+  const chatRunner = new ChatRunner(mcp, cfg.agent.model)
+  const statusServer = startStatusServer(4242, chatRunner)
 
   const runner = new AgentRunner(mcp, {
     model: cfg.agent.model,
@@ -142,11 +145,15 @@ async function main() {
   process.on('SIGINT', async () => {
     process.stderr.write('\n[kaleidoagent] Shutting down...\n')
     scheduler.stop()
+    agentState.stop()
+    statusServer.close()
     await mcp.disconnect()
     process.exit(0)
   })
   process.on('SIGTERM', async () => {
     scheduler.stop()
+    agentState.stop()
+    statusServer.close()
     await mcp.disconnect()
     process.exit(0)
   })

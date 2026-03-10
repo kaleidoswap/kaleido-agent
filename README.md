@@ -114,6 +114,22 @@ ANTHROPIC_API_KEY=sk-ant-... node dist/index.js
 ANTHROPIC_API_KEY=sk-ant-... DRY_RUN=false node dist/index.js
 ```
 
+### Quick Commands
+
+```bash
+# Install both agent + webapp deps
+make install
+
+# Run both services together (agent on :4242, webapp on :5173)
+make dev
+
+# Build both projects
+make build
+
+# Unit tests
+make test
+```
+
 ### Environment Variables
 
 | Variable | Default | Description |

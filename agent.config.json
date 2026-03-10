@@ -18,11 +18,6 @@
       "env": {
         "RLN_NODE_URL": "http://localhost:3001"
       }
-    },
-    "l402_gateway": {
-      "command": "node",
-      "args": ["../l402-gateway-mcp/dist/index.js"],
-      "env": {}
     }
   },
   "portfolio": {
@@ -39,11 +34,11 @@
     "dry_run": true,
     "trading_mode": "atomic",
     "lsp": {
-      "lsp_balance_sat": 100000,
+      "lsp_balance_sat": 2000000,
       "client_balance_sat": 0,
       "channel_expiry_blocks": 4320,
-      "min_outbound_liquidity_sat": 20000,
-      "auto_buy_channel": false
+      "min_outbound_liquidity_sat": 200000,
+      "auto_buy_channel": true
     }
   },
   "schedule": {
@@ -53,8 +48,8 @@
   },
   "assets": {
     "btc_asset_id": "BTC",
-    "usdt_asset_id": "rgb:eElX56I7-i1couXO-Yg2xlpG-qYaFPX5-UADWuIn-TuVwZw8",
-    "xaut_asset_id": "rgb:y2giv4DD-Mj~5lIY-AOIaJNM-RbkDvYr-Zg6WHYG-Rwr5o9o"
+    "usdt_asset_id": "rgb:i~xXdG4J-JfXE_QX-RRVCDbQ-ggISPWO-P2yxBGT-nQX19SQ",
+    "xaut_asset_id": "rgb:Vf25LAhx-tcikQu3-O3msZ7~-DcNF4YH-8FCe1FC-Brh2rIc"
   },
   "notifications": {
     "log_file": "logs/kaleidoagent.log",

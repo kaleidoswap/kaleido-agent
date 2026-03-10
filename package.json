@@ -9,13 +9,22 @@
   },
   "scripts": {
     "build": "tsc",
+    "build:agent": "tsc",
+    "build:webapp": "npm --prefix webapp run build",
+    "build:all": "npm run build:agent && npm run build:webapp",
     "dev": "tsx src/index.ts",
+    "dev:agent": "tsx src/index.ts",
+    "dev:webapp": "npm --prefix webapp run dev -- --host 127.0.0.1 --port 5173",
+    "dev:all": "sh ./scripts/dev-all.sh",
     "start": "node dist/index.js",
+    "start:webapp": "npm --prefix webapp run preview -- --host 127.0.0.1 --port 5173",
     "test": "vitest run tests/unit",
+    "test:agent": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:all": "vitest run",
     "test:watch": "vitest tests/unit",
-    "coverage": "vitest run --coverage tests/unit"
+    "coverage": "vitest run --coverage tests/unit",
+    "install:all": "npm install && npm --prefix webapp install"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",

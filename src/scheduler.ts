@@ -9,6 +9,7 @@
 
 import { AgentRunner, LoopType } from './agent-runner.js'
 import { Logger } from './logger.js'
+import { agentState } from './agent-state.js'
 
 export interface SchedulerConfig {
   rebalanceIntervalSec: number
@@ -72,6 +73,7 @@ export class Scheduler {
     try {
       const result = await this.runner.run(loop, this.config.portfolioParams)
       this.logger.log(result)
+      agentState.recordRunResult(result)
       process.stderr.write(
         `[scheduler] ✓ ${loop} done in ${result.duration_ms}ms (${result.tool_calls} tool calls)\n`
       )
@@ -79,6 +81,7 @@ export class Scheduler {
       const msg = err instanceof Error ? err.message : String(err)
       process.stderr.write(`[scheduler] ✗ ${loop} failed: ${msg}\n`)
       this.logger.error(loop, msg)
+      agentState.recordLoopError(loop, msg)
     }
   }
 

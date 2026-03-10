@@ -178,12 +178,17 @@ Execute the **portfolio rebalance loop**:
 2. Call wdk_get_balances — get BTC Lightning balance (lightning_balance_sat)
 3. Call wdk_list_assets — discover RGB asset IDs (resolve USDT and XAUT by ticker)
 4. Call wdk_get_asset_balance for each RGB asset (USDT, XAUT if configured)
-5. Call l402_get_price for BTC and XAUT (if XAUT asset_id is non-empty)
-6. Calculate USD value of each holding:
-   - BTC_usd  = (lightning_balance_sat / 1e8) * btc_price
-   - USDT_usd = usdt_settled + usdt_offchain_inbound
-   - XAUT_usd = xaut_amount * xaut_price  (skip if not configured)
-   - total_usd = BTC_usd + USDT_usd + XAUT_usd
+5. Derive rates via kaleidoswap_get_quote (KaleidoSwap IS the price oracle — no external feed needed):
+   - BTC/USDT rate: kaleidoswap_get_quote(from_asset_id="BTC", from_layer="BTC_LN", from_amount=0.001, to_asset_id=<USDT_ID>, to_layer="RGB_LN")
+     NOTE: from_amount is BTC display units (0.001 = 100,000 sats)
+     → btc_price_usdt = to_asset.amount_display / 0.001
+   - XAUT/USDT rate (if XAUT configured): kaleidoswap_get_quote(from_asset_id=<XAUT_ID>, from_layer="RGB_LN", from_amount=1.0, to_asset_id=<USDT_ID>, to_layer="RGB_LN")
+     → xaut_price_usdt = to_asset.amount_display / 1.0
+6. Calculate USDT value of each holding:
+   - BTC_usdt  = (lightning_balance_sat / 1e8) * btc_price_usdt
+   - USDT_usdt = (usdt_settled + usdt_offchain_inbound) / 10^usdt_precision
+   - XAUT_usdt = (xaut_amount / 10^xaut_precision) * xaut_price_usdt  (skip if not configured)
+   - total_usdt = BTC_usdt + USDT_usdt + XAUT_usdt
 7. Calculate current allocation percentages vs targets from portfolio.targets
 8. If max drift across assets <= rebalance_threshold_pct: skip and report "balanced"
 9. If dry_run=true: describe what swap you would execute but do NOT place orders
@@ -232,11 +237,22 @@ Execute the **portfolio rebalance loop**:
       heartbeat: `${baseContext}
 
 Execute the **heartbeat check loop**:
-1. Call wdk_get_node_info — confirm the RLN node is online
-2. Call wdk_list_channels with usable_only=true — summarize active liquidity
+1. Call wdk_get_node_info — confirm the RLN node is online, capture client_pubkey
+2. Call wdk_list_channels with usable_only=true — sum total_outbound_msat across all channels
 3. Call wdk_refresh_transfers — flush any pending RGB transfers
 4. Call kaleidoswap_get_open_orders — check for stuck/expired orders
-5. Return a JSON health report with node status, channel count, liquidity summary, and any alerts`,
+5. LIQUIDITY GUARD — check if total_outbound_msat/1000 < lsp.min_outbound_liquidity_sat (from Portfolio parameters above):
+   YES and lsp.auto_buy_channel=true:
+     a. kaleidoswap_lsp_get_info → lsp_connection_url (format: pubkey@host:port)
+     b. wdk_connect_peer (lsp_connection_url) — connect to maker node if not already peered
+     c. kaleidoswap_lsp_estimate_fees (client_pubkey, lsp_balance_sat, client_balance_sat, channel_expiry_blocks — all from lsp config above)
+     d. If dry_run=true: log "Would buy channel, fee=X sats" and STOP here
+     e. kaleidoswap_lsp_create_order (client_pubkey, lsp_balance_sat, client_balance_sat, required_channel_confirmations=0, funding_confirms_within_blocks=6, channel_expiry_blocks, announce_channel=false — all from lsp config)
+        → order_id, bolt11_invoice, order_total_sat
+     f. wdk_pay_invoice (bolt11_invoice) — pay the LSP fee
+     g. kaleidoswap_lsp_get_order (order_id) — confirm order_state is CHANNEL_OPENING or COMPLETED
+   NO or auto_buy_channel=false: log current liquidity, no action needed
+6. Return a structured health report: node status, channel count, outbound_sat, open orders, and channel-buy action if taken`,
 
       daily_summary: `${baseContext}
 
@@ -244,11 +260,15 @@ Generate the **daily portfolio summary**:
 1. Call wdk_get_balances — BTC on-chain + Lightning balance
 2. Call wdk_list_assets — all RGB assets
 3. Call wdk_get_asset_balance for each asset
-4. Call l402_get_price for BTC, USDT, XAUT
-5. Call l402_get_ohlcv for BTC (days=1)
-6. Call kaleidoswap_get_position — session trade stats
-7. Calculate total portfolio USD value and current allocation percentages
-8. Return a comprehensive JSON daily report including balances, prices, allocation, and trade history`,
+4. Derive live rates via kaleidoswap_get_quote (no external oracle needed):
+   - BTC/USDT: kaleidoswap_get_quote(from_asset_id="BTC", from_layer="BTC_LN", from_amount=0.001, to_asset_id=<USDT_ID>, to_layer="RGB_LN")
+     NOTE: from_amount is BTC display units (0.001 = 100,000 sats)
+     → btc_price_usdt = to_asset.amount_display / 0.001
+   - XAUT/USDT (if configured): kaleidoswap_get_quote(from_asset_id=<XAUT_ID>, from_layer="RGB_LN", from_amount=1.0, to_asset_id=<USDT_ID>, to_layer="RGB_LN")
+     NOTE: from_amount=1.0 = 1 XAUT display unit
+5. Call kaleidoswap_get_position — session trade stats (PnL, volume, order count)
+6. Calculate total portfolio USDT value and current allocation percentages
+7. Return a comprehensive JSON daily report including balances, rates, allocation, and trade history`,
     }
 
     return prompts[loop]

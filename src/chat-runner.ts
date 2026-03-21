@@ -9,8 +9,10 @@
  * the caller provides the full message history and gets back { text, action }.
  */
 
-import Anthropic from '@anthropic-ai/sdk'
 import { McpManager } from './mcp-manager.js'
+import { createProvider } from './providers/index.js'
+import { configStore } from './config-store.js'
+import type { ToolCallResult } from './providers/index.js'
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -187,21 +189,24 @@ function parseAction(text: string): { cleanText: string; action: ChatAction } {
 const MAX_TOOL_CALLS = 10
 
 export class ChatRunner {
-  private anthropic: Anthropic
   private mcp: McpManager
   private model: string
 
   constructor(mcp: McpManager, model = 'claude-haiku-4-5-20251001') {
-    this.anthropic = new Anthropic()
     this.mcp = mcp
     this.model = model
   }
 
   async chat(history: ChatMessage[]): Promise<ChatResponse> {
-    const messages: Anthropic.MessageParam[] = history.map((m) => ({
-      role: m.role,
-      content: m.content,
-    }))
+    const provider = createProvider(configStore.provider)
+    const model = configStore.model || this.model
+
+    const messages = provider.initMessages('')
+    // Replace initMessages result with real history
+    messages.length = 0
+    for (const m of history) {
+      messages.push({ role: m.role, content: m.content })
+    }
 
     let toolCallCount = 0
     let finalText = ''
@@ -209,39 +214,30 @@ export class ChatRunner {
 
     // Agentic loop
     while (toolCallCount < MAX_TOOL_CALLS) {
-      const response = await this.anthropic.messages.create({
-        model: this.model,
-        max_tokens: 512,
-        system: CHAT_SYSTEM_PROMPT,
-        tools: this.mcp.tools,
-        messages,
-      })
-
-      // Collect any text blocks
-      const textBlocks = response.content.filter(
-        (b): b is Anthropic.TextBlock => b.type === 'text'
+      const turn = await provider.runTurn(
+        model,
+        512,
+        CHAT_SYSTEM_PROMPT,
+        this.mcp.rawTools,
+        messages
       )
-      if (textBlocks.length > 0) {
-        finalText = textBlocks.map((b) => b.text).join('')
+
+      if (turn.text) {
+        finalText = turn.text
       }
 
-      if (response.stop_reason === 'end_turn') break
+      if (turn.stop_reason === 'end_turn') break
+      if (turn.tool_calls.length === 0) break
 
-      // Execute tool calls
-      const toolUseBlocks = response.content.filter(
-        (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use'
-      )
-      if (toolUseBlocks.length === 0) break
+      provider.appendAssistant(messages, turn)
 
-      messages.push({ role: 'assistant', content: response.content })
-
-      const toolResults: Anthropic.ToolResultBlockParam[] = []
-      for (const block of toolUseBlocks) {
+      const results: ToolCallResult[] = []
+      for (const call of turn.tool_calls) {
         toolCallCount++
         let result: string
         let isError = false
         try {
-          result = await this.mcp.callTool(block.name, block.input as Record<string, unknown>)
+          result = await this.mcp.callTool(call.name, call.input)
           // Detect API-level errors in the result JSON
           try {
             const parsed = JSON.parse(result)
@@ -253,18 +249,18 @@ export class ChatRunner {
         }
 
         // Record trace entry
-        const inputSummary = JSON.stringify(block.input)
+        const inputSummary = JSON.stringify(call.input)
         toolTrace.push({
-          name: block.name,
+          name: call.name,
           input: inputSummary.length > 120 ? inputSummary.slice(0, 120) + '…' : inputSummary,
           result: result.length > 200 ? result.slice(0, 200) + '…' : result,
           error: isError,
         })
 
-        toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: result })
+        results.push({ id: call.id, result })
       }
 
-      messages.push({ role: 'user', content: toolResults })
+      provider.appendToolResults(messages, results)
     }
 
     const { cleanText, action } = parseAction(finalText)

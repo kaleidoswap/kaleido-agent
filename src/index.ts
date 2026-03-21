@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import 'dotenv/config'
+import dotenv from 'dotenv'
+dotenv.config({ override: true })
 /**
  * KaleidoAgent — Autonomous Bitcoin L2 Portfolio Rebalancer
  *
@@ -26,6 +27,7 @@ import { Logger } from './logger.js'
 import { agentState } from './agent-state.js'
 import { startStatusServer } from './status-server.js'
 import { ChatRunner } from './chat-runner.js'
+import { configStore } from './config-store.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
@@ -63,6 +65,10 @@ interface AgentConfigFile {
 
 const cfg = JSON.parse(readFileSync(configPath, 'utf8')) as AgentConfigFile
 
+// Init config store with env path and initial model
+const envPath = resolve(process.cwd(), '.env')
+configStore.init(envPath, cfg.agent.model)
+
 // Env overrides
 const dryRun = process.env.DRY_RUN !== 'false'
 
@@ -97,13 +103,12 @@ const systemPrompt = readFileSync(skillPath, 'utf8')
 // Boot
 // ---------------------------------------------------------------------------
 async function main() {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    process.stderr.write('[kaleidoagent] ERROR: ANTHROPIC_API_KEY is not set\n')
-    process.exit(1)
+  if (!process.env.ANTHROPIC_API_KEY && !process.env.OPENAI_API_KEY) {
+    process.stderr.write('[kaleidoagent] WARNING: No API key set (ANTHROPIC_API_KEY or OPENAI_API_KEY). Set via config UI or env.\n')
   }
 
   process.stderr.write(
-    `[kaleidoagent] Starting — model: ${cfg.agent.model} | dry_run: ${dryRun}\n`
+    `[kaleidoagent] Starting — provider: ${configStore.provider} | model: ${configStore.model} | dry_run: ${dryRun}\n`
   )
 
   // Init state store — server starts after MCP connects so chat is ready immediately

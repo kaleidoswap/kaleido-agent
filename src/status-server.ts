@@ -10,6 +10,7 @@
 
 import http from 'node:http'
 import { agentState } from './agent-state.js'
+import { configStore } from './config-store.js'
 import type { ChatRunner, ChatMessage } from './chat-runner.js'
 
 // ---------------------------------------------------------------------------
@@ -53,6 +54,29 @@ export function startStatusServer(port = 4242, chatRunner?: ChatRunner): http.Se
     if (req.url === '/status' && req.method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify(agentState.getStatus()))
+      return
+    }
+
+    // GET /config
+    if (req.url === '/config' && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify(configStore.getPublicConfig()))
+      return
+    }
+
+    // POST /config
+    if (req.url === '/config' && req.method === 'POST') {
+      try {
+        const body = await readBody(req)
+        const patch = JSON.parse(body)
+        configStore.update(patch)
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ ok: true, config: configStore.getPublicConfig() }))
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        res.writeHead(400, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: msg }))
+      }
       return
     }
 

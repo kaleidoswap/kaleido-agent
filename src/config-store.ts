@@ -1,0 +1,91 @@
+/**
+ * ConfigStore — runtime config (provider, model, API keys).
+ * Changes apply live without restart; keys are persisted to .env.
+ */
+import { writeFileSync } from 'node:fs'
+import type { AIProviderName } from './providers/index.js'
+
+export interface RuntimeConfig {
+  provider: AIProviderName
+  model: string
+  anthropicApiKey: string
+  openaiApiKey: string
+}
+
+export const ANTHROPIC_MODELS = [
+  { id: 'claude-opus-4-5',           label: 'claude-opus-4-5 · Most capable' },
+  { id: 'claude-sonnet-4-6',         label: 'claude-sonnet-4-6 · Balanced' },
+  { id: 'claude-haiku-4-5-20251001', label: 'claude-haiku-4-5 · Fast & cheap' },
+]
+
+export const OPENAI_MODELS = [
+  { id: 'gpt-4o',      label: 'gpt-4o · Most capable' },
+  { id: 'gpt-4o-mini', label: 'gpt-4o-mini · Fast & cheap' },
+  { id: 'o3-mini',     label: 'o3-mini · Reasoning' },
+]
+
+class ConfigStore {
+  private _provider: AIProviderName = 'anthropic'
+  private _model = 'claude-sonnet-4-6'
+  private _anthropicApiKey = ''
+  private _openaiApiKey = ''
+  private _envPath = ''
+
+  init(envPath: string, initialModel: string) {
+    this._envPath = envPath
+    this._anthropicApiKey = process.env.ANTHROPIC_API_KEY ?? ''
+    this._openaiApiKey = process.env.OPENAI_API_KEY ?? ''
+    this._model = initialModel
+
+    // Detect provider from env
+    const providerEnv = process.env.AGENT_PROVIDER as AIProviderName | undefined
+    if (providerEnv === 'openai') {
+      this._provider = 'openai'
+    }
+  }
+
+  get provider(): AIProviderName { return this._provider }
+  get model(): string { return this._model }
+  get anthropicApiKey(): string { return this._anthropicApiKey }
+  get openaiApiKey(): string { return this._openaiApiKey }
+
+  getPublicConfig() {
+    return {
+      provider: this._provider,
+      model: this._model,
+      has_anthropic_key: this._anthropicApiKey.length > 0,
+      has_openai_key: this._openaiApiKey.length > 0,
+      anthropic_models: ANTHROPIC_MODELS,
+      openai_models: OPENAI_MODELS,
+    }
+  }
+
+  update(patch: {
+    provider?: AIProviderName
+    model?: string
+    anthropic_api_key?: string
+    openai_api_key?: string
+  }): void {
+    if (patch.provider) this._provider = patch.provider
+    if (patch.model) this._model = patch.model
+    if (patch.anthropic_api_key !== undefined) {
+      this._anthropicApiKey = patch.anthropic_api_key
+      process.env.ANTHROPIC_API_KEY = patch.anthropic_api_key
+    }
+    if (patch.openai_api_key !== undefined) {
+      this._openaiApiKey = patch.openai_api_key
+      process.env.OPENAI_API_KEY = patch.openai_api_key
+    }
+    this.writeEnv()
+  }
+
+  private writeEnv(): void {
+    if (!this._envPath) return
+    const lines: string[] = []
+    if (this._anthropicApiKey) lines.push(`ANTHROPIC_API_KEY=${this._anthropicApiKey}`)
+    if (this._openaiApiKey) lines.push(`OPENAI_API_KEY=${this._openaiApiKey}`)
+    try { writeFileSync(this._envPath, lines.join('\n') + '\n', 'utf8') } catch { /* ignore */ }
+  }
+}
+
+export const configStore = new ConfigStore()

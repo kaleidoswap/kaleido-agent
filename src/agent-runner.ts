@@ -1,11 +1,11 @@
 /**
- * AgentRunner — drives a single agent turn using Claude + MCP tools.
- * Implements the standard agentic loop: send message → collect tool calls
- * → execute tools → send results → repeat until stop_reason = "end_turn".
+ * AgentRunner — drives a single agent turn using the configured AI provider + MCP tools.
+ * Provider and model are read from configStore on each run, so live config changes apply.
  */
-
-import Anthropic from '@anthropic-ai/sdk'
 import { McpManager } from './mcp-manager.js'
+import { configStore } from './config-store.js'
+import { createProvider } from './providers/index.js'
+import type { ToolCallResult } from './providers/index.js'
 
 export type LoopType = 'rebalance' | 'heartbeat' | 'daily_summary'
 
@@ -32,20 +32,21 @@ export interface RunResult {
   usage: TokenUsage
 }
 
-// Cost per token by model (USD)
-const COST_PER_TOKEN: Record<string, { input: number; output: number }> = {
-  'claude-opus-4-6':              { input: 15 / 1_000_000,   output: 75 / 1_000_000 },
-  'claude-sonnet-4-6':            { input: 3 / 1_000_000,    output: 15 / 1_000_000 },
-  'claude-haiku-4-5-20251001':    { input: 0.8 / 1_000_000,  output: 4 / 1_000_000 },
+// Cost per million tokens by model (USD)
+const COST_PER_M: Record<string, { input: number; output: number }> = {
+  'claude-opus-4-5':           { input: 15,   output: 75 },
+  'claude-sonnet-4-6':         { input: 3,    output: 15 },
+  'claude-haiku-4-5-20251001': { input: 0.8,  output: 4 },
+  'gpt-4o':                    { input: 2.5,  output: 10 },
+  'gpt-4o-mini':               { input: 0.15, output: 0.6 },
+  'o3-mini':                   { input: 1.1,  output: 4.4 },
 }
 
 export class AgentRunner {
-  private anthropic: Anthropic
   private mcp: McpManager
   private config: AgentConfig
 
   constructor(mcp: McpManager, config: AgentConfig) {
-    this.anthropic = new Anthropic()
     this.mcp = mcp
     this.config = config
   }
@@ -55,87 +56,71 @@ export class AgentRunner {
     let toolCallCount = 0
     let totalInputTokens = 0
     let totalOutputTokens = 0
-    const costs = COST_PER_TOKEN[this.config.model] ?? { input: 0, output: 0 }
+
+    // Read live config — provider/model may have changed since constructor
+    const model = configStore.model || this.config.model
+    const provider = createProvider(configStore.provider)
+    const costs = COST_PER_M[model] ?? { input: 0, output: 0 }
+    const costFactor = 1 / 1_000_000
 
     const userPrompt = this.buildPrompt(loop, portfolioParams)
-    const messages: Anthropic.MessageParam[] = [
-      { role: 'user', content: userPrompt },
-    ]
+    const messages = provider.initMessages(userPrompt)
 
     let finalResponse = ''
     let apiCallIndex = 0
 
     this.log(`\n${'─'.repeat(60)}`)
-    this.log(`[${loop.toUpperCase()}] starting — model: ${this.config.model} | dry_run: ${this.config.dryRun}`)
+    this.log(`[${loop.toUpperCase()}] starting — provider: ${configStore.provider} | model: ${model} | dry_run: ${this.config.dryRun}`)
     this.log(`${'─'.repeat(60)}`)
 
-    // Agentic loop
     while (toolCallCount < this.config.maxToolCallsPerRun) {
       apiCallIndex++
-      const response = await this.anthropic.messages.create({
-        model: this.config.model,
-        max_tokens: this.config.maxTokens,
-        system: this.config.systemPrompt,
-        tools: this.mcp.tools,
-        messages,
-      })
-
-      // Track token usage
-      totalInputTokens += response.usage.input_tokens
-      totalOutputTokens += response.usage.output_tokens
-      const callCost = response.usage.input_tokens * costs.input + response.usage.output_tokens * costs.output
-      this.log(
-        `  [api#${apiCallIndex}] tokens: in=${response.usage.input_tokens} out=${response.usage.output_tokens}` +
-        ` | cost: $${callCost.toFixed(4)} | stop: ${response.stop_reason}`
+      const turn = await provider.runTurn(
+        model,
+        this.config.maxTokens,
+        this.config.systemPrompt,
+        this.mcp.rawTools,
+        messages
       )
 
-      // Print any model text (reasoning between tool calls)
-      const textBlocks = response.content.filter((b): b is Anthropic.TextBlock => b.type === 'text')
-      if (textBlocks.length > 0) {
-        const text = textBlocks.map((b) => b.text).join('\n')
-        finalResponse = text
-        this.log(`  [model] ${text}`)
+      totalInputTokens += turn.usage.input_tokens
+      totalOutputTokens += turn.usage.output_tokens
+      const callCost = (turn.usage.input_tokens * costs.input + turn.usage.output_tokens * costs.output) * costFactor
+      this.log(
+        `  [api#${apiCallIndex}] tokens: in=${turn.usage.input_tokens} out=${turn.usage.output_tokens}` +
+        ` | cost: $${callCost.toFixed(4)} | stop: ${turn.stop_reason}`
+      )
+
+      if (turn.text) {
+        finalResponse = turn.text
+        this.log(`  [model] ${turn.text}`)
       }
 
-      if (response.stop_reason === 'end_turn') break
+      if (turn.stop_reason === 'end_turn') break
+      if (turn.tool_calls.length === 0) break
 
-      // Process tool use blocks
-      const toolUseBlocks = response.content.filter(
-        (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use'
-      )
-      if (toolUseBlocks.length === 0) break
+      provider.appendAssistant(messages, turn)
 
-      // Add assistant message with all blocks
-      messages.push({ role: 'assistant', content: response.content })
-
-      // Execute each tool call and collect results
-      const toolResults: Anthropic.ToolResultBlockParam[] = []
-      for (const block of toolUseBlocks) {
+      const results: ToolCallResult[] = []
+      for (const call of turn.tool_calls) {
         toolCallCount++
-        this.log(`  [tool→] ${block.name}(${JSON.stringify(block.input)})`)
-
+        this.log(`  [tool→] ${call.name}(${JSON.stringify(call.input)})`)
         let result: string
         try {
-          result = await this.mcp.callTool(block.name, block.input as Record<string, unknown>)
-          // Show a compact preview of the result (first 200 chars)
+          result = await this.mcp.callTool(call.name, call.input)
           const preview = result.length > 200 ? result.slice(0, 200) + '…' : result
           this.log(`  [tool←] ${preview}`)
         } catch (err) {
           result = JSON.stringify({ error: err instanceof Error ? err.message : String(err) })
           this.log(`  [tool✗] ${result}`)
         }
-
-        toolResults.push({
-          type: 'tool_result',
-          tool_use_id: block.id,
-          content: result,
-        })
+        results.push({ id: call.id, result })
       }
 
-      messages.push({ role: 'user', content: toolResults })
+      provider.appendToolResults(messages, results)
     }
 
-    const totalCost = totalInputTokens * costs.input + totalOutputTokens * costs.output
+    const totalCost = (totalInputTokens * costs.input + totalOutputTokens * costs.output) * costFactor
     this.log(`${'─'.repeat(60)}`)
     this.log(
       `[${loop.toUpperCase()}] done in ${Date.now() - start}ms | ` +

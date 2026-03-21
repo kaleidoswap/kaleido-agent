@@ -7,6 +7,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import Anthropic from '@anthropic-ai/sdk'
+import type { McpToolDef } from './providers/index.js'
 
 export interface McpServerConfig {
   command: string
@@ -23,6 +24,7 @@ interface RegisteredServer {
 export class McpManager {
   private servers: RegisteredServer[] = []
   private allTools: Anthropic.Tool[] = []
+  private rawToolDefs: McpToolDef[] = []
 
   async connect(servers: Record<string, McpServerConfig>): Promise<void> {
     for (const [name, cfg] of Object.entries(servers)) {
@@ -48,6 +50,11 @@ export class McpManager {
             properties: {},
           },
         })
+        this.rawToolDefs.push({
+          name: t.name,
+          description: t.description ?? '',
+          inputSchema: (t.inputSchema as Record<string, unknown>) ?? { type: 'object', properties: {} },
+        })
       }
 
       this.servers.push({ name, client, toolNames })
@@ -57,6 +64,10 @@ export class McpManager {
 
   get tools(): Anthropic.Tool[] {
     return this.allTools
+  }
+
+  get rawTools(): McpToolDef[] {
+    return this.rawToolDefs
   }
 
   async callTool(

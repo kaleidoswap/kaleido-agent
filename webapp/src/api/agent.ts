@@ -100,3 +100,48 @@ export async function sendChat(messages: ChatMessage[]): Promise<ChatResponse> {
   }
   return res.json()
 }
+
+// ─── Config API ───
+
+export interface ModelOption {
+  id: string
+  label: string
+}
+
+export interface AgentConfig {
+  provider: 'anthropic' | 'openai'
+  model: string
+  has_anthropic_key: boolean
+  has_openai_key: boolean
+  anthropic_models: ModelOption[]
+  openai_models: ModelOption[]
+}
+
+export async function getConfig(): Promise<AgentConfig | null> {
+  try {
+    const res = await fetch(`${BASE}/config`, { signal: AbortSignal.timeout(3000) })
+    if (!res.ok) return null
+    return res.json()
+  } catch {
+    return null
+  }
+}
+
+export async function updateConfig(patch: {
+  provider?: 'anthropic' | 'openai'
+  model?: string
+  anthropic_api_key?: string
+  openai_api_key?: string
+}): Promise<{ ok: boolean; config?: AgentConfig; error?: string }> {
+  try {
+    const res = await fetch(`${BASE}/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+      signal: AbortSignal.timeout(5000),
+    })
+    return res.json()
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) }
+  }
+}

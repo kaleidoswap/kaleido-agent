@@ -4,11 +4,13 @@ import { Header } from './components/Header'
 import { Sidebar } from './components/Sidebar'
 import { ChatPanel } from './components/ChatPanel'
 import { ActionModal } from './components/ActionModal'
+import { SettingsPanel } from './components/SettingsPanel'
 import { useAgentStatus } from './hooks/useAgentStatus'
 
 export default function App() {
   const { status, connection } = useAgentStatus(5000)
   const [pendingAction, setPendingAction] = useState<ChatAction | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const handleAction = (action: ChatAction) => {
     if (action.type !== 'none') {
@@ -18,7 +20,7 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#0a0a0a] text-gray-200">
-      <Header connection={connection} status={status} />
+      <Header connection={connection} status={status} onSettingsClick={() => setSettingsOpen(true)} />
 
       <div className="flex flex-1 min-h-0">
         <Sidebar status={status} connection={connection} />
@@ -31,6 +33,7 @@ export default function App() {
         action={pendingAction}
         onClose={() => setPendingAction(null)}
       />
+      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   )
 }

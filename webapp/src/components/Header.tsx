@@ -4,6 +4,7 @@ import { AgentStatus } from '../api/agent'
 interface Props {
   connection: ConnectionState
   status: AgentStatus | null
+  onSettingsClick: () => void
 }
 
 function formatUptime(sec: number): string {
@@ -12,7 +13,7 @@ function formatUptime(sec: number): string {
   return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`
 }
 
-export function Header({ connection, status }: Props) {
+export function Header({ connection, status, onSettingsClick }: Props) {
   return (
     <header className="flex items-center justify-between px-5 py-3 border-b border-white/5 bg-[#0d0d0d]">
       {/* Left: brand */}
@@ -71,6 +72,16 @@ export function Header({ connection, status }: Props) {
         {connection === 'offline' && (
           <span className="text-gray-600">start kaleidoagent on :4242</span>
         )}
+        <button
+          onClick={onSettingsClick}
+          className="text-gray-600 hover:text-gray-300 transition-colors ml-3"
+          title="Settings"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="7" cy="7" r="2.5"/>
+            <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.93 2.93l1.06 1.06M10.01 10.01l1.06 1.06M2.93 11.07l1.06-1.06M10.01 3.99l1.06-1.06"/>
+          </svg>
+        </button>
       </div>
     </header>
   )

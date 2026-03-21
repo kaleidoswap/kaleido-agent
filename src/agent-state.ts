@@ -29,6 +29,7 @@ export interface AgentStatusPayload {
   uptime_sec: number
   dry_run: boolean
   model: string
+  provider: string
   portfolio_targets: Record<string, number>
   cumulative_cost_usd: number
   cumulative_input_tokens: number
@@ -41,6 +42,7 @@ class AgentStateStore {
   private startTime = Date.now()
   private dryRun = true
   private model = ''
+  private provider = 'anthropic'
   private portfolioTargets: Record<string, number> = {}
   private cumulativeCostUsd = 0
   private cumulativeInputTokens = 0
@@ -55,9 +57,10 @@ class AgentStateStore {
 
   private recentRuns: RecentRun[] = []
 
-  init(dryRun: boolean, model: string, portfolioTargets: Record<string, number>): void {
+  init(dryRun: boolean, model: string, portfolioTargets: Record<string, number>, provider = 'anthropic'): void {
     this.dryRun = dryRun
     this.model = model
+    this.provider = provider
     this.portfolioTargets = portfolioTargets
     this.running = true
     this.startTime = Date.now()
@@ -109,6 +112,7 @@ class AgentStateStore {
       uptime_sec: Math.floor((Date.now() - this.startTime) / 1000),
       dry_run: this.dryRun,
       model: this.model,
+      provider: this.provider,
       portfolio_targets: this.portfolioTargets,
       cumulative_cost_usd: this.cumulativeCostUsd,
       cumulative_input_tokens: this.cumulativeInputTokens,

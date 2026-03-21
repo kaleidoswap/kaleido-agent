@@ -1,8 +1,8 @@
 /**
  * ConfigStore — runtime config (provider, model, API keys).
- * Changes apply live without restart; keys are persisted to .env.
+ * Changes apply live without restart; managed values are persisted to .env.
  */
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import type { AIProviderName } from './providers/index.js'
 
 export interface RuntimeConfig {
@@ -24,6 +24,13 @@ export const OPENAI_MODELS = [
   { id: 'o3-mini',     label: 'o3-mini · Reasoning' },
 ]
 
+const MANAGED_ENV_KEYS = new Set([
+  'ANTHROPIC_API_KEY',
+  'OPENAI_API_KEY',
+  'AGENT_PROVIDER',
+  'AGENT_MODEL',
+])
+
 class ConfigStore {
   private _provider: AIProviderName = 'anthropic'
   private _model = 'claude-sonnet-4-6'
@@ -35,12 +42,12 @@ class ConfigStore {
     this._envPath = envPath
     this._anthropicApiKey = process.env.ANTHROPIC_API_KEY ?? ''
     this._openaiApiKey = process.env.OPENAI_API_KEY ?? ''
-    this._model = initialModel
+    this._model = process.env.AGENT_MODEL ?? initialModel
 
     // Detect provider from env
     const providerEnv = process.env.AGENT_PROVIDER as AIProviderName | undefined
-    if (providerEnv === 'openai') {
-      this._provider = 'openai'
+    if (providerEnv === 'openai' || providerEnv === 'anthropic') {
+      this._provider = providerEnv
     }
   }
 
@@ -68,6 +75,8 @@ class ConfigStore {
   }): void {
     if (patch.provider) this._provider = patch.provider
     if (patch.model) this._model = patch.model
+    process.env.AGENT_PROVIDER = this._provider
+    process.env.AGENT_MODEL = this._model
     if (patch.anthropic_api_key !== undefined) {
       this._anthropicApiKey = patch.anthropic_api_key
       process.env.ANTHROPIC_API_KEY = patch.anthropic_api_key
@@ -82,8 +91,28 @@ class ConfigStore {
   private writeEnv(): void {
     if (!this._envPath) return
     const lines: string[] = []
+    try {
+      const existing = readFileSync(this._envPath, 'utf8')
+      for (const line of existing.split('\n')) {
+        const trimmed = line.trim()
+        if (!trimmed) continue
+        if (trimmed.startsWith('#')) {
+          lines.push(line)
+          continue
+        }
+        const key = trimmed.split('=')[0]
+        if (!MANAGED_ENV_KEYS.has(key)) {
+          lines.push(line)
+        }
+      }
+    } catch {
+      // No existing .env file to preserve.
+    }
+
     if (this._anthropicApiKey) lines.push(`ANTHROPIC_API_KEY=${this._anthropicApiKey}`)
     if (this._openaiApiKey) lines.push(`OPENAI_API_KEY=${this._openaiApiKey}`)
+    lines.push(`AGENT_PROVIDER=${this._provider}`)
+    lines.push(`AGENT_MODEL=${this._model}`)
     try { writeFileSync(this._envPath, lines.join('\n') + '\n', 'utf8') } catch { /* ignore */ }
   }
 }

@@ -66,7 +66,7 @@ export function Sidebar({ status, connection }: Props) {
     )
   }
 
-  // Placeholder visualization: current allocation mirrors target values.
+  const snapshot = status.portfolio_snapshot
   const targets = status.portfolio_targets
 
   return (
@@ -76,18 +76,30 @@ export function Sidebar({ status, connection }: Props) {
         {/* Portfolio targets */}
         <section>
           <h2 className="text-[10px] font-mono text-gray-600 uppercase tracking-widest mb-3">
-            Portfolio Targets
+            Portfolio
           </h2>
+          {snapshot?.total_usdt !== null && snapshot?.total_usdt !== undefined && (
+            <p className="mb-3 text-[11px] font-mono text-gray-500">
+              total ${snapshot.total_usdt.toFixed(2)}
+            </p>
+          )}
           <div className="space-y-3">
-            {Object.entries(targets).map(([asset, pct]) => (
+            {Object.entries(targets).map(([asset, target]) => {
+              const currentPct = snapshot?.assets?.[asset]?.pct
+              return (
               <AllocationBar
                 key={asset}
                 asset={asset}
-                pct={pct}
-                target={pct}
+                pct={typeof currentPct === 'number' ? currentPct : target}
+                target={typeof snapshot?.assets?.[asset]?.target_pct === 'number' ? snapshot.assets[asset].target_pct! : target}
               />
-            ))}
+            )})}
           </div>
+          {!snapshot && (
+            <p className="mt-3 text-[10px] font-mono text-gray-700">
+              Waiting for the first structured portfolio report.
+            </p>
+          )}
         </section>
 
         {/* Divider */}

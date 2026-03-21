@@ -54,6 +54,8 @@ export function Header({ connection, status, onSettingsClick }: Props) {
       <div className="flex items-center gap-4 text-xs text-gray-500 font-mono">
         {status && (
           <>
+            <span className="uppercase">{status.provider}</span>
+            <span className="text-gray-700">·</span>
             <span>{status.model}</span>
             <span className="text-gray-700">·</span>
             {status.dry_run && (

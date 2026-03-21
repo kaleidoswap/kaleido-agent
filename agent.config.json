@@ -9,7 +9,7 @@
       "command": "node",
       "args": ["../kaleidoswap-mcp/dist/index.js"],
       "env": {
-        "KALEIDOSWAP_API_URL": "http://localhost:8000"
+        "KALEIDOSWAP_API_URL": "https://api.staging.kaleidoswap.com"
       }
     },
     "wdk_wallet": {
@@ -57,8 +57,8 @@
     }
   },
   "schedule": {
-    "rebalance_interval_sec": 300,
-    "heartbeat_interval_sec": 300,
+    "rebalance_interval_sec": 3600,
+    "heartbeat_interval_sec": 3600,
     "daily_summary_cron": "00:00"
   },
   "assets": {

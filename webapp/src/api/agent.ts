@@ -24,7 +24,18 @@ export interface AgentStatus {
   uptime_sec: number
   dry_run: boolean
   model: string
+  provider: string
   portfolio_targets: Record<string, number>
+  portfolio_snapshot: {
+    total_usdt: number | null
+    assets: Record<string, {
+      pct: number | null
+      target_pct: number | null
+      usdt: number | null
+      amount: number | null
+      amount_sat: number | null
+    }>
+  } | null
   cumulative_cost_usd: number
   cumulative_input_tokens: number
   cumulative_output_tokens: number
@@ -108,6 +119,30 @@ export interface ModelOption {
   label: string
 }
 
+export interface AgentPortfolioConfig {
+  targets: Record<string, number>
+  rebalance_threshold_pct: number
+  max_swap_usd: number
+  min_btc_reserve_sats: number
+  max_concurrent_orders: number
+  stop_loss_btc_sats: number
+  dry_run: boolean
+  trading_mode: 'atomic' | 'rest' | 'both'
+  lsp: {
+    lsp_balance_sat: number
+    client_balance_sat: number
+    channel_expiry_blocks: number
+    min_outbound_liquidity_sat: number
+    auto_buy_channel: boolean
+  }
+}
+
+export interface AgentScheduleConfig {
+  rebalance_interval_sec: number
+  heartbeat_interval_sec: number
+  daily_summary_cron: string
+}
+
 export interface AgentConfig {
   provider: 'anthropic' | 'openai'
   model: string
@@ -115,6 +150,13 @@ export interface AgentConfig {
   has_openai_key: boolean
   anthropic_models: ModelOption[]
   openai_models: ModelOption[]
+  portfolio: AgentPortfolioConfig
+  schedule: AgentScheduleConfig
+  assets: {
+    btc_asset_id: string
+    usdt_asset_id: string
+    xaut_asset_id: string
+  }
 }
 
 export async function getConfig(): Promise<AgentConfig | null> {
@@ -132,6 +174,10 @@ export async function updateConfig(patch: {
   model?: string
   anthropic_api_key?: string
   openai_api_key?: string
+  portfolio?: Partial<AgentPortfolioConfig> & {
+    lsp?: Partial<AgentPortfolioConfig['lsp']>
+  }
+  schedule?: Partial<AgentScheduleConfig>
 }): Promise<{ ok: boolean; config?: AgentConfig; error?: string }> {
   try {
     const res = await fetch(`${BASE}/config`, {

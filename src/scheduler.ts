@@ -67,6 +67,35 @@ export class Scheduler {
     this.timers = []
   }
 
+  updateConfig(next: Partial<SchedulerConfig>): void {
+    this.config = {
+      ...this.config,
+      ...next,
+      portfolioParams: next.portfolioParams ?? this.config.portfolioParams,
+    }
+
+    if (!this.running) return
+
+    for (const t of this.timers) clearInterval(t)
+    this.timers = []
+
+    this.timers.push(
+      setInterval(
+        () => this.runLoop('rebalance').catch(() => {}),
+        this.config.rebalanceIntervalSec * 1000
+      )
+    )
+
+    this.timers.push(
+      setInterval(
+        () => this.runLoop('heartbeat').catch(() => {}),
+        this.config.heartbeatIntervalSec * 1000
+      )
+    )
+
+    this.scheduleDailySummary()
+  }
+
   private async runLoop(loop: LoopType): Promise<void> {
     if (!this.running) return
     process.stderr.write(`[scheduler] → starting ${loop} loop\n`)

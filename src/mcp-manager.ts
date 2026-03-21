@@ -25,6 +25,7 @@ export class McpManager {
   private servers: RegisteredServer[] = []
   private allTools: Anthropic.Tool[] = []
   private rawToolDefs: McpToolDef[] = []
+  private rawToolDefsByName = new Map<string, McpToolDef>()
 
   async connect(servers: Record<string, McpServerConfig>): Promise<void> {
     for (const [name, cfg] of Object.entries(servers)) {
@@ -55,6 +56,11 @@ export class McpManager {
           description: t.description ?? '',
           inputSchema: (t.inputSchema as Record<string, unknown>) ?? { type: 'object', properties: {} },
         })
+        this.rawToolDefsByName.set(t.name, {
+          name: t.name,
+          description: t.description ?? '',
+          inputSchema: (t.inputSchema as Record<string, unknown>) ?? { type: 'object', properties: {} },
+        })
       }
 
       this.servers.push({ name, client, toolNames })
@@ -68,6 +74,15 @@ export class McpManager {
 
   get rawTools(): McpToolDef[] {
     return this.rawToolDefs
+  }
+
+  getToolsByNames(names: readonly string[]): McpToolDef[] {
+    const selected: McpToolDef[] = []
+    for (const name of names) {
+      const tool = this.rawToolDefsByName.get(name)
+      if (tool) selected.push(tool)
+    }
+    return selected
   }
 
   async callTool(

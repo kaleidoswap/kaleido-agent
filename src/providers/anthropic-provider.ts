@@ -12,7 +12,7 @@ export class AnthropicProvider implements AIProvider {
   }
 
   private convertTools(tools: McpToolDef[]): Anthropic.Tool[] {
-    return tools.map((t) => ({
+    return (tools ?? []).map((t) => ({
       name: t.name,
       description: t.description,
       input_schema: (t.inputSchema as Anthropic.Tool['input_schema']) ?? {

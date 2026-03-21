@@ -11,6 +11,21 @@ export function SettingsPanel({ open, onClose }: Props) {
   const [provider, setProvider] = useState<'anthropic' | 'openai'>('anthropic')
   const [model, setModel] = useState('')
   const [apiKey, setApiKey] = useState('')
+  const [targets, setTargets] = useState({ BTC: '70', USDT: '20', XAUT: '10' })
+  const [rebalanceThreshold, setRebalanceThreshold] = useState('5')
+  const [maxSwapUsd, setMaxSwapUsd] = useState('200')
+  const [minBtcReserve, setMinBtcReserve] = useState('50000')
+  const [maxConcurrentOrders, setMaxConcurrentOrders] = useState('3')
+  const [stopLossBtc, setStopLossBtc] = useState('30000')
+  const [tradingMode, setTradingMode] = useState<'atomic' | 'rest' | 'both'>('atomic')
+  const [rebalanceIntervalSec, setRebalanceIntervalSec] = useState('300')
+  const [heartbeatIntervalSec, setHeartbeatIntervalSec] = useState('300')
+  const [dailySummaryCron, setDailySummaryCron] = useState('00:00')
+  const [lspBalanceSat, setLspBalanceSat] = useState('2000000')
+  const [clientBalanceSat, setClientBalanceSat] = useState('0')
+  const [channelExpiryBlocks, setChannelExpiryBlocks] = useState('4320')
+  const [minOutboundLiquiditySat, setMinOutboundLiquiditySat] = useState('200000')
+  const [autoBuyChannel, setAutoBuyChannel] = useState(false)
   const [showKey, setShowKey] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle')
@@ -23,6 +38,25 @@ export function SettingsPanel({ open, onClose }: Props) {
       setProvider(cfg.provider)
       setModel(cfg.model)
       setApiKey('')
+      setTargets({
+        BTC: String(cfg.portfolio.targets.BTC ?? 0),
+        USDT: String(cfg.portfolio.targets.USDT ?? 0),
+        XAUT: String(cfg.portfolio.targets.XAUT ?? 0),
+      })
+      setRebalanceThreshold(String(cfg.portfolio.rebalance_threshold_pct))
+      setMaxSwapUsd(String(cfg.portfolio.max_swap_usd))
+      setMinBtcReserve(String(cfg.portfolio.min_btc_reserve_sats))
+      setMaxConcurrentOrders(String(cfg.portfolio.max_concurrent_orders))
+      setStopLossBtc(String(cfg.portfolio.stop_loss_btc_sats))
+      setTradingMode(cfg.portfolio.trading_mode)
+      setRebalanceIntervalSec(String(cfg.schedule.rebalance_interval_sec))
+      setHeartbeatIntervalSec(String(cfg.schedule.heartbeat_interval_sec))
+      setDailySummaryCron(cfg.schedule.daily_summary_cron)
+      setLspBalanceSat(String(cfg.portfolio.lsp.lsp_balance_sat))
+      setClientBalanceSat(String(cfg.portfolio.lsp.client_balance_sat))
+      setChannelExpiryBlocks(String(cfg.portfolio.lsp.channel_expiry_blocks))
+      setMinOutboundLiquiditySat(String(cfg.portfolio.lsp.min_outbound_liquidity_sat))
+      setAutoBuyChannel(cfg.portfolio.lsp.auto_buy_channel)
     })
   }, [open])
 
@@ -48,7 +82,35 @@ export function SettingsPanel({ open, onClose }: Props) {
   const handleSave = async () => {
     setSaving(true)
     setSaveStatus('idle')
-    const patch: Parameters<typeof updateConfig>[0] = { provider, model }
+    const patch: Parameters<typeof updateConfig>[0] = {
+      provider,
+      model,
+      portfolio: {
+        targets: {
+          BTC: Number(targets.BTC || 0),
+          USDT: Number(targets.USDT || 0),
+          XAUT: Number(targets.XAUT || 0),
+        },
+        rebalance_threshold_pct: Number(rebalanceThreshold || 0),
+        max_swap_usd: Number(maxSwapUsd || 0),
+        min_btc_reserve_sats: Number(minBtcReserve || 0),
+        max_concurrent_orders: Number(maxConcurrentOrders || 0),
+        stop_loss_btc_sats: Number(stopLossBtc || 0),
+        trading_mode: tradingMode,
+        lsp: {
+          lsp_balance_sat: Number(lspBalanceSat || 0),
+          client_balance_sat: Number(clientBalanceSat || 0),
+          channel_expiry_blocks: Number(channelExpiryBlocks || 0),
+          min_outbound_liquidity_sat: Number(minOutboundLiquiditySat || 0),
+          auto_buy_channel: autoBuyChannel,
+        },
+      },
+      schedule: {
+        rebalance_interval_sec: Number(rebalanceIntervalSec || 0),
+        heartbeat_interval_sec: Number(heartbeatIntervalSec || 0),
+        daily_summary_cron: dailySummaryCron,
+      },
+    }
     if (apiKey.trim()) {
       if (provider === 'anthropic') patch.anthropic_api_key = apiKey.trim()
       else patch.openai_api_key = apiKey.trim()
@@ -166,6 +228,87 @@ export function SettingsPanel({ open, onClose }: Props) {
             </select>
           </div>
 
+          <div>
+            <p className="text-[10px] font-mono text-gray-600 uppercase tracking-widest mb-2">
+              Portfolio Targets
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {(['BTC', 'USDT', 'XAUT'] as const).map((asset) => (
+                <label key={asset} className="space-y-1">
+                  <span className="block text-[10px] font-mono text-gray-500">{asset}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={targets[asset]}
+                    onChange={(e) => setTargets((prev) => ({ ...prev, [asset]: e.target.value }))}
+                    className="w-full bg-white/[0.03] border border-white/10 rounded px-3 py-2 text-xs font-mono text-gray-300"
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-mono text-gray-600 uppercase tracking-widest mb-2">
+              Risk Rules
+            </p>
+            <div className="space-y-2">
+              <ConfigField label="rebalance threshold %" value={rebalanceThreshold} onChange={setRebalanceThreshold} />
+              <ConfigField label="max swap usd" value={maxSwapUsd} onChange={setMaxSwapUsd} />
+              <ConfigField label="min btc reserve sats" value={minBtcReserve} onChange={setMinBtcReserve} />
+              <ConfigField label="max concurrent orders" value={maxConcurrentOrders} onChange={setMaxConcurrentOrders} />
+              <ConfigField label="stop loss btc sats" value={stopLossBtc} onChange={setStopLossBtc} />
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-mono text-gray-600 uppercase tracking-widest mb-2">
+              Strategy
+            </p>
+            <select
+              value={tradingMode}
+              onChange={(e) => setTradingMode(e.target.value as typeof tradingMode)}
+              className="w-full bg-white/[0.03] border border-white/10 rounded px-3 py-2 text-xs font-mono text-gray-300"
+            >
+              <option value="atomic">atomic</option>
+              <option value="rest">rest</option>
+              <option value="both">both</option>
+            </select>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-mono text-gray-600 uppercase tracking-widest mb-2">
+              Schedule
+            </p>
+            <div className="space-y-2">
+              <ConfigField label="rebalance interval sec" value={rebalanceIntervalSec} onChange={setRebalanceIntervalSec} />
+              <ConfigField label="heartbeat interval sec" value={heartbeatIntervalSec} onChange={setHeartbeatIntervalSec} />
+              <ConfigField label="daily summary time" value={dailySummaryCron} onChange={setDailySummaryCron} placeholder="00:00" />
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-mono text-gray-600 uppercase tracking-widest mb-2">
+              Channel Buy
+            </p>
+            <div className="space-y-2">
+              <ConfigField label="lsp balance sat" value={lspBalanceSat} onChange={setLspBalanceSat} />
+              <ConfigField label="client balance sat" value={clientBalanceSat} onChange={setClientBalanceSat} />
+              <ConfigField label="expiry blocks" value={channelExpiryBlocks} onChange={setChannelExpiryBlocks} />
+              <ConfigField label="min outbound sats" value={minOutboundLiquiditySat} onChange={setMinOutboundLiquiditySat} />
+              <label className="flex items-center justify-between rounded border border-white/10 bg-white/[0.03] px-3 py-2">
+                <span className="text-[10px] font-mono text-gray-400">auto buy channel</span>
+                <input
+                  type="checkbox"
+                  checked={autoBuyChannel}
+                  onChange={(e) => setAutoBuyChannel(e.target.checked)}
+                  className="h-4 w-4 accent-emerald-500"
+                />
+              </label>
+            </div>
+          </div>
+
           {/* Save button */}
           <button
             onClick={handleSave}
@@ -185,10 +328,34 @@ export function SettingsPanel({ open, onClose }: Props) {
         {/* Footer note */}
         <div className="px-5 py-3 border-t border-white/5">
           <p className="text-[10px] font-mono text-gray-700">
-            Changes apply on the next agent run
+            Chat picks this up immediately. Scheduled loops use it on the next run.
           </p>
         </div>
       </div>
     </div>
+  )
+}
+
+function ConfigField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+}) {
+  return (
+    <label className="block space-y-1">
+      <span className="block text-[10px] font-mono text-gray-500">{label}</span>
+      <input
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-white/[0.03] border border-white/10 rounded px-3 py-2 text-xs font-mono text-gray-300"
+      />
+    </label>
   )
 }

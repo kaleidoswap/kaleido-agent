@@ -18,6 +18,13 @@ export default function App() {
     }
   }
 
+  const handleDispatchAction = (action: ChatAction) => {
+    window.dispatchEvent(new CustomEvent('kaleidoagent-action', { detail: action }))
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: 'kaleidoagent-action', action }, '*')
+    }
+  }
+
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#0a0a0a] text-gray-200">
       <Header connection={connection} status={status} onSettingsClick={() => setSettingsOpen(true)} />
@@ -31,6 +38,7 @@ export default function App() {
 
       <ActionModal
         action={pendingAction}
+        onDispatch={handleDispatchAction}
         onClose={() => setPendingAction(null)}
       />
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />

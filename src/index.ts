@@ -28,6 +28,9 @@ import { agentState } from './agent-state.js'
 import { startStatusServer } from './status-server.js'
 import { ChatRunner } from './chat-runner.js'
 import { configStore } from './config-store.js'
+import { agentConfigStore, type AgentConfigFile } from './agent-config-store.js'
+import { AGENT_SYSTEM_PROMPT } from './prompts.js'
+import { ensureNodeRunning } from './node-bootstrap.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
@@ -38,32 +41,8 @@ const configPath = resolve(
   process.env.CONFIG_PATH ?? resolve(__dirname, '..', 'agent.config.json')
 )
 
-interface AgentConfigFile {
-  agent: { model: string; max_tokens: number; max_tool_calls_per_run: number }
-  mcp: Record<string, { command: string; args: string[]; env?: Record<string, string> }>
-  portfolio: {
-    targets: Record<string, number>
-    rebalance_threshold_pct: number
-    max_swap_usd: number
-    min_btc_reserve_sats: number
-    max_concurrent_orders: number
-    stop_loss_btc_sats: number
-    dry_run: boolean
-  }
-  schedule: {
-    rebalance_interval_sec: number
-    heartbeat_interval_sec: number
-    daily_summary_cron: string
-  }
-  assets: {
-    btc_asset_id: string
-    usdt_asset_id: string
-    xaut_asset_id: string
-  }
-  notifications: { log_file: string; log_level: string }
-}
-
 const cfg = JSON.parse(readFileSync(configPath, 'utf8')) as AgentConfigFile
+agentConfigStore.init(configPath, cfg)
 
 // Init config store with env path and initial model
 const envPath = resolve(process.cwd(), '.env')
@@ -94,12 +73,6 @@ const portfolioParams = {
 }
 
 // ---------------------------------------------------------------------------
-// Load strategy skill (system prompt)
-// ---------------------------------------------------------------------------
-const skillPath = resolve(__dirname, '..', 'skills', 'kaleidoagent', 'SKILL.md')
-const systemPrompt = readFileSync(skillPath, 'utf8')
-
-// ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
 async function main() {
@@ -112,12 +85,24 @@ async function main() {
   )
 
   // Init state store — server starts after MCP connects so chat is ready immediately
-  agentState.init(dryRun, cfg.agent.model, cfg.portfolio.targets)
+  agentState.init(dryRun, configStore.model, cfg.portfolio.targets, configStore.provider)
 
   const logger = new Logger(
     resolve(process.cwd(), cfg.notifications.log_file),
     cfg.notifications.log_level
   )
+
+  const rlnNodeUrl = process.env.RLN_NODE_URL ?? cfg.mcp.wdk_wallet.env?.RLN_NODE_URL ?? 'http://localhost:3001'
+  const kaleidoApiUrl = process.env.KALEIDO_API_URL
+    ?? cfg.mcp.kaleido_node.env?.KALEIDO_API_URL
+    ?? cfg.mcp.kaleidoswap.env?.KALEIDOSWAP_API_URL
+
+  await ensureNodeRunning({
+    nodeUrl: rlnNodeUrl,
+    apiUrl: kaleidoApiUrl,
+    envName: process.env.KALEIDO_ENV_NAME ?? cfg.mcp.kaleido_node.env?.KALEIDO_ENV_NAME,
+    kaleidoBin: process.env.KALEIDO_BIN,
+  })
 
   // Connect to all MCP servers
   const mcp = new McpManager()
@@ -125,13 +110,11 @@ async function main() {
 
   // Start status + chat server now that MCP tools are available
   const chatRunner = new ChatRunner(mcp, cfg.agent.model)
-  const statusServer = startStatusServer(4242, chatRunner)
-
   const runner = new AgentRunner(mcp, {
     model: cfg.agent.model,
     maxTokens: cfg.agent.max_tokens,
     maxToolCallsPerRun: cfg.agent.max_tool_calls_per_run,
-    systemPrompt,
+    systemPrompt: AGENT_SYSTEM_PROMPT,
     dryRun,
   })
 
@@ -145,6 +128,8 @@ async function main() {
     },
     logger
   )
+
+  const statusServer = startStatusServer(4242, chatRunner, scheduler)
 
   // Graceful shutdown
   process.on('SIGINT', async () => {

@@ -13,7 +13,7 @@ export class OpenAIProvider implements AIProvider {
   }
 
   private convertTools(tools: McpToolDef[]): OpenAI.Chat.ChatCompletionTool[] {
-    return tools.map((t) => ({
+    return (tools ?? []).map((t) => ({
       type: 'function' as const,
       function: {
         name: t.name,

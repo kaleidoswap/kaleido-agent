@@ -11,7 +11,9 @@
 import http from 'node:http'
 import { agentState } from './agent-state.js'
 import { configStore } from './config-store.js'
+import { agentConfigStore } from './agent-config-store.js'
 import type { ChatRunner, ChatMessage } from './chat-runner.js'
+import type { SchedulerConfig, Scheduler } from './scheduler.js'
 
 // ---------------------------------------------------------------------------
 // Body reader helper
@@ -30,7 +32,11 @@ function readBody(req: http.IncomingMessage): Promise<string> {
 // Server factory
 // ---------------------------------------------------------------------------
 
-export function startStatusServer(port = 4242, chatRunner?: ChatRunner): http.Server {
+export function startStatusServer(
+  port = 4242,
+  chatRunner?: ChatRunner,
+  scheduler?: Scheduler,
+): http.Server {
   const server = http.createServer(async (req, res) => {
     // CORS — allow the Chrome extension origin
     res.setHeader('Access-Control-Allow-Origin', '*')
@@ -60,7 +66,10 @@ export function startStatusServer(port = 4242, chatRunner?: ChatRunner): http.Se
     // GET /config
     if (req.url === '/config' && req.method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify(configStore.getPublicConfig()))
+      res.end(JSON.stringify({
+        ...configStore.getPublicConfig(),
+        ...agentConfigStore.getPublicConfig(),
+      }))
       return
     }
 
@@ -68,10 +77,50 @@ export function startStatusServer(port = 4242, chatRunner?: ChatRunner): http.Se
     if (req.url === '/config' && req.method === 'POST') {
       try {
         const body = await readBody(req)
-        const patch = JSON.parse(body)
-        configStore.update(patch)
+        const patch = JSON.parse(body) as {
+          provider?: 'anthropic' | 'openai'
+          model?: string
+          anthropic_api_key?: string
+          openai_api_key?: string
+          portfolio?: SchedulerConfig['portfolioParams']
+          schedule?: {
+            rebalance_interval_sec?: number
+            heartbeat_interval_sec?: number
+            daily_summary_cron?: string
+          }
+        }
+
+        configStore.update({
+          provider: patch.provider,
+          model: patch.model,
+          anthropic_api_key: patch.anthropic_api_key,
+          openai_api_key: patch.openai_api_key,
+        })
+        agentState.updateRuntimeConfig(configStore.provider, configStore.model)
+        const configFile = agentConfigStore.update({
+          portfolio: patch.portfolio as Parameters<typeof agentConfigStore.update>[0]['portfolio'],
+          schedule: patch.schedule,
+        })
+
+        scheduler?.updateConfig({
+          rebalanceIntervalSec: configFile.schedule.rebalance_interval_sec,
+          heartbeatIntervalSec: configFile.schedule.heartbeat_interval_sec,
+          dailySummaryCron: configFile.schedule.daily_summary_cron,
+          portfolioParams: {
+            ...configFile.portfolio,
+            dry_run: agentState.getStatus().dry_run,
+            assets: configFile.assets,
+          },
+        })
+
         res.writeHead(200, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ ok: true, config: configStore.getPublicConfig() }))
+        res.end(JSON.stringify({
+          ok: true,
+          config: {
+            ...configStore.getPublicConfig(),
+            ...agentConfigStore.getPublicConfig(),
+          },
+        }))
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
         res.writeHead(400, { 'Content-Type': 'application/json' })

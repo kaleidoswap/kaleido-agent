@@ -57,7 +57,7 @@ kaleidoswap_lsp_get_order      → poll → CHANNEL_OPENING | COMPLETED
 ## Requirements
 
 - Node.js 20+
-- [RGB Lightning Node](https://github.com/RGB-Tools/rgb-lightning-node) running at `RLN_NODE_URL`
+- [`kaleido` CLI](https://github.com/kaleidoswap/kaleido) installed locally if you want KaleidoAgent to auto-start the node when `RLN_NODE_URL` is down
 - Built MCP servers: `kaleidoswap-mcp`, `wdk-wallet-mcp`, `mpp-gateway-mcp`
 - Anthropic API key
 
@@ -138,6 +138,8 @@ make test
 | `DRY_RUN` | `true` | Set to `false` to enable live trading |
 | `KALEIDOSWAP_API_URL` | `https://api.staging.kaleidoswap.com` | KaleidoSwap API URL |
 | `RLN_NODE_URL` | `http://localhost:3001` | RLN daemon URL |
+| `KALEIDO_BIN` | auto-detect | Path to the `kaleido` CLI binary for node auto-start |
+| `KALEIDO_ENV_NAME` | auto-detect | Optional Kaleido environment name passed to `kaleido node up` |
 | `L402_GATEWAY_URL` | _(none)_ | L402 proxy URL (optional) |
 | `CONFIG_PATH` | `./agent.config.json` | Path to config file |
 

@@ -1,12 +1,32 @@
+import { useMemo, useState } from 'react'
 import { ChatAction } from '../api/agent'
 
 interface Props {
   action: ChatAction | null
+  onDispatch: (action: ChatAction) => void
   onClose: () => void
 }
 
-export function ActionModal({ action, onClose }: Props) {
+export function ActionModal({ action, onDispatch, onClose }: Props) {
+  const [copied, setCopied] = useState(false)
   if (!action || action.type === 'none') return null
+
+  const payload = useMemo(() => JSON.stringify(action, null, 2), [action])
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(payload)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  const handleDispatch = () => {
+    onDispatch(action)
+    onClose()
+  }
 
   return (
     <div
@@ -44,8 +64,12 @@ export function ActionModal({ action, onClose }: Props) {
             </div>
 
             <p className="text-xs text-gray-600 text-center">
-              This will open the swap flow. The agent never executes swaps automatically.
+              This dashboard can emit the action to a host wallet via `postMessage` or a `kaleidoagent-action` event.
             </p>
+
+            <pre className="overflow-x-auto rounded-xl border border-white/5 bg-black/30 p-3 text-[11px] text-gray-400">
+              {payload}
+            </pre>
 
             <div className="flex gap-2">
               <button
@@ -56,11 +80,18 @@ export function ActionModal({ action, onClose }: Props) {
                 Cancel
               </button>
               <button
-                onClick={onClose}
+                onClick={handleDispatch}
+                className="flex-1 py-2 rounded-xl text-sm border border-orange-500/30 text-orange-300
+                           hover:bg-orange-500/10 transition-colors font-medium"
+              >
+                Send To Host
+              </button>
+              <button
+                onClick={() => void handleCopy()}
                 className="flex-1 py-2 rounded-xl text-sm bg-orange-500 text-white
                            hover:bg-orange-600 transition-colors font-medium"
               >
-                Open Swap
+                {copied ? 'Copied' : 'Copy Intent'}
               </button>
             </div>
           </>
@@ -77,14 +108,26 @@ export function ActionModal({ action, onClose }: Props) {
                 ✕
               </button>
             </div>
-            <p className="text-sm text-gray-400">Open: <span className="font-mono text-gray-200">{action.view}</span></p>
-            <button
-              onClick={onClose}
-              className="w-full py-2 rounded-xl text-sm bg-orange-500 text-white
-                         hover:bg-orange-600 transition-colors font-medium"
-            >
-              OK
-            </button>
+            <p className="text-sm text-gray-400">Suggested view: <span className="font-mono text-gray-200">{action.view}</span></p>
+            <pre className="overflow-x-auto rounded-xl border border-white/5 bg-black/30 p-3 text-[11px] text-gray-400">
+              {payload}
+            </pre>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDispatch}
+                className="flex-1 py-2 rounded-xl text-sm border border-orange-500/30 text-orange-300
+                           hover:bg-orange-500/10 transition-colors font-medium"
+              >
+                Send To Host
+              </button>
+              <button
+                onClick={() => void handleCopy()}
+                className="flex-1 py-2 rounded-xl text-sm bg-orange-500 text-white
+                           hover:bg-orange-600 transition-colors font-medium"
+              >
+                {copied ? 'Copied' : 'Copy Action'}
+              </button>
+            </div>
           </>
         )}
       </div>

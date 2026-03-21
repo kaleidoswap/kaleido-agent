@@ -31,6 +31,16 @@ export interface AgentStatusPayload {
   model: string
   provider: string
   portfolio_targets: Record<string, number>
+  portfolio_snapshot: {
+    total_usdt: number | null
+    assets: Record<string, {
+      pct: number | null
+      target_pct: number | null
+      usdt: number | null
+      amount: number | null
+      amount_sat: number | null
+    }>
+  } | null
   cumulative_cost_usd: number
   cumulative_input_tokens: number
   cumulative_output_tokens: number
@@ -44,6 +54,7 @@ class AgentStateStore {
   private model = ''
   private provider = 'anthropic'
   private portfolioTargets: Record<string, number> = {}
+  private portfolioSnapshot: AgentStatusPayload['portfolio_snapshot'] = null
   private cumulativeCostUsd = 0
   private cumulativeInputTokens = 0
   private cumulativeOutputTokens = 0
@@ -66,6 +77,11 @@ class AgentStateStore {
     this.startTime = Date.now()
   }
 
+  updateRuntimeConfig(provider: string, model: string): void {
+    this.provider = provider
+    this.model = model
+  }
+
   recordRunResult(result: RunResult): void {
     const stats = this.loopStats[result.loop]
     if (stats) {
@@ -75,6 +91,11 @@ class AgentStateStore {
       stats.last_tool_calls = result.tool_calls
       stats.last_error = null
       stats.last_response = result.final_response.slice(0, 800)
+    }
+
+    const snapshot = this.extractPortfolioSnapshot(result.final_response)
+    if (snapshot) {
+      this.portfolioSnapshot = snapshot
     }
 
     this.cumulativeCostUsd += result.usage.estimated_cost_usd
@@ -114,11 +135,51 @@ class AgentStateStore {
       model: this.model,
       provider: this.provider,
       portfolio_targets: this.portfolioTargets,
+      portfolio_snapshot: this.portfolioSnapshot,
       cumulative_cost_usd: this.cumulativeCostUsd,
       cumulative_input_tokens: this.cumulativeInputTokens,
       cumulative_output_tokens: this.cumulativeOutputTokens,
       loops: this.loopStats,
       recent_runs: this.recentRuns,
+    }
+  }
+
+  private extractPortfolioSnapshot(finalResponse: string): AgentStatusPayload['portfolio_snapshot'] {
+    try {
+      const parsed = JSON.parse(finalResponse) as {
+        portfolio?: {
+          total_usdt?: unknown
+          assets?: Record<string, Record<string, unknown>>
+        }
+      }
+      if (!parsed.portfolio || typeof parsed.portfolio !== 'object') return null
+      const rawAssets = parsed.portfolio.assets
+      if (!rawAssets || typeof rawAssets !== 'object') return null
+
+      const assets = Object.fromEntries(
+        Object.entries(rawAssets).flatMap(([ticker, rawValue]) => {
+          if (!rawValue || typeof rawValue !== 'object') return []
+          const value = rawValue as Record<string, unknown>
+          return [[ticker, {
+            pct: typeof value.pct === 'number' ? value.pct : null,
+            target_pct: typeof value.target_pct === 'number'
+              ? value.target_pct
+              : (typeof this.portfolioTargets[ticker] === 'number' ? this.portfolioTargets[ticker] : null),
+            usdt: typeof value.usdt === 'number' ? value.usdt : null,
+            amount: typeof value.amount === 'number' ? value.amount : null,
+            amount_sat: typeof value.amount_sat === 'number' ? value.amount_sat : null,
+          }]]
+        }),
+      )
+
+      if (Object.keys(assets).length === 0) return null
+
+      return {
+        total_usdt: typeof parsed.portfolio.total_usdt === 'number' ? parsed.portfolio.total_usdt : null,
+        assets,
+      }
+    } catch {
+      return null
     }
   }
 }

@@ -25,6 +25,14 @@
       "env": {
         "MPP_GATEWAY_URL": ""
       }
+    },
+    "kaleido_node": {
+      "command": "node",
+      "args": ["../kaleido-node-mcp/dist/index.js"],
+      "env": {
+        "KALEIDO_NODE_URL": "http://localhost:3001",
+        "KALEIDO_API_URL": "https://api.staging.kaleidoswap.com"
+      }
     }
   },
   "portfolio": {

@@ -32,6 +32,10 @@
     "wallet-assistant": {
       "source": "/Users/walter/Lavoro/Kaleidoswap/kaleidoagent/skills/wallet-assistant",
       "sourceType": "local"
+    },
+    "node-manager": {
+      "source": "/Users/walter/Lavoro/Kaleidoswap/kaleidoagent/skills/node-manager",
+      "sourceType": "local"
     }
   }
 }

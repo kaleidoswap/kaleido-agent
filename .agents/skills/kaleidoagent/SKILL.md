@@ -2,10 +2,10 @@
 name: kaleidoagent
 description: Autonomous Bitcoin L2 market-making agent for KaleidoSwap. Executes BTC/RGB-asset swaps on Lightning Network using three MCP servers — KaleidoSwap (swap engine), WDK Wallet (RLN node), L402 Gateway (market data). Use when performing automated trading, swap execution, arbitrage scanning, or portfolio monitoring on Lightning Network.
 license: Apache-2.0
-compatibility: Requires kaleidoswap-mcp, wdk-wallet-mcp, and l402-gateway-mcp MCP servers plus an RLN daemon at RLN_NODE_URL.
+compatibility: Requires kaleidoswap-mcp, wdk-wallet-mcp, and mpp-gateway-mcp MCP servers plus an RLN daemon at RLN_NODE_URL.
 metadata:
-  author: tetherto
-  version: "1.0.0-beta.1"
+  author: kaleidoswap
+  version: "1.1.0"
   networks: bitcoin-lightning, rgb
 ---
 
@@ -21,7 +21,7 @@ You must have all three MCP servers connected before acting:
 |--------|-------------|---------|
 | `kaleidoswap-mcp` | `kaleidoswap_` | Swap quotes, order placement, status |
 | `wdk-wallet-mcp` | `wdk_` | RLN wallet: balances, invoices, payments, channels |
-| `l402-gateway-mcp` | `l402_` | Market data: prices, OHLCV, sentiment |
+| `mpp-gateway-mcp` | `l402_` | Market data: prices, OHLCV, sentiment |
 
 See [references/tools.md](references/tools.md) for the complete tool reference.
 

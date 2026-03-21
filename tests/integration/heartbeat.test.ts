@@ -42,7 +42,7 @@ describe.skipIf(!HAS_API_KEY)('Integration: heartbeat loop', () => {
       },
       l402_gateway: {
         command: 'node',
-        args: [resolve(ROOT, '../l402-gateway-mcp/dist/index.js')],
+        args: [resolve(ROOT, '../mpp-gateway-mcp/dist/index.js')],
         env: {},
       },
     })
@@ -61,10 +61,11 @@ describe.skipIf(!HAS_API_KEY)('Integration: heartbeat loop', () => {
     // wdk-wallet-mcp tools
     expect(names).toContain('wdk_get_node_info')
     expect(names).toContain('wdk_atomic_taker')
-    // l402-gateway-mcp tools
+    // mpp-gateway-mcp tools
     expect(names).toContain('l402_get_price')
-    // Total: 15 + 17 + 6 = 38
-    expect(mcp.tools.length).toBe(38)
+    expect(names).toContain('mpp_request_challenge')
+    // Total: 15 kaleidoswap + 18 wdk + 9 mpp = 42
+    expect(mcp.tools.length).toBe(42)
   })
 
   it('kaleidoswap_get_assets returns BTC and at least one asset', async () => {
@@ -141,7 +142,7 @@ describe('Integration: MCP tool smoke tests (no API key needed)', () => {
       },
       l402_gateway: {
         command: 'node',
-        args: [resolve(ROOT, '../l402-gateway-mcp/dist/index.js')],
+        args: [resolve(ROOT, '../mpp-gateway-mcp/dist/index.js')],
         env: {},
       },
     })
@@ -151,8 +152,8 @@ describe('Integration: MCP tool smoke tests (no API key needed)', () => {
     await mcp.disconnect()
   })
 
-  it('all 38 tools are registered', () => {
-    expect(mcp.tools.length).toBe(38)
+  it('all 42 tools are registered', () => {
+    expect(mcp.tools.length).toBe(42)
   })
 
   it('kaleidoswap_get_pairs returns trading pairs', async () => {

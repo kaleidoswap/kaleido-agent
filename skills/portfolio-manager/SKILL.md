@@ -1,0 +1,169 @@
+---
+name: portfolio-manager
+description: >
+  Autonomous portfolio rebalancing for Bitcoin L2 assets.
+  Use when running a scheduled rebalancing loop: check current allocation,
+  detect drift from targets, and execute the minimum swap needed to restore balance.
+  Requires kaleidoswap-mcp and wdk-wallet-mcp.
+license: Apache-2.0
+metadata:
+  author: kaleidoswap
+  version: "1.1"
+  networks: bitcoin-lightning, rgb
+---
+
+# Portfolio Manager Skill
+
+You are an autonomous portfolio rebalancer. Each time you run, you:
+1. Measure the current portfolio allocation
+2. Compare to the configured target allocation
+3. Determine if rebalancing is needed (drift > threshold)
+4. Execute the minimum swap to bring the portfolio back in balance
+5. Output a structured JSON report
+
+For risk rules → [references/risk.md](references/risk.md)
+
+## Configuration (read from context or config block)
+
+```json
+{
+  "targets": { "BTC": 70, "USDT": 20, "XAUT": 10 },
+  "rebalance_threshold_pct": 5,
+  "max_swap_usd": 200,
+  "min_btc_reserve_sats": 50000,
+  "max_concurrent_orders": 3,
+  "stop_loss_btc_sats": 30000,
+  "trading_mode": "atomic",
+  "dry_run": true
+}
+```
+
+## Step 1: Assess Current State
+
+```
+wdk_get_node_info()             → verify node is online
+wdk_get_balances()              → BTC offchain (outbound sats) + RGB asset balances
+kaleidoswap_get_pairs()         → discover trading pairs + layers
+kaleidoswap_get_assets()        → resolve asset IDs + precisions by ticker
+```
+
+**Derive BTC price in USDT from a live quote (display units):**
+```
+quote = kaleidoswap_get_quote({
+  from_asset_id: "BTC",
+  from_layer:    "BTC_LN",
+  from_amount:   0.001,           // display BTC (= 100,000 sats = 100M msat internally)
+  to_asset_id:   "<USDT_ID>",
+  to_layer:      "RGB_LN"
+})
+btc_price_usdt = quote.to_asset.amount_display / 0.001
+```
+
+For each asset, compute USDT value:
+```
+btc_sats      = offchain_outbound_sat   (from wdk_get_balances)
+btc_usdt      = (btc_sats / 1e8) × btc_price_usdt
+usdt_val      = usdt_raw / 10^usdt_precision
+xaut_usdt     = xaut_raw / 10^xaut_precision × xaut_price_usdt
+                  where xaut_price_usdt = from XAUT→USDT quote:
+                    kaleidoswap_get_quote({ from_asset_id: "<XAUT_ID>", from_layer: "RGB_LN",
+                                           from_amount: 1.0, to_asset_id: "<USDT_ID>", to_layer: "RGB_LN" })
+                    xaut_price_usdt = quote.to_asset.amount_display / 1.0
+```
+
+Total portfolio = sum of all USDT values.
+
+## Step 2: Detect Drift
+
+```
+current_pct[asset] = (asset_usdt / total_usdt) × 100
+drift[asset] = current_pct[asset] - target_pct[asset]
+```
+
+**Trigger rebalance if**: any `|drift[asset]| > rebalance_threshold_pct`
+
+If no drift exceeds threshold → exit with `"action": "balanced"`.
+
+## Step 3: Decide the Swap
+
+Rebalance toward the asset that is most underweight:
+- Overweight asset = sell (from)
+- Underweight asset = buy (to)
+
+Swap amount in USDT:
+```
+swap_usdt = min(|drift_pct| × total_usdt / 100, max_swap_usd)
+```
+
+Convert to from-asset display amount using the quote rate.
+
+**Always check before swapping (see risk.md):**
+- BTC balance after swap > `min_btc_reserve_sats`
+- BTC balance > `stop_loss_btc_sats` → else halt
+- Open orders < `max_concurrent_orders`
+- `dry_run` is false → else describe only
+
+## Step 4: Execute the Swap
+
+**Get a fresh quote:**
+```
+kaleidoswap_get_pairs()                   → find the correct route
+kaleidoswap_get_quote({
+  from_asset_id, from_layer, from_amount,  // display amount
+  to_asset_id, to_layer
+})
+→ { rfq_id, from_asset: { amount_raw }, to_asset: { amount_raw }, ... }
+```
+
+**Execute per `trading_mode`:**
+- `"atomic"` → atomic only (preferred):
+  1. `kaleidoswap_atomic_init({ rfq_id, from_asset_id, from_amount_raw, to_asset_id, to_amount_raw })`
+     → `{ swapstring, payment_hash }`
+  2. `wdk_atomic_taker({ swapstring })`
+  3. `wdk_get_node_info()` → `pubkey`
+  4. `kaleidoswap_atomic_execute({ swapstring, taker_pubkey: pubkey, payment_hash })`
+  5. Poll `kaleidoswap_atomic_status({ payment_hash })` every 2s
+     until `status` is `"Succeeded"`, `"Expired"`, or `"Failed"`
+- `"rest"` → REST order only (see kaleidoswap SKILL.md Step 3b)
+- `"both"` → try atomic first; if `Expired`/`Failed`, fall back to REST
+
+## Step 5: Output Report
+
+```json
+{
+  "loop": "rebalance",
+  "timestamp": "2024-01-01T00:05:00Z",
+  "dry_run": false,
+  "action": "swap",
+  "reason": "USDT drift: +8.2% (target 20%, actual 28.2%)",
+  "btc_price_usdt": 65763.00,
+  "portfolio": {
+    "total_usdt": 524.00,
+    "assets": {
+      "BTC":  { "amount_sat": 280000, "usdt": 266.00, "pct": 50.8, "target_pct": 70 },
+      "USDT": { "amount": 200.0,      "usdt": 200.00, "pct": 38.2, "target_pct": 20 },
+      "XAUT": { "amount": 0.05,       "usdt":  58.00, "pct": 11.1, "target_pct": 10 }
+    }
+  },
+  "swap_executed": {
+    "from": "USDT",
+    "to": "BTC",
+    "from_amount_usdt": 43.00,
+    "to_amount_sat": 65400,
+    "payment_hash": "abc123...",
+    "status": "Succeeded"
+  }
+}
+```
+
+## Safety Rules
+
+See [references/risk.md](references/risk.md) for full details.
+
+**Quick reference:**
+1. Verify node is online before doing anything: `wdk_get_node_info()`
+2. Halt all trading if BTC < `stop_loss_btc_sats`
+3. Skip if result puts BTC < `min_btc_reserve_sats`
+4. Cap each swap at `max_swap_usd`
+5. Skip cycle if open orders ≥ `max_concurrent_orders`
+6. In `dry_run` mode: compute and log, never execute

@@ -18,6 +18,13 @@
       "env": {
         "RLN_NODE_URL": "http://localhost:3001"
       }
+    },
+    "mpp_gateway": {
+      "command": "node",
+      "args": ["../mpp-gateway-mcp/dist/index.js"],
+      "env": {
+        "MPP_GATEWAY_URL": ""
+      }
     }
   },
   "portfolio": {

@@ -1,11 +1,11 @@
 ---
 name: kaleidoagent
-description: Autonomous Bitcoin L2 portfolio rebalancer for KaleidoSwap. Maintains target allocations across BTC, USDT (RGB), and XAUT (RGB) by executing swaps on Lightning Network as a taker. Uses three MCP servers — KaleidoSwap (swap engine), WDK Wallet (RLN node), L402 Gateway (market data).
+description: Autonomous Bitcoin L2 portfolio rebalancer for KaleidoSwap. Maintains target allocations across BTC, USDT (RGB), and XAUT (RGB) by executing swaps on Lightning Network as a taker. Uses three MCP servers — KaleidoSwap (swap engine), WDK Wallet (RLN node), MPP Gateway (market data + MPP payments).
 license: Apache-2.0
-compatibility: Requires kaleidoswap-mcp, wdk-wallet-mcp, and l402-gateway-mcp MCP servers plus an RLN daemon at RLN_NODE_URL.
+compatibility: Requires kaleidoswap-mcp, wdk-wallet-mcp, and mpp-gateway-mcp MCP servers plus an RLN daemon at RLN_NODE_URL.
 metadata:
-  author: tetherto
-  version: "1.0.0-beta.1"
+  author: kaleidoswap
+  version: "1.1.0"
   networks: bitcoin-lightning, rgb
 ---
 
@@ -20,8 +20,8 @@ You must have all three MCP servers connected before acting:
 | Server | Tools prefix | Purpose |
 |--------|-------------|---------|
 | `kaleidoswap-mcp` | `kaleidoswap_` | Swap quotes, order placement, status |
-| `wdk-wallet-mcp` | `wdk_` | RLN wallet: balances, invoices, payments, channels |
-| `l402-gateway-mcp` | `l402_` | Market data: prices, OHLCV, sentiment |
+| `wdk-wallet-mcp` | `wdk_` | RLN wallet: balances, invoices, payments, channels, MPP payments |
+| `mpp-gateway-mcp` | `l402_` / `mpp_` | Market data (prices, OHLCV, sentiment) + MPP payment challenges |
 
 See [references/tools.md](references/tools.md) for the complete tool reference.
 
@@ -36,7 +36,7 @@ Goal: maintain target portfolio allocation. Swap from over-allocated to under-al
 2. wdk_get_balances           → BTC Lightning balance (lightning_balance_sat)
 3. wdk_list_assets            → discover RGB asset IDs by ticker
 4. wdk_get_asset_balance      → USDT balance, XAUT balance
-5. l402_get_price             → BTC and XAUT prices in USD
+5. l402_get_price             → BTC and XAUT prices in USD  (use mpp_request_challenge → wdk_mpp_pay → mpp_submit_credential for MPP-gated price sources)
 6. [calculate USD values and allocation percentages]
 7. [compare vs targets; skip if max drift ≤ threshold]
 8. kaleidoswap_get_open_orders → skip if at max_concurrent_orders
@@ -207,6 +207,29 @@ kaleidoswap_lsp_get_order           # poll until channel opens
   order_id: <order_id>
   ↓ order_state: CREATED → CHANNEL_OPENING → COMPLETED | FAILED
 ```
+
+## MPP — Accessing Payment-Gated Resources
+
+Some data sources (premium order books, analytics, third-party feeds) are gated by MPP (Machine Payments Protocol). Pay per request using Lightning — no API keys needed.
+
+### MPP 3-Step Flow
+
+```
+mpp_request_challenge(url)
+  ↓ { invoice, challenge_id, macaroon?, amount_sats, expires_at }
+
+wdk_mpp_pay(invoice, challenge_id?, macaroon?)
+  ↓ { paid: true, credential: "<JSON string>" }
+
+mpp_submit_credential(url, credential)
+  ↓ { ok: true, data: {...}, receipt: {...} }
+```
+
+**Rules:**
+- Complete all 3 steps before `expires_at` — challenges expire (~60s)
+- If `wdk_mpp_pay` returns `preimage: null`, some servers still accept `payment_hash` as proof
+- `mpp_parse_challenge_header` parses a raw `WWW-Authenticate` header if you already have it
+- L402 legacy resources (older servers): use `l402_request_challenge` + `wdk_pay_invoice` + `l402_fetch_resource` instead
 
 ## Output Format
 

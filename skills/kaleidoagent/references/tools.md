@@ -45,8 +45,11 @@
 | `wdk_atomic_taker` | `swapstring` | `{success}` — step 2: whitelist HTLC on RLN node before execute |
 | `wdk_list_swaps` | — | `{maker:[...], taker:[...], total}` — all atomic swaps on node |
 | `wdk_get_swap` | `payment_hash, taker?` | `{swap:{payment_hash, status, ...}}` — node-side atomic swap state |
+| `wdk_mpp_pay` | `invoice, challenge_id?, macaroon?` | `{paid, payment_hash, preimage, credential}` — pay MPP challenge, return credential JSON for mpp_submit_credential |
 
-## L402 Gateway MCP (`l402_*`)
+## MPP Gateway MCP (`mpp_*` + legacy `l402_*`)
+
+### Market Data (CoinGecko free tier — max 1 call/30s)
 
 | Tool | Args | Returns |
 |------|------|---------|
@@ -54,8 +57,23 @@
 | `l402_get_market_data` | `assets` (array) | `[PriceResult]` |
 | `l402_get_ohlcv` | `asset, days?` | `{candle_count, period_change_pct, latest_close, candles:[{timestamp,open,high,low,close}]}` |
 | `l402_get_sentiment` | — | `{index_value (0-100), classification, timestamp, trading_signal}` — signal: `STRONG_BUY_SIGNAL\|BUY_SIGNAL\|NEUTRAL\|SELL_SIGNAL\|STRONG_SELL_SIGNAL` |
+
+### Legacy L402 (for older servers)
+
+| Tool | Args | Returns |
+|------|------|---------|
 | `l402_request_challenge` | `resource_url, price_sats?` | `{invoice, macaroon, resource, price_sats, next_step}` |
 | `l402_fetch_resource` | `resource_url, token` | `{status, data}` |
+
+### MPP (Machine Payments Protocol — for modern servers)
+
+| Tool | Args | Returns |
+|------|------|---------|
+| `mpp_request_challenge` | `url` | `{challenge_id, method, intent, invoice?, macaroon?, amount_sats, expires_at}` — probe URL, get payment challenge |
+| `mpp_submit_credential` | `url, credential` | `{ok, status, data, receipt}` — submit credential JSON from wdk_mpp_pay |
+| `mpp_parse_challenge_header` | `url, www_authenticate` | challenge object — parse raw 402 header without HTTP request |
+
+**MPP flow:** `mpp_request_challenge` → `wdk_mpp_pay` (in wdk-wallet-mcp) → `mpp_submit_credential`
 
 ## Asset IDs by Network
 

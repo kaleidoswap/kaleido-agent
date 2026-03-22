@@ -31,7 +31,7 @@
     "min_btc_reserve_sats": 50000,
     "max_concurrent_orders": 3,
     "stop_loss_btc_sats": 30000,
-    "dry_run": false,
+    "dry_run": true,
     "trading_mode": "atomic",
     "lsp": {
       "lsp_balance_sat": 500000,
@@ -54,7 +54,6 @@
     "enabled": [
       "mpp",
       "cross-l2",
-      "node-manager",
       "dca",
       "kaleidoagent",
       "kaleidoswap",
@@ -62,5 +61,13 @@
       "channel-manager",
       "wallet-assistant"
     ]
+  },
+  "nanobot": {
+    "gateway_port": 18790,
+    "telegram": {
+      "allow_from": [
+        "*"
+      ]
+    }
   }
 }

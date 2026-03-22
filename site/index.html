@@ -3,682 +3,478 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KaleidoAgent — Autonomous Bitcoin L2 DeFi Agent</title>
+<title>KaleidoAgent — Autonomous Bitcoin L2 Portfolio Rebalancer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Barlow:wght@300;400;500;600;700;800;900&family=Barlow+Condensed:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg:         #080c10;
-    --bg2:        #0d1219;
-    --bg3:        #111820;
-    --border:     #1a2535;
-    --green:      #00ff88;
-    --green-dim:  #00cc6a;
-    --green-glow: rgba(0,255,136,0.15);
-    --amber:      #f5a623;
-    --amber-glow: rgba(245,166,35,0.12);
-    --blue:       #4fc3f7;
-    --blue-glow:  rgba(79,195,247,0.12);
-    --purple:     #b39ddb;
-    --purple-glow:rgba(179,157,219,0.12);
-    --text:       #c8d6e5;
-    --text-dim:   #5a7a9a;
-    --text-muted: #3a5070;
-    --mono:       'JetBrains Mono', monospace;
-  }
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #060608;
+    --bg2:       #0d0d10;
+    --bg3:       #13131a;
+    --border:    rgba(255,255,255,0.07);
+    --border2:   rgba(255,255,255,0.12);
+    --orange:    #f7931a;
+    --orange2:   #ffb347;
+    --gold:      #e8c96d;
+    --green:     #22d87a;
+    --red:       #ff4d4d;
+    --blue:      #4d9fff;
+    --purple:    #9b6dff;
+    --text:      #e8e8ec;
+    --muted:     #7a7a8a;
+    --dim:       #3a3a48;
+    --mono:      'Space Mono', monospace;
+    --sans:      'Barlow', sans-serif;
+    --cond:      'Barlow Condensed', sans-serif;
+  }
 
   html { scroll-behavior: smooth; }
 
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: var(--mono);
-    font-size: 14px;
-    line-height: 1.7;
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
     overflow-x: hidden;
-    cursor: crosshair;
   }
 
-  /* ─── GRID BACKGROUND ─── */
+  /* GRID OVERLAY */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
     background-image:
-      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
     background-size: 40px 40px;
     pointer-events: none;
     z-index: 0;
   }
 
-  /* scanline effect */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.08) 2px,
-      rgba(0,0,0,0.08) 4px
-    );
-    pointer-events: none;
-    z-index: 0;
-  }
+  section, nav, footer { position: relative; z-index: 1; }
 
-  /* ─── LAYOUT ─── */
-  .container {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 32px;
-    position: relative;
-    z-index: 1;
-  }
-
-  section {
-    padding: 80px 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  /* ─── FADE IN ─── */
-  .fade-in {
-    opacity: 0;
-    transform: translateY(24px);
-    transition: opacity 0.7s ease, transform 0.7s ease;
-  }
-  .fade-in.visible {
-    opacity: 1;
-    transform: none;
-  }
-
-  /* ─── NAV ─── */
+  /* NAV */
   nav {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-    background: rgba(8,12,16,0.85);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 0 32px;
-  }
-  .nav-inner {
-    max-width: 1100px;
-    margin: 0 auto;
+    top: 0; left: 0; right: 0;
+    height: 56px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 52px;
+    padding: 0 40px;
+    background: rgba(6,6,8,0.88);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
   }
+
   .nav-logo {
-    color: var(--green);
-    font-weight: 700;
-    font-size: 15px;
-    letter-spacing: -0.5px;
-    text-decoration: none;
-  }
-  .nav-logo span { color: var(--text-dim); font-weight: 400; }
-  .nav-links {
+    font-family: var(--cond);
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 0.04em;
+    color: var(--text);
     display: flex;
-    gap: 28px;
-    list-style: none;
+    align-items: center;
+    gap: 10px;
   }
+
+  .nav-logo .dot {
+    width: 8px; height: 8px;
+    background: var(--orange);
+    border-radius: 50%;
+    animation: pulse-dot 2s infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%,100% { opacity:1; box-shadow: 0 0 0 0 rgba(247,147,26,0.6); }
+    50%      { opacity:0.8; box-shadow: 0 0 0 6px rgba(247,147,26,0); }
+  }
+
+  .nav-links { display: flex; gap: 32px; list-style: none; }
   .nav-links a {
-    color: var(--text-dim);
-    text-decoration: none;
-    font-size: 12px;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    text-decoration: none; letter-spacing: 0.08em; text-transform: uppercase;
     transition: color 0.2s;
   }
-  .nav-links a:hover { color: var(--green); }
+  .nav-links a:hover { color: var(--orange); }
 
-  /* ─── HERO ─── */
-  #hero {
+  .nav-badge {
+    font-family: var(--mono); font-size: 10px; color: var(--orange);
+    border: 1px solid var(--orange); padding: 3px 10px; letter-spacing: 0.1em;
+  }
+
+  /* HERO */
+  .hero {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding-top: 80px;
-    border-bottom: 1px solid var(--border);
+    padding: 100px 80px 80px;
     position: relative;
     overflow: hidden;
   }
 
   .hero-glow {
-    position: absolute;
-    top: 20%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 600px;
-    height: 300px;
-    background: radial-gradient(ellipse, rgba(0,255,136,0.06) 0%, transparent 70%);
+    position: absolute; top: -200px; left: -200px;
+    width: 800px; height: 800px;
+    background: radial-gradient(circle, rgba(247,147,26,0.08) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .hero-glow2 {
+    position: absolute; bottom: -300px; right: -100px;
+    width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(77,159,255,0.06) 0%, transparent 65%);
     pointer-events: none;
   }
 
-  .hero-eyebrow {
-    color: var(--green);
-    font-size: 11px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  .hackathon-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 32px;
+    animation: fade-up 0.6s ease both;
   }
-  .hero-eyebrow::before {
-    content: '';
-    display: inline-block;
-    width: 24px;
-    height: 1px;
-    background: var(--green);
+  .hackathon-tag span { color: var(--orange); }
+  .hackathon-tag::before {
+    content: ''; display: block; width: 24px; height: 1px; background: var(--orange);
   }
 
-  h1 {
-    font-size: clamp(48px, 8vw, 88px);
-    font-weight: 800;
-    line-height: 0.95;
-    letter-spacing: -3px;
-    margin-bottom: 28px;
-    position: relative;
+  .hero h1 {
+    font-family: var(--cond); font-weight: 900;
+    font-size: clamp(56px, 8vw, 110px); line-height: 0.92;
+    letter-spacing: -0.01em; color: var(--text); text-transform: uppercase;
+    margin-bottom: 8px;
+    animation: fade-up 0.6s 0.1s ease both;
   }
-  .h1-main {
-    display: block;
-    background: linear-gradient(135deg, #00ff88 0%, #00ccaa 40%, #4fc3f7 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: shimmer 4s ease infinite;
-    background-size: 200% 200%;
-  }
-  @keyframes shimmer {
-    0%   { background-position: 0% 50%; }
-    50%  { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-  }
-
-  .hero-tagline {
-    font-size: 15px;
-    color: var(--text-dim);
-    max-width: 600px;
-    margin-bottom: 16px;
-    line-height: 1.6;
-  }
+  .hero h1 .accent { color: var(--orange); }
 
   .hero-sub {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-bottom: 36px;
-  }
-  .hero-sub span { color: var(--amber); }
-
-  .badge-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 48px;
-  }
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border-radius: 3px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .badge-green  { background: rgba(0,255,136,0.1); color: var(--green);  border: 1px solid rgba(0,255,136,0.3); }
-  .badge-amber  { background: rgba(245,166,35,0.1); color: var(--amber); border: 1px solid rgba(245,166,35,0.3); }
-  .badge-blue   { background: rgba(79,195,247,0.1); color: var(--blue);  border: 1px solid rgba(79,195,247,0.3); }
-  .badge-purple { background: rgba(179,157,219,0.1); color: var(--purple); border: 1px solid rgba(179,157,219,0.3); }
-
-  .hero-stats {
-    display: flex;
-    gap: 48px;
-    border-top: 1px solid var(--border);
-    padding-top: 36px;
-  }
-  .stat-item { display: flex; flex-direction: column; gap: 4px; }
-  .stat-value { font-size: 28px; font-weight: 700; color: var(--green); letter-spacing: -1px; }
-  .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
-
-  /* ─── SECTION HEADER ─── */
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 48px;
-  }
-  .section-number {
-    color: var(--text-muted);
-    font-size: 11px;
-    letter-spacing: 0.2em;
-    font-weight: 400;
-  }
-  .section-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--green);
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-  }
-  .section-line {
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, var(--border), transparent);
+    font-family: var(--cond); font-weight: 400;
+    font-size: clamp(18px, 3vw, 28px); color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 40px;
+    animation: fade-up 0.6s 0.2s ease both;
   }
 
-  h2 {
-    font-size: clamp(24px, 4vw, 40px);
-    font-weight: 800;
-    letter-spacing: -1.5px;
-    color: #fff;
-    margin-bottom: 12px;
-    line-height: 1.1;
+  .hero-desc {
+    max-width: 560px; font-size: 17px; color: var(--muted);
+    line-height: 1.75; margin-bottom: 48px;
+    animation: fade-up 0.6s 0.3s ease both;
   }
-  h2 em { font-style: normal; color: var(--green); }
+  .hero-desc strong { color: var(--text); font-weight: 600; }
 
-  .section-desc {
-    color: var(--text-dim);
-    font-size: 13px;
-    max-width: 540px;
-    margin-bottom: 48px;
+  .hero-actions {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    animation: fade-up 0.6s 0.4s ease both;
   }
 
-  /* ─── TERMINAL WINDOW ─── */
-  .terminal {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    overflow: hidden;
-    box-shadow: 0 0 40px rgba(0,255,136,0.05), 0 20px 60px rgba(0,0,0,0.5);
+  .btn {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 14px 28px; text-decoration: none;
+    transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary { background: var(--orange); color: #000; font-weight: 700; }
+  .btn-primary:hover { background: var(--orange2); transform: translateY(-1px); }
+  .btn-ghost { color: var(--text); border: 1px solid var(--border2); }
+  .btn-ghost:hover { border-color: var(--orange); color: var(--orange); }
+
+  /* TERMINAL */
+  .hero-terminal {
+    position: absolute; right: 80px; top: 50%; transform: translateY(-50%);
+    width: 480px; background: var(--bg2);
+    border: 1px solid var(--border2);
+    font-family: var(--mono); font-size: 12px;
+    animation: fade-left 0.8s 0.5s ease both;
+    box-shadow: 0 0 80px rgba(247,147,26,0.08), 0 32px 64px rgba(0,0,0,0.5);
+  }
+  @keyframes fade-left {
+    from { opacity:0; transform: translateY(-50%) translateX(30px); }
+    to   { opacity:1; transform: translateY(-50%) translateX(0); }
   }
   .terminal-bar {
-    background: #0d1520;
-    padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    padding: 10px 16px; background: var(--bg3);
     border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
   }
-  .dot { width: 10px; height: 10px; border-radius: 50%; }
-  .dot-r { background: #ff5f57; }
-  .dot-y { background: #febc2e; }
-  .dot-g { background: #28c840; }
-  .terminal-title {
-    flex: 1;
-    text-align: center;
-    font-size: 11px;
-    color: var(--text-muted);
-    letter-spacing: 0.05em;
+  .t-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .t-dot.r { background: #ff5f57; }
+  .t-dot.y { background: #febc2e; }
+  .t-dot.g { background: #28c840; }
+  .terminal-title { margin-left: 8px; color: var(--muted); font-size: 11px; letter-spacing: 0.06em; }
+  .terminal-body { padding: 20px; min-height: 320px; line-height: 1.9; }
+  .t-line { display: flex; gap: 8px; margin-bottom: 1px; flex-wrap: wrap; }
+  .t-prompt { color: var(--orange); }
+  .t-ok { color: var(--green); }
+  .t-info { color: var(--blue); }
+  .t-warn { color: var(--gold); }
+  .t-val { color: var(--orange2); }
+  .t-comment { color: var(--dim); }
+  .t-cursor {
+    display: inline-block; width: 8px; height: 14px;
+    background: var(--orange); animation: blink 1s infinite; vertical-align: middle;
   }
-  .terminal-body {
-    padding: 24px 28px;
-    font-size: 13px;
-    line-height: 1.9;
-  }
-  .t-green   { color: var(--green); }
-  .t-amber   { color: var(--amber); }
-  .t-blue    { color: var(--blue); }
-  .t-purple  { color: var(--purple); }
-  .t-dim     { color: var(--text-dim); }
-  .t-muted   { color: var(--text-muted); }
-  .t-white   { color: #fff; }
-  .t-indent  { padding-left: 24px; display: block; }
-  .t-indent2 { padding-left: 48px; display: block; }
+  @keyframes blink { 0%,49% { opacity:1; } 50%,100% { opacity:0; } }
 
-  /* ─── ARCH DIAGRAM ─── */
-  .arch-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    margin-top: 40px;
-  }
-  .arch-node {
+  /* STATS BAR */
+  .stats-bar {
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    padding: 28px 80px;
+    display: grid; grid-template-columns: repeat(4,1fr); gap: 40px;
     background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 24px;
-    position: relative;
-    transition: border-color 0.2s, box-shadow 0.2s;
   }
-  .arch-node:hover { border-color: var(--green); box-shadow: 0 0 20px var(--green-glow); }
-  .arch-node.main {
-    grid-column: 1 / -1;
-    border-color: rgba(0,255,136,0.3);
-    box-shadow: 0 0 30px var(--green-glow);
+  .stat-item { display: flex; flex-direction: column; gap: 6px; }
+  .stat-label {
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+    letter-spacing: 0.12em; text-transform: uppercase;
   }
-  .arch-node.amber-node { border-color: rgba(245,166,35,0.2); }
-  .arch-node.amber-node:hover { border-color: var(--amber); box-shadow: 0 0 20px var(--amber-glow); }
-  .arch-node.blue-node  { border-color: rgba(79,195,247,0.2); }
-  .arch-node.blue-node:hover  { border-color: var(--blue);  box-shadow: 0 0 20px var(--blue-glow);  }
-  .arch-node.purple-node { border-color: rgba(179,157,219,0.2); }
-  .arch-node.purple-node:hover { border-color: var(--purple); box-shadow: 0 0 20px var(--purple-glow); }
+  .stat-value {
+    font-family: var(--cond); font-weight: 700; font-size: 32px;
+    color: var(--text); letter-spacing: -0.02em;
+  }
+  .stat-value .unit { font-size: 16px; color: var(--muted); font-weight: 400; }
+  .stat-note { font-size: 12px; color: var(--muted); }
 
-  .arch-label {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    margin-bottom: 6px;
-  }
-  .arch-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-  .arch-tools { font-size: 11px; color: var(--text-muted); margin-bottom: 12px; }
-  .arch-desc { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+  /* SECTIONS */
+  .section { padding: 100px 80px; }
 
-  .connector-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0;
-    padding: 12px 0;
-    position: relative;
+  .section-label {
+    font-family: var(--mono); font-size: 11px; color: var(--orange);
+    letter-spacing: 0.15em; text-transform: uppercase;
+    margin-bottom: 16px; display: flex; align-items: center; gap: 12px;
   }
-  .connector-line {
-    height: 1px;
-    flex: 1;
-    background: var(--border);
+  .section-label::after {
+    content: ''; flex: 1; max-width: 40px; height: 1px;
+    background: var(--orange); opacity: 0.5;
   }
-  .connector-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 8px var(--green);
-    flex-shrink: 0;
+  .section-title {
+    font-family: var(--cond); font-weight: 800;
+    font-size: clamp(36px, 5vw, 64px); line-height: 1;
+    text-transform: uppercase; letter-spacing: -0.01em; margin-bottom: 24px;
+  }
+  .section-body {
+    font-size: 17px; color: var(--muted); line-height: 1.75; max-width: 640px;
   }
 
-  /* ─── LOOP CARDS ─── */
-  .loop-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+  /* LOOPS */
+  .loops-grid {
+    display: grid; grid-template-columns: repeat(3,1fr);
+    gap: 1px; background: var(--border);
+    margin-top: 64px; border: 1px solid var(--border);
   }
   .loop-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 28px;
-    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
-    cursor: default;
+    background: var(--bg); padding: 40px 36px; position: relative; overflow: hidden;
+    transition: background 0.3s;
   }
-  .loop-card:hover {
-    border-color: var(--green);
-    box-shadow: 0 0 24px var(--green-glow);
-    transform: translateY(-2px);
+  .loop-card:hover { background: var(--bg2); }
+  .loop-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--accent, var(--orange));
+    transform: scaleX(0); transform-origin: left; transition: transform 0.4s ease;
   }
-  .loop-icon {
-    font-size: 22px;
-    margin-bottom: 14px;
-    display: block;
-  }
-  .loop-name { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .loop-card:hover::before { transform: scaleX(1); }
   .loop-interval {
-    font-size: 10px;
-    color: var(--green);
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    font-family: var(--mono); font-size: 11px; color: var(--accent, var(--orange));
+    letter-spacing: 0.1em; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
   }
   .loop-interval::before {
-    content: '';
-    display: inline-block;
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green);
-    animation: pulse 2s ease infinite;
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent, var(--orange)); animation: pulse-dot 2s infinite;
   }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
+  .loop-name {
+    font-family: var(--cond); font-weight: 700; font-size: 28px;
+    text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 16px;
   }
-  .loop-desc { font-size: 12px; color: var(--text-dim); line-height: 1.7; }
+  .loop-desc { font-size: 14px; color: var(--muted); line-height: 1.7; margin-bottom: 28px; }
+  .loop-steps { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .loop-steps li {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .loop-steps li::before { content: '→'; color: var(--accent, var(--orange)); flex-shrink: 0; }
 
-  /* ─── SWAP MODES ─── */
-  .modes-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-bottom: 40px;
-  }
-  .mode-card {
+  /* ATOMIC SWAP */
+  .swap-section {
     background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 28px;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
   }
-  .mode-card.atomic { border-top: 2px solid var(--green); }
-  .mode-card.rest   { border-top: 2px solid var(--blue); }
-  .mode-card.both   { border-top: 2px solid var(--amber); }
-  .mode-card:hover  { box-shadow: 0 4px 30px rgba(0,0,0,0.4); }
+  .swap-layout {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
+    align-items: center; margin-top: 64px;
+  }
+  .swap-steps {
+    display: flex; flex-direction: column; gap: 0; position: relative;
+  }
+  .swap-steps::before {
+    content: ''; position: absolute; left: 17px; top: 36px; bottom: 36px;
+    width: 1px; background: linear-gradient(to bottom, var(--orange), var(--blue));
+    opacity: 0.3;
+  }
+  .swap-step {
+    display: flex; gap: 20px; align-items: flex-start; padding: 18px 0;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .step-num {
+    width: 36px; height: 36px; border: 1px solid var(--dim); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    flex-shrink: 0; transition: all 0.3s; background: var(--bg); z-index: 1;
+  }
+  .swap-step.active .step-num {
+    border-color: var(--orange); color: var(--orange);
+    background: rgba(247,147,26,0.1); box-shadow: 0 0 16px rgba(247,147,26,0.3);
+  }
+  .step-fn { font-family: var(--mono); font-size: 13px; color: var(--text); margin-bottom: 4px; }
+  .swap-step.active .step-fn { color: var(--orange); }
+  .step-arrow { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .step-detail { font-size: 13px; color: var(--muted); display: none; margin-top: 8px; line-height: 1.6; }
+  .swap-step.active .step-detail { display: block; }
 
-  .mode-name { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 6px; }
-  .mode-tag  { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px; }
-  .mode-desc { font-size: 12px; color: var(--text-dim); line-height: 1.7; }
+  /* Swap SVG diagram */
+  .swap-visual {
+    position: relative; height: 400px;
+    display: flex; align-items: center; justify-content: center;
+  }
 
-  /* ─── SEQUENCE FLOW ─── */
-  .flow-steps {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
+  /* ARCHITECTURE */
+  .arch-grid {
+    display: grid; grid-template-columns: 1fr 320px; gap: 64px;
+    margin-top: 64px; align-items: start;
   }
-  .flow-step {
-    display: grid;
-    grid-template-columns: 200px auto 1fr;
-    align-items: start;
-    gap: 16px;
-    padding: 14px 0;
-    border-bottom: 1px solid rgba(26,37,53,0.5);
-    animation: none;
-  }
-  .flow-step:last-child { border-bottom: none; }
-  .flow-tool {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--amber);
-    white-space: nowrap;
-  }
-  .flow-arrow { color: var(--text-muted); font-size: 12px; }
-  .flow-result { font-size: 12px; color: var(--text-dim); }
-
-  /* ─── LSPS1 ─── */
-  .lsp-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 32px;
-    align-items: start;
-  }
-  .lsp-desc-block { }
-  .lsp-trigger {
-    background: rgba(245,166,35,0.06);
-    border: 1px solid rgba(245,166,35,0.2);
-    border-radius: 6px;
-    padding: 16px 20px;
-    margin-bottom: 20px;
-    font-size: 12px;
-    color: var(--amber);
-  }
-  .lsp-trigger strong { display: block; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; }
-
-  /* ─── RISK CONTROLS ─── */
-  .risk-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-  }
-  .risk-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 20px 24px;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  .risk-card:hover { border-color: rgba(0,255,136,0.3); box-shadow: 0 0 16px rgba(0,255,136,0.06); }
-  .risk-icon { font-size: 18px; margin-bottom: 10px; }
-  .risk-name { font-size: 12px; font-weight: 700; color: var(--green); margin-bottom: 6px; }
-  .risk-desc { font-size: 11px; color: var(--text-dim); line-height: 1.6; }
-
-  /* ─── MCP TOOLS ─── */
-  .mcp-server {
-    margin-bottom: 36px;
-  }
-  .mcp-server:last-child { margin-bottom: 0; }
-  .mcp-server-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 14px;
-  }
-  .mcp-server-name { font-size: 14px; font-weight: 700; }
-  .mcp-count {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--text-muted);
-  }
-  .pills { display: flex; flex-wrap: wrap; gap: 8px; }
-  .pill {
-    padding: 4px 10px;
-    border-radius: 3px;
-    font-size: 11px;
-    font-weight: 500;
-    transition: transform 0.15s, box-shadow 0.15s;
-    cursor: default;
-  }
-  .pill:hover { transform: translateY(-1px); }
-  .pill-amber  { background: rgba(245,166,35,0.1); color: var(--amber);  border: 1px solid rgba(245,166,35,0.25); }
-  .pill-amber:hover  { box-shadow: 0 2px 12px rgba(245,166,35,0.2); }
-  .pill-blue   { background: rgba(79,195,247,0.1); color: var(--blue);   border: 1px solid rgba(79,195,247,0.25); }
-  .pill-blue:hover   { box-shadow: 0 2px 12px rgba(79,195,247,0.2); }
-  .pill-purple { background: rgba(179,157,219,0.1); color: var(--purple); border: 1px solid rgba(179,157,219,0.25); }
-  .pill-purple:hover { box-shadow: 0 2px 12px rgba(179,157,219,0.2); }
-
-  /* ─── STACK ─── */
-  .stack-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-  }
-  .stack-item {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 20px 24px;
+  .arch-layers { display: flex; flex-direction: column; gap: 12px; }
+  .arch-layer {
+    border: 1px solid var(--border); background: var(--bg2); overflow: hidden;
     transition: border-color 0.2s;
   }
-  .stack-item:hover { border-color: var(--green-dim); }
-  .stack-layer { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-muted); margin-bottom: 6px; }
-  .stack-value { font-size: 13px; font-weight: 600; color: #fff; }
-  .stack-detail { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+  .arch-layer:hover { border-color: var(--border2); }
+  .arch-layer-header {
+    padding: 16px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .arch-layer-num { font-family: var(--mono); font-size: 10px; color: var(--orange); opacity: 0.6; }
+  .arch-layer-name {
+    font-family: var(--cond); font-weight: 700; font-size: 16px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .arch-layer-body { padding: 20px 24px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .arch-chip {
+    font-family: var(--mono); font-size: 11px; padding: 5px 12px;
+    border: 1px solid var(--border); color: var(--muted); transition: all 0.2s;
+  }
+  .arch-chip:hover { border-color: var(--orange); color: var(--orange); background: rgba(247,147,26,0.05); }
+  .arch-chip.hl { border-color: var(--orange); color: var(--orange); background: rgba(247,147,26,0.08); }
 
-  /* ─── FOOTER ─── */
+  .arch-side { display: flex; flex-direction: column; gap: 16px; }
+  .arch-side-card { border: 1px solid var(--border); padding: 20px; background: var(--bg2); }
+  .arch-side-title {
+    font-family: var(--mono); font-size: 10px; color: var(--orange);
+    letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 12px;
+  }
+  .alloc-bars { display: flex; flex-direction: column; gap: 12px; }
+  .alloc-row { display: flex; flex-direction: column; gap: 5px; }
+  .alloc-meta { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .alloc-track { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+  .alloc-fill { height: 100%; border-radius: 2px; transition: width 1.5s cubic-bezier(0.16,1,0.3,1); width: 0; }
+  .alloc-fill.btc  { background: var(--orange); }
+  .alloc-fill.usdt { background: var(--green); }
+  .alloc-fill.xaut { background: var(--gold); }
+
+  .risk-list { display: flex; flex-direction: column; gap: 9px; }
+  .risk-item { display: flex; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 11px; }
+  .risk-key { color: var(--muted); }
+  .risk-val { color: var(--text); }
+  .risk-val.safe { color: var(--green); }
+  .risk-val.warn { color: var(--gold); }
+
+  /* CODE */
+  .code-section { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .code-tabs {
+    display: flex; border-bottom: 1px solid var(--border); margin-top: 48px;
+  }
+  .code-tab {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    padding: 12px 24px; cursor: pointer; letter-spacing: 0.06em;
+    border-bottom: 2px solid transparent; transition: all 0.2s; margin-bottom: -1px;
+  }
+  .code-tab:hover { color: var(--text); }
+  .code-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+  .code-panel {
+    display: none; background: var(--bg);
+    border: 1px solid var(--border); border-top: none;
+    padding: 32px; overflow-x: auto;
+  }
+  .code-panel.active { display: block; }
+  pre { font-family: var(--mono); font-size: 13px; line-height: 1.9; color: var(--text); }
+  .k  { color: var(--purple); }
+  .s  { color: var(--green); }
+  .n  { color: var(--blue); }
+  .c  { color: var(--dim); font-style: italic; }
+  .p  { color: var(--orange); }
+  .t  { color: var(--gold); }
+  .f  { color: var(--orange2); }
+
+  /* TECH GRID */
+  .tech-grid {
+    display: grid; grid-template-columns: repeat(4,1fr);
+    gap: 1px; background: var(--border); border: 1px solid var(--border);
+    margin-top: 64px;
+  }
+  .tech-card { background: var(--bg); padding: 32px 28px; transition: background 0.2s; }
+  .tech-card:hover { background: var(--bg2); }
+  .tech-layer { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 12px; }
+  .tech-name { font-family: var(--cond); font-weight: 700; font-size: 20px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .tech-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* FOOTER */
   footer {
-    padding: 40px 0;
-    border-top: 1px solid var(--border);
-    position: relative;
-    z-index: 1;
-  }
-  .footer-inner {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 32px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .footer-left { font-size: 11px; color: var(--text-muted); line-height: 1.8; }
-  .footer-left strong { color: var(--green); }
-  .footer-right { font-size: 11px; color: var(--text-muted); text-align: right; }
-
-  /* ─── CURSOR BLINK ─── */
-  .blink {
-    display: inline-block;
-    width: 2px;
-    height: 1em;
-    background: var(--green);
-    vertical-align: text-bottom;
-    animation: blink 1s step-end infinite;
-    margin-left: 2px;
-  }
-  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-
-  /* ─── TICKER ─── */
-  .ticker-wrap {
-    overflow: hidden;
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
+    padding: 48px 80px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
     background: var(--bg2);
-    padding: 10px 0;
-    position: relative;
-    z-index: 1;
   }
-  .ticker {
-    display: flex;
-    gap: 64px;
-    animation: ticker 30s linear infinite;
-    white-space: nowrap;
-    width: max-content;
+  .footer-logo { font-family: var(--cond); font-weight: 800; font-size: 22px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .footer-logo span { color: var(--orange); }
+  .footer-links { display: flex; gap: 32px; list-style: none; }
+  .footer-links a {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    text-decoration: none; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.2s;
   }
-  .ticker-item {
-    font-size: 11px;
-    color: var(--text-dim);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .ticker-item .t-green { font-weight: 600; }
-  @keyframes ticker {
-    0%   { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
+  .footer-links a:hover { color: var(--orange); }
+  .footer-copy { font-family: var(--mono); font-size: 11px; color: var(--dim); }
 
-  /* ─── CONFIG PREVIEW ─── */
-  .config-preview {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 24px 28px;
-    font-size: 12px;
-    line-height: 1.9;
-    position: relative;
-    overflow: hidden;
+  /* ANIMATIONS */
+  @keyframes fade-up {
+    from { opacity:0; transform: translateY(20px); }
+    to   { opacity:1; transform: translateY(0); }
   }
-  .config-preview::before {
-    content: 'agent.config.json';
-    position: absolute;
-    top: 10px;
-    right: 16px;
-    font-size: 10px;
-    color: var(--text-muted);
-    letter-spacing: 0.05em;
-  }
-  .json-key    { color: var(--blue); }
-  .json-str    { color: var(--amber); }
-  .json-num    { color: var(--purple); }
-  .json-bool   { color: var(--green); }
-  .json-brace  { color: var(--text-dim); }
+  .reveal { opacity:0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.visible { opacity:1; transform: none; }
 
-  /* ─── RESPONSIVE ─── */
-  @media (max-width: 768px) {
-    .loop-grid, .modes-grid, .risk-grid, .stack-grid { grid-template-columns: 1fr; }
-    .arch-grid, .lsp-grid { grid-template-columns: 1fr; }
-    .hero-stats { flex-wrap: wrap; gap: 24px; }
-    .footer-inner { flex-direction: column; gap: 16px; text-align: center; }
-    h1 { letter-spacing: -2px; }
-    .flow-step { grid-template-columns: 1fr; }
-    nav { display: none; }
+  /* RESPONSIVE */
+  @media (max-width: 1100px) {
+    .hero-terminal { display: none; }
+    .hero { padding: 120px 40px 80px; }
+    .stats-bar { padding: 24px 40px; }
+    .section { padding: 80px 40px; }
+    .swap-layout { grid-template-columns: 1fr; }
+    .swap-visual { display: none; }
+    .arch-grid { grid-template-columns: 1fr; }
+    .tech-grid { grid-template-columns: repeat(2,1fr); }
+    footer { flex-direction: column; gap: 24px; text-align: center; }
+    .footer-links { flex-wrap: wrap; justify-content: center; }
+  }
+  @media (max-width: 700px) {
+    .loops-grid { grid-template-columns: 1fr; }
+    .stats-bar { grid-template-columns: repeat(2,1fr); }
+    .tech-grid { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+    .hero { padding: 100px 24px 60px; }
+    .stats-bar { padding: 24px; }
+    .section { padding: 60px 24px; }
+    footer { padding: 40px 24px; }
   }
 </style>
 </head>
@@ -686,686 +482,649 @@
 
 <!-- NAV -->
 <nav>
-  <div class="nav-inner">
-    <a href="#" class="nav-logo">KaleidoAgent<span>.ts</span></a>
-    <ul class="nav-links">
-      <li><a href="#architecture">Architecture</a></li>
-      <li><a href="#loops">Loops</a></li>
-      <li><a href="#swaps">Swap Modes</a></li>
-      <li><a href="#lsp">LSPS1</a></li>
-      <li><a href="#tools">MCP Tools</a></li>
-      <li><a href="#stack">Stack</a></li>
-    </ul>
+  <div class="nav-logo">
+    <div class="dot"></div>
+    KaleidoAgent
   </div>
+  <ul class="nav-links">
+    <li><a href="#how-it-works">How It Works</a></li>
+    <li><a href="#atomic-swap">Atomic Swap</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#code">Code</a></li>
+  </ul>
+  <div class="nav-badge">WDK Hackathon 2026</div>
 </nav>
 
-<!-- TICKER -->
-<div class="ticker-wrap" style="margin-top:52px;">
-  <div class="ticker" id="ticker">
-    <span class="ticker-item"><span class="t-green">▲ BTC/USDT</span> <span>KaleidoSwap atomic HTLC</span></span>
-    <span class="ticker-item"><span class="t-amber">⬡ RGB Lightning</span> <span>USDT · XAU₮ on L2</span></span>
-    <span class="ticker-item"><span class="t-blue">⬡ 42 MCP Tools</span> <span>3 servers · full composability</span></span>
-    <span class="ticker-item"><span class="t-green">▲ Autonomous</span> <span>No human in the loop</span></span>
-    <span class="ticker-item"><span class="t-purple">⬡ LSPS1</span> <span>Auto channel purchase</span></span>
-    <span class="ticker-item"><span class="t-amber">⬡ Claude AI</span> <span>Reasoning + decision-making</span></span>
-    <span class="ticker-item"><span class="t-blue">⬡ WDK</span> <span>Self-custodial wallet execution</span></span>
-    <span class="ticker-item"><span class="t-green">▲ dry_run=false</span> <span>Live trading enabled</span></span>
-    <!-- duplicate for seamless loop -->
-    <span class="ticker-item"><span class="t-green">▲ BTC/USDT</span> <span>KaleidoSwap atomic HTLC</span></span>
-    <span class="ticker-item"><span class="t-amber">⬡ RGB Lightning</span> <span>USDT · XAU₮ on L2</span></span>
-    <span class="ticker-item"><span class="t-blue">⬡ 42 MCP Tools</span> <span>3 servers · full composability</span></span>
-    <span class="ticker-item"><span class="t-green">▲ Autonomous</span> <span>No human in the loop</span></span>
-    <span class="ticker-item"><span class="t-purple">⬡ LSPS1</span> <span>Auto channel purchase</span></span>
-    <span class="ticker-item"><span class="t-amber">⬡ Claude AI</span> <span>Reasoning + decision-making</span></span>
-    <span class="ticker-item"><span class="t-blue">⬡ WDK</span> <span>Self-custodial wallet execution</span></span>
-    <span class="ticker-item"><span class="t-green">▲ dry_run=false</span> <span>Live trading enabled</span></span>
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+
+  <div class="hackathon-tag">
+    Hackathon Galáctica · WDK Edition 1
+    <span>· Agent Wallets · Autonomous DeFi</span>
+  </div>
+
+  <h1>Kaleido<br><span class="accent">Agent</span></h1>
+  <div class="hero-sub">Autonomous Bitcoin L2 Portfolio Rebalancer</div>
+
+  <p class="hero-desc">
+    A <strong>non-custodial</strong> autonomous trading agent that holds and rebalances
+    <strong>BTC · USDT · XAUT</strong> on the Lightning Network.
+    Claude AI detects drift, executes <strong>atomic HTLC swaps</strong>,
+    and manages Lightning channels — without human intervention.
+  </p>
+
+  <div class="hero-actions">
+    <a href="https://github.com/kaleidoswap/kaleidoagent" class="btn btn-primary">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      View on GitHub
+    </a>
+    <a href="#how-it-works" class="btn btn-ghost">How It Works →</a>
+  </div>
+
+  <!-- Terminal -->
+  <div class="hero-terminal">
+    <div class="terminal-bar">
+      <div class="t-dot r"></div><div class="t-dot y"></div><div class="t-dot g"></div>
+      <span class="terminal-title">kaleidoagent — live</span>
+    </div>
+    <div class="terminal-body" id="terminal"></div>
+  </div>
+</section>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat-item reveal">
+    <div class="stat-label">Loops Running</div>
+    <div class="stat-value">3 <span class="unit">autonomous</span></div>
+    <div class="stat-note">rebalance · heartbeat · daily</div>
+  </div>
+  <div class="stat-item reveal">
+    <div class="stat-label">Swap Protocol</div>
+    <div class="stat-value">Atomic <span class="unit">HTLC</span></div>
+    <div class="stat-note">5-step trustless settlement</div>
+  </div>
+  <div class="stat-item reveal">
+    <div class="stat-label">MCP Tools</div>
+    <div class="stat-value">60<span class="unit">+</span></div>
+    <div class="stat-note">WDK · KaleidoSwap · MPP</div>
+  </div>
+  <div class="stat-item reveal">
+    <div class="stat-label">Custody</div>
+    <div class="stat-value">Zero <span class="unit">custodian</span></div>
+    <div class="stat-note">WDK Spark + RLN node</div>
   </div>
 </div>
 
-<!-- HERO -->
-<section id="hero">
-  <div class="hero-glow"></div>
-  <div class="container">
-    <div class="hero-eyebrow">Hackathon Galáctica · WDK Edition 1</div>
-    <h1><span class="h1-main">KaleidoAgent</span></h1>
-    <p class="hero-tagline">Autonomous Bitcoin L2 portfolio manager — Lightning-native DeFi agent powered by Claude AI + Tether WDK.</p>
-    <p class="hero-sub">
-      Manages <span>BTC</span> · <span>USDT (RGB)</span> · <span>XAU₮ (RGB)</span> allocations autonomously on the Lightning Network
-    </p>
-    <div class="badge-row">
-      <span class="badge badge-green">🌊 Autonomous DeFi Agent Track</span>
-      <span class="badge badge-blue">🤖 Agent Wallets Track</span>
-      <span class="badge badge-amber">⚡ Lightning Native</span>
-      <span class="badge badge-purple">🔗 42 MCP Tools</span>
+<!-- HOW IT WORKS -->
+<section class="section" id="how-it-works">
+  <div class="section-label">How it works</div>
+  <h2 class="section-title reveal">Three Autonomous<br>Loops</h2>
+  <p class="section-body reveal">
+    You define target allocations. The agent runs continuously —
+    detecting drift, executing swaps, managing channels — using Claude AI
+    to reason about each decision before acting.
+  </p>
+
+  <div class="loops-grid">
+    <div class="loop-card reveal" style="--accent: var(--orange)">
+      <div class="loop-interval">Every 1 hour</div>
+      <div class="loop-name">Rebalance</div>
+      <div class="loop-desc">Compares live portfolio against target allocations. If drift exceeds threshold, calculates the optimal swap and executes it atomically on Lightning.</div>
+      <ul class="loop-steps">
+        <li>Read live balances via WDK tools</li>
+        <li>Compute current vs. target allocations</li>
+        <li>Check risk limits before acting</li>
+        <li>Get live quote from KaleidoSwap</li>
+        <li>Execute atomic HTLC swap</li>
+        <li>Confirm settlement + log result</li>
+      </ul>
     </div>
-    <div class="hero-stats">
-      <div class="stat-item">
-        <span class="stat-value">42</span>
-        <span class="stat-label">MCP Tools</span>
+    <div class="loop-card reveal" style="--accent: var(--green)">
+      <div class="loop-interval">Every 5 minutes</div>
+      <div class="loop-name">Heartbeat</div>
+      <div class="loop-desc">Monitors Lightning node health, flushes stuck RGB transfers, and auto-purchases channel liquidity via LSPS1 when outbound runs low.</div>
+      <ul class="loop-steps">
+        <li>Read node info + peer count</li>
+        <li>Audit channel inbound/outbound</li>
+        <li>Flush pending RGB transfer states</li>
+        <li>If outbound critical → LSPS1 channel buy</li>
+        <li>Pay bolt11 invoice from RLN wallet</li>
+        <li>Poll until CHANNEL_OPENING complete</li>
+      </ul>
+    </div>
+    <div class="loop-card reveal" style="--accent: var(--gold)">
+      <div class="loop-interval">Daily at 00:00 UTC</div>
+      <div class="loop-name">Summary</div>
+      <div class="loop-desc">Generates a full portfolio snapshot — balances, trade history, market data, and performance report delivered via Telegram or log file.</div>
+      <ul class="loop-steps">
+        <li>Snapshot all asset balances</li>
+        <li>Retrieve full swap history</li>
+        <li>Fetch market prices + sentiment</li>
+        <li>Compute daily P&L vs. targets</li>
+        <li>Report via Telegram + log file</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ATOMIC SWAP -->
+<section class="section swap-section" id="atomic-swap">
+  <div class="section-label">Atomic Swap Flow</div>
+  <h2 class="section-title reveal">Trustless HTLC<br>Settlement</h2>
+  <p class="section-body reveal">No deposit address. No custodian. The agent coordinates the full 5-step HTLC swap across two MCP servers in a single tool-call sequence. Settles atomically on Lightning.</p>
+
+  <div class="swap-layout">
+    <div class="swap-steps" id="swapSteps">
+      <div class="swap-step active" data-step="0">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <div class="step-fn">kaleidoswap_get_quote</div>
+          <div class="step-arrow">→ rfq_id + raw amounts</div>
+          <div class="step-detail">Live quote for the pair to rebalance. Returns <code>rfq_id</code> (valid ~30s) with exact in/out amounts in raw asset units.</div>
+        </div>
       </div>
-      <div class="stat-item">
-        <span class="stat-value">3</span>
-        <span class="stat-label">Agent Loops</span>
+      <div class="swap-step" data-step="1">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <div class="step-fn">kaleidoswap_atomic_init</div>
+          <div class="step-arrow">→ swapstring + payment_hash</div>
+          <div class="step-detail">Maker creates the HTLC. Returns encoded <code>swapstring</code> and the <code>payment_hash</code> the taker must lock funds against.</div>
+        </div>
       </div>
-      <div class="stat-item">
-        <span class="stat-value">5s</span>
-        <span class="stat-label">Atomic Swap</span>
+      <div class="swap-step" data-step="2">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <div class="step-fn">wdk_atomic_taker</div>
+          <div class="step-arrow">→ whitelist HTLC on RLN</div>
+          <div class="step-detail">Agent calls the WDK RLN node to whitelist the incoming HTLC, then retrieves the node's pubkey for the maker to route to.</div>
+        </div>
       </div>
-      <div class="stat-item">
-        <span class="stat-value">0</span>
-        <span class="stat-label">Human Inputs</span>
+      <div class="swap-step" data-step="3">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <div class="step-fn">kaleidoswap_atomic_execute</div>
+          <div class="step-arrow">→ HTLC settlement triggered</div>
+          <div class="step-detail">Maker executes against taker pubkey + payment secret. Both HTLCs settle simultaneously — atomic by construction.</div>
+        </div>
       </div>
-      <div class="stat-item">
-        <span class="stat-value">3</span>
-        <span class="stat-label">RGB Assets</span>
+      <div class="swap-step" data-step="4">
+        <div class="step-num">05</div>
+        <div class="step-content">
+          <div class="step-fn">kaleidoswap_atomic_status</div>
+          <div class="step-arrow">→ poll → Succeeded</div>
+          <div class="step-detail">Agent polls until <code>Succeeded</code>. On success: sync asset state, log result. On failure: log reason, defer to next cycle.</div>
+        </div>
       </div>
+    </div>
+
+    <div class="swap-visual">
+      <svg width="360" height="360" viewBox="0 0 360 360">
+        <defs>
+          <radialGradient id="gAgent" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="rgba(247,147,26,0.2)"/>
+            <stop offset="100%" stop-color="transparent"/>
+          </radialGradient>
+          <radialGradient id="gKaleido" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="rgba(77,159,255,0.2)"/>
+            <stop offset="100%" stop-color="transparent"/>
+          </radialGradient>
+          <radialGradient id="gRLN" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="rgba(34,216,122,0.2)"/>
+            <stop offset="100%" stop-color="transparent"/>
+          </radialGradient>
+        </defs>
+
+        <!-- Connection lines -->
+        <line x1="180" y1="100" x2="100" y2="260" stroke="#f7931a" stroke-width="1" stroke-dasharray="4 3" opacity="0.2"/>
+        <line x1="180" y1="100" x2="260" y2="260" stroke="#4d9fff" stroke-width="1" stroke-dasharray="4 3" opacity="0.2"/>
+        <line x1="100" y1="260" x2="260" y2="260" stroke="#22d87a" stroke-width="1" stroke-dasharray="4 3" opacity="0.2"/>
+
+        <!-- Animated dots along paths -->
+        <circle r="4" fill="#f7931a" opacity="0.9">
+          <animateMotion dur="2.4s" repeatCount="indefinite" begin="0s">
+            <mpath href="#pOK"/>
+          </animateMotion>
+          <animate attributeName="opacity" values="0;1;1;0" dur="2.4s" repeatCount="indefinite"/>
+        </circle>
+        <path id="pOK" d="M 180,100 L 260,260" fill="none"/>
+
+        <circle r="4" fill="#22d87a" opacity="0.9">
+          <animateMotion dur="2.4s" repeatCount="indefinite" begin="0.8s">
+            <mpath href="#pKR"/>
+          </animateMotion>
+          <animate attributeName="opacity" values="0;1;1;0" dur="2.4s" repeatCount="indefinite" begin="0.8s"/>
+        </circle>
+        <path id="pKR" d="M 260,260 L 100,260" fill="none"/>
+
+        <circle r="4" fill="#4d9fff" opacity="0.9">
+          <animateMotion dur="2.4s" repeatCount="indefinite" begin="1.6s">
+            <mpath href="#pRA"/>
+          </animateMotion>
+          <animate attributeName="opacity" values="0;1;1;0" dur="2.4s" repeatCount="indefinite" begin="1.6s"/>
+        </circle>
+        <path id="pRA" d="M 100,260 L 180,100" fill="none"/>
+
+        <!-- Node: Agent -->
+        <ellipse cx="180" cy="80" rx="56" ry="24" fill="url(#gAgent)"/>
+        <rect x="148" y="60" width="64" height="40" rx="4" fill="#13131a" stroke="#f7931a" stroke-width="1"/>
+        <text x="180" y="76" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#f7931a" letter-spacing="1">AGENT</text>
+        <text x="180" y="90" text-anchor="middle" font-family="Space Mono" font-size="7" fill="#7a7a8a">Claude + MCP</text>
+
+        <!-- Node: KaleidoSwap -->
+        <ellipse cx="262" cy="272" rx="60" ry="24" fill="url(#gKaleido)"/>
+        <rect x="220" y="252" width="84" height="40" rx="4" fill="#13131a" stroke="#4d9fff" stroke-width="1"/>
+        <text x="262" y="268" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#4d9fff">KALEIDOSWAP</text>
+        <text x="262" y="282" text-anchor="middle" font-family="Space Mono" font-size="7" fill="#7a7a8a">Maker · DEX</text>
+
+        <!-- Node: RLN -->
+        <ellipse cx="98" cy="272" rx="56" ry="24" fill="url(#gRLN)"/>
+        <rect x="58" y="252" width="80" height="40" rx="4" fill="#13131a" stroke="#22d87a" stroke-width="1"/>
+        <text x="98" y="268" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#22d87a" letter-spacing="1">WDK RLN</text>
+        <text x="98" y="282" text-anchor="middle" font-family="Space Mono" font-size="7" fill="#7a7a8a">Taker · Lightning</text>
+
+        <!-- Edge labels -->
+        <text x="234" y="162" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#4d9fff" opacity="0.65" transform="rotate(52,234,162)">swapstring</text>
+        <text x="126" y="162" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#22d87a" opacity="0.65" transform="rotate(-52,126,162)">pubkey</text>
+        <text x="180" y="244" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#f7931a" opacity="0.65">HTLC</text>
+      </svg>
     </div>
   </div>
 </section>
 
 <!-- ARCHITECTURE -->
-<section id="architecture">
-  <div class="container">
-    <div class="section-header fade-in">
-      <span class="section-number">01</span>
-      <span class="section-title">Architecture</span>
-      <div class="section-line"></div>
-    </div>
-    <h2 class="fade-in">Three MCP servers.<br><em>One autonomous agent.</em></h2>
-    <p class="section-desc fade-in">KaleidoAgent orchestrates three specialized MCP servers — each exposing domain-specific tools — through a central Claude AI reasoning loop. The agent decides when to act, what tools to call, and how to sequence multi-step flows.</p>
+<section class="section" id="architecture">
+  <div class="section-label">Architecture</div>
+  <h2 class="section-title reveal">Built on WDK +<br>MCP + Lightning</h2>
+  <p class="section-body reveal">Clean layered architecture: Claude reasons at the top, MCP tools provide the interface, WDK handles wallet execution. Each layer is independently replaceable.</p>
 
-    <div class="fade-in">
-      <div class="terminal">
-        <div class="terminal-bar">
-          <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-          <div class="terminal-title">system architecture</div>
+  <div class="arch-grid">
+    <div class="arch-layers">
+      <div class="arch-layer reveal">
+        <div class="arch-layer-header">
+          <span class="arch-layer-num">L3</span>
+          <span class="arch-layer-name">Agent Reasoning</span>
         </div>
-        <div class="terminal-body">
-          <span class="t-green t-white" style="font-weight:700">kaleidoagent</span>
-          <span class="t-dim"> — Claude AI · agentic loop · status :4242 · webapp :5173</span><br>
-          <span class="t-dim">  │</span><br>
-          <span class="t-dim">  ├──</span> <span class="t-amber" style="font-weight:600">kaleidoswap-mcp</span>
-          <span class="t-dim">   (15 tools)</span>
-          <span class="t-indent t-muted">quotes · orders · atomic swaps · atomic_init/execute/status · LSP channels</span><br>
-          <span class="t-dim">  │</span><br>
-          <span class="t-dim">  ├──</span> <span class="t-blue" style="font-weight:600">wdk-wallet-rln-mcp</span>
-          <span class="t-dim">    (18 tools)</span>
-          <span class="t-indent t-muted">RLN node · balances · invoices · payments · peer connect · atomic taker</span><br>
-          <span class="t-dim">  │</span><br>
-          <span class="t-dim">  └──</span> <span class="t-purple" style="font-weight:600">mpp-gateway-mcp</span>
-          <span class="t-dim">   (9 tools)</span>
-          <span class="t-indent t-muted">market data · OHLCV · Fear &amp; Greed sentiment · MPP flow</span>
+        <div class="arch-layer-body">
+          <span class="arch-chip hl">Claude Sonnet 4.6</span>
+          <span class="arch-chip">Anthropic SDK</span>
+          <span class="arch-chip">SKILL.md prompts</span>
+          <span class="arch-chip">Nanobot runtime</span>
+          <span class="arch-chip">AgentRunner</span>
+          <span class="arch-chip">Scheduler (3 loops)</span>
+          <span class="arch-chip">Cost tracking</span>
+        </div>
+      </div>
+      <div class="arch-layer reveal">
+        <div class="arch-layer-header">
+          <span class="arch-layer-num">L2</span>
+          <span class="arch-layer-name">MCP Tool Layer</span>
+        </div>
+        <div class="arch-layer-body">
+          <span class="arch-chip hl">kaleido-mcp</span>
+          <span class="arch-chip">mpp-gateway-mcp</span>
+          <span class="arch-chip">60+ tools</span>
+          <span class="arch-chip">stdio / HTTP transport</span>
+          <span class="arch-chip">Tool allowlists</span>
+          <span class="arch-chip">MCP Manager</span>
+        </div>
+      </div>
+      <div class="arch-layer reveal">
+        <div class="arch-layer-header">
+          <span class="arch-layer-num">L1</span>
+          <span class="arch-layer-name">WDK Wallet Layer</span>
+        </div>
+        <div class="arch-layer-body">
+          <span class="arch-chip hl">WDK Spark L2</span>
+          <span class="arch-chip hl">WDK RLN Node</span>
+          <span class="arch-chip">Lightning channels</span>
+          <span class="arch-chip">RGB assets (USDT · XAUT)</span>
+          <span class="arch-chip">LSPS1 liquidity</span>
+          <span class="arch-chip">Atomic taker</span>
+          <span class="arch-chip">Non-custodial</span>
+        </div>
+      </div>
+      <div class="arch-layer reveal">
+        <div class="arch-layer-header">
+          <span class="arch-layer-num">L0</span>
+          <span class="arch-layer-name">Protocol / Network</span>
+        </div>
+        <div class="arch-layer-body">
+          <span class="arch-chip">Bitcoin Lightning</span>
+          <span class="arch-chip">RGB Protocol</span>
+          <span class="arch-chip">KaleidoSwap DEX</span>
+          <span class="arch-chip">HTLC Atomic Swaps</span>
+          <span class="arch-chip">LSPS1</span>
+          <span class="arch-chip">MPP / L402</span>
         </div>
       </div>
     </div>
 
-    <div class="arch-grid fade-in" style="margin-top:32px;">
-      <div class="arch-node main">
-        <div class="arch-label t-green">Core Orchestrator</div>
-        <div class="arch-name" style="color:var(--green)">kaleidoagent</div>
-        <div class="arch-tools">Claude AI (claude-sonnet-4-6) · Anthropic SDK · MCP stdio</div>
-        <div class="arch-desc">Drives three autonomous loops (rebalance · heartbeat · daily summary). On each run, Claude receives portfolio context and a structured prompt, then calls MCP tools iteratively until the task is complete. Token usage and cost are tracked per run.</div>
-        <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
-          <span class="badge badge-green" style="font-size:10px;">Status API :4242</span>
-          <span class="badge badge-green" style="font-size:10px;">Webapp :5173</span>
-          <span class="badge badge-green" style="font-size:10px;">Chat NL Interface</span>
+    <div class="arch-side">
+      <div class="arch-side-card reveal">
+        <div class="arch-side-title">Portfolio Targets</div>
+        <div class="alloc-bars">
+          <div class="alloc-row">
+            <div class="alloc-meta"><span>BTC</span><span style="color:var(--orange)">70%</span></div>
+            <div class="alloc-track"><div class="alloc-fill btc" data-width="70"></div></div>
+          </div>
+          <div class="alloc-row">
+            <div class="alloc-meta"><span>USDT (RGB)</span><span style="color:var(--green)">20%</span></div>
+            <div class="alloc-track"><div class="alloc-fill usdt" data-width="20"></div></div>
+          </div>
+          <div class="alloc-row">
+            <div class="alloc-meta"><span>XAUT (RGB)</span><span style="color:var(--gold)">10%</span></div>
+            <div class="alloc-track"><div class="alloc-fill xaut" data-width="10"></div></div>
+          </div>
         </div>
       </div>
-      <div class="arch-node amber-node">
-        <div class="arch-label t-amber">Swap Engine</div>
-        <div class="arch-name" style="color:var(--amber)">kaleidoswap-mcp</div>
-        <div class="arch-tools">15 tools · KaleidoSwap API</div>
-        <div class="arch-desc">Full KaleidoSwap integration: asset discovery, pair pricing, quote engine (also used as price oracle), atomic HTLC swap init/execute/status, deposit-based REST orders, open order management, and LSPS1 Lightning channel purchasing.</div>
-      </div>
-      <div class="arch-node blue-node">
-        <div class="arch-label t-blue">Wallet Execution</div>
-        <div class="arch-name" style="color:var(--blue)">wdk-wallet-rln-mcp</div>
-        <div class="arch-tools">18 tools · RGB Lightning Node (RLN) · WDK</div>
-        <div class="arch-desc">Full WDK wallet access: Lightning + on-chain balances, RGB asset balances, channel list, invoice creation (RGB + LN), asset sends, payment execution, peer connection, atomic HTLC taker registration, swap tracking, and MPP payment.</div>
-      </div>
-      <div class="arch-node purple-node">
-        <div class="arch-label t-purple">Market Intelligence</div>
-        <div class="arch-name" style="color:var(--purple)">mpp-gateway-mcp</div>
-        <div class="arch-tools">9 tools · L402 + MPP gateway</div>
-        <div class="arch-desc">Real-time market data via MPP-gated API: spot prices, OHLCV candlesticks, Fear &amp; Greed sentiment index. Uses Lightning micropayments (MPP challenge/credential flow) to pay for premium data without custodial accounts.</div>
-      </div>
-    </div>
-  </div>
-</section>
 
-<!-- LOOPS -->
-<section id="loops">
-  <div class="container">
-    <div class="section-header fade-in">
-      <span class="section-number">02</span>
-      <span class="section-title">Autonomous Loops</span>
-      <div class="section-line"></div>
-    </div>
-    <h2 class="fade-in">Three loops.<br><em>Zero human triggers.</em></h2>
-    <p class="section-desc fade-in">The agent runs continuously. Each loop fires on its own schedule, executes a full Claude reasoning cycle with tool calls, and logs results to the status server. No webhooks, no manual triggers.</p>
+      <div class="arch-side-card reveal">
+        <div class="arch-side-title">Risk Controls</div>
+        <div class="risk-list">
+          <div class="risk-item"><span class="risk-key">dry_run</span><span class="risk-val safe">true (default)</span></div>
+          <div class="risk-item"><span class="risk-key">max_swap_usd</span><span class="risk-val">$200</span></div>
+          <div class="risk-item"><span class="risk-key">min_btc_reserve</span><span class="risk-val">50,000 sats</span></div>
+          <div class="risk-item"><span class="risk-key">stop_loss</span><span class="risk-val warn">30,000 sats</span></div>
+          <div class="risk-item"><span class="risk-key">max_orders</span><span class="risk-val">3 concurrent</span></div>
+          <div class="risk-item"><span class="risk-key">threshold</span><span class="risk-val">5% drift</span></div>
+        </div>
+      </div>
 
-    <div class="loop-grid fade-in">
-      <div class="loop-card">
-        <span class="loop-icon">⚖️</span>
-        <div class="loop-name">Rebalance Loop</div>
-        <div class="loop-interval">Every 5 minutes</div>
-        <div class="loop-desc">
-          Fetches live balances and derives USD values using KaleidoSwap as the price oracle.
-          Computes allocation drift vs. configured targets (BTC 70% · USDT 20% · XAU₮ 10%).
-          If drift exceeds the threshold, executes a swap — atomic HTLC first, REST fallback.
-          Enforces stop-loss, max_swap_usd cap, and min BTC reserve on every run.
-        </div>
-      </div>
-      <div class="loop-card">
-        <span class="loop-icon">🩺</span>
-        <div class="loop-name">Heartbeat Loop</div>
-        <div class="loop-interval">Every 5 minutes</div>
-        <div class="loop-desc">
-          Verifies RLN node is online, counts usable channels, totals outbound liquidity.
-          Flushes pending RGB transfers and clears stuck orders.
-          If outbound satoshis fall below <code style="color:var(--green)">min_outbound_liquidity_sat</code>,
-          autonomously purchases a new Lightning channel via LSPS1 — no human needed.
-        </div>
-      </div>
-      <div class="loop-card">
-        <span class="loop-icon">📊</span>
-        <div class="loop-name">Daily Summary</div>
-        <div class="loop-interval">Every day at 00:00</div>
-        <div class="loop-desc">
-          Full portfolio snapshot at midnight: BTC + RGB balances, live exchange rates
-          (BTC/USDT, XAU₮/USDT via KaleidoSwap quotes), total portfolio value in USD,
-          current allocation percentages, session PnL, and complete trade history.
-          Results stored in the status server and streamed to the webapp.
+      <div class="arch-side-card reveal">
+        <div class="arch-side-title">Status API · :4242</div>
+        <div class="risk-list">
+          <div class="risk-item"><span class="risk-key" style="font-family:var(--mono);font-size:10px">GET /health</span><span class="risk-val safe" style="font-size:11px">service status</span></div>
+          <div class="risk-item"><span class="risk-key" style="font-family:var(--mono);font-size:10px">GET /status</span><span class="risk-val" style="font-size:11px">full agent state</span></div>
+          <div class="risk-item"><span class="risk-key" style="font-family:var(--mono);font-size:10px">POST /run</span><span class="risk-val" style="font-size:11px">trigger task</span></div>
+          <div class="risk-item"><span class="risk-key" style="font-family:var(--mono);font-size:10px">POST /chat</span><span class="risk-val" style="font-size:11px">wallet assistant</span></div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- SWAP MODES -->
-<section id="swaps">
-  <div class="container">
-    <div class="section-header fade-in">
-      <span class="section-number">03</span>
-      <span class="section-title">Swap Modes</span>
-      <div class="section-line"></div>
-    </div>
-    <h2 class="fade-in">Atomic HTLC by default.<br><em>REST fallback if needed.</em></h2>
-    <p class="section-desc fade-in">The agent supports three trading modes, configurable per deployment. The preferred mode is atomic HTLC — a trustless, non-custodial swap that settles directly on Lightning with no deposit address required.</p>
+<!-- CODE -->
+<section class="section code-section" id="code">
+  <div class="section-label">Code</div>
+  <h2 class="section-title reveal">Simple to Configure,<br>Powerful to Run</h2>
 
-    <div class="modes-grid fade-in">
-      <div class="mode-card atomic">
-        <div class="mode-name">Atomic (HTLC)</div>
-        <div class="mode-tag t-green">Preferred · Trustless</div>
-        <div class="mode-desc">
-          5-step HTLC swap flow. No deposit address required. Assets move directly
-          between Lightning channels via Hash Time-Locked Contracts.
-          Fastest settlement, fully non-custodial, zero counterparty risk.
-        </div>
-      </div>
-      <div class="mode-card rest">
-        <div class="mode-name">REST</div>
-        <div class="mode-tag t-blue">Deposit-based</div>
-        <div class="mode-desc">
-          Classic deposit-based order flow. Agent creates an invoice or RGB address,
-          places the order with KaleidoSwap, sends payment, then polls for fill.
-          Used when outbound Lightning liquidity is insufficient for atomic.
-        </div>
-      </div>
-      <div class="mode-card both">
-        <div class="mode-name">Both</div>
-        <div class="mode-tag t-amber">Smart Fallback</div>
-        <div class="mode-desc">
-          Attempts atomic HTLC first. If channel outbound liquidity falls below
-          <code style="color:var(--amber)">min_outbound_liquidity_sat</code>, automatically
-          falls back to REST. Combines reliability with trustlessness.
-        </div>
-      </div>
-    </div>
+  <div class="code-tabs reveal">
+    <div class="code-tab active" data-target="config">agent.config.json</div>
+    <div class="code-tab" data-target="skill">portfolio SKILL.md</div>
+    <div class="code-tab" data-target="install">Quick Start</div>
+  </div>
 
-    <!-- Atomic Flow -->
-    <div class="fade-in">
-      <div class="terminal">
-        <div class="terminal-bar">
-          <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-          <div class="terminal-title">atomic swap flow — 6 steps</div>
-        </div>
-        <div class="terminal-body">
-          <div class="flow-steps">
-            <div class="flow-step">
-              <span class="flow-tool t-amber">kaleidoswap_get_quote</span>
-              <span class="flow-arrow">→</span>
-              <span class="flow-result t-dim">rfq_id, from_asset.amount_raw, to_asset.amount_raw, from_asset.amount_display</span>
-            </div>
-            <div class="flow-step">
-              <span class="flow-tool t-amber">kaleidoswap_atomic_init</span>
-              <span class="flow-arrow">→</span>
-              <span class="flow-result t-dim">swapstring, payment_hash — RFQ locked on maker side</span>
-            </div>
-            <div class="flow-step">
-              <span class="flow-tool t-blue">wdk_atomic_taker</span>
-              <span class="flow-arrow">→</span>
-              <span class="flow-result t-dim">HTLC whitelisted on RLN node — taker ready to accept</span>
-            </div>
-            <div class="flow-step">
-              <span class="flow-tool t-blue">wdk_get_node_info</span>
-              <span class="flow-arrow">→</span>
-              <span class="flow-result t-dim">taker_pubkey — passed to maker for HTLC routing</span>
-            </div>
-            <div class="flow-step">
-              <span class="flow-tool t-amber">kaleidoswap_atomic_execute</span>
-              <span class="flow-arrow">→</span>
-              <span class="flow-result t-dim">HTLC settlement triggered by maker</span>
-            </div>
-            <div class="flow-step">
-              <span class="flow-tool t-amber">kaleidoswap_atomic_status</span>
-              <span class="flow-arrow">→</span>
-              <span class="flow-result"><span class="t-green">Succeeded</span> <span class="t-muted">· poll until terminal state</span></span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <div class="code-panel active" id="tab-config">
+<pre>{
+  <span class="p">"agent"</span>: {
+    <span class="p">"model"</span>: <span class="s">"claude-sonnet-4-6"</span>,
+    <span class="p">"max_tokens"</span>: <span class="n">4096</span>,
+    <span class="p">"max_tool_calls_per_run"</span>: <span class="n">30</span>
+  },
+  <span class="p">"portfolio"</span>: {
+    <span class="p">"targets"</span>: { <span class="p">"BTC"</span>: <span class="n">70</span>, <span class="p">"USDT"</span>: <span class="n">20</span>, <span class="p">"XAUT"</span>: <span class="n">10</span> },
+    <span class="p">"rebalance_threshold_pct"</span>: <span class="n">5</span>,
+    <span class="p">"max_swap_usd"</span>: <span class="n">200</span>,
+    <span class="p">"min_btc_reserve_sats"</span>: <span class="n">50000</span>,
+    <span class="p">"stop_loss_btc_sats"</span>: <span class="n">30000</span>,
+    <span class="p">"dry_run"</span>: <span class="k">true</span>,
+    <span class="p">"trading_mode"</span>: <span class="s">"atomic"</span>,  <span class="c">// atomic | rest | both</span>
+    <span class="p">"lsp"</span>: {
+      <span class="p">"lsp_balance_sat"</span>: <span class="n">500000</span>,
+      <span class="p">"min_outbound_liquidity_sat"</span>: <span class="n">2000</span>,
+      <span class="p">"auto_buy_channel"</span>: <span class="k">true</span>
+    }
+  },
+  <span class="p">"mcp"</span>: {
+    <span class="p">"kaleido"</span>: {
+      <span class="p">"command"</span>: <span class="s">"node"</span>,
+      <span class="p">"args"</span>: [<span class="s">"../kaleido-mcp/dist/index.js"</span>],
+      <span class="p">"env"</span>: {
+        <span class="p">"WDK_SEED"</span>: <span class="s">"&lt;your-wallet-seed&gt;"</span>,
+        <span class="p">"SPARK_NETWORK"</span>: <span class="s">"MAINNET"</span>,
+        <span class="p">"RLN_NODE_URL"</span>: <span class="s">"http://localhost:3001"</span>
+      }
+    }
+  }
+}</pre>
+  </div>
+  <div class="code-panel" id="tab-skill">
+<pre><span class="c">---</span>
+<span class="p">name:</span> <span class="s">portfolio-manager</span>
+<span class="p">version:</span> <span class="s">1.1</span>
+<span class="p">description:</span> <span class="s">Drift detection + atomic swap execution</span>
+<span class="c">---</span>
+
+<span class="t">## State  (injected at runtime)</span>
+
+<span class="f">!`kaleido --json spark balance`</span>
+<span class="f">!`kaleido --json rln balances`</span>
+
+<span class="t">## Logic</span>
+
+<span class="n">1.</span> Read live balances from Spark + RLN via WDK tools
+<span class="n">2.</span> Convert all assets to USD at current market prices
+<span class="n">3.</span> Compute allocation % for BTC / USDT / XAUT
+<span class="n">4.</span> Find asset with largest deviation from target
+<span class="n">5.</span> If max_drift &lt; rebalance_threshold_pct → SKIP
+<span class="n">6.</span> Apply risk checks (reserve, max_swap, stop_loss, orders)
+<span class="n">7.</span> kaleidoswap_get_quote → rfq_id
+<span class="n">8.</span> Execute 5-step atomic HTLC swap
+<span class="n">9.</span> Confirm settlement, sync asset state
+
+<span class="t">## Output (JSON)</span>
+
+{
+  <span class="p">"action"</span>: <span class="s">"swap | skip | error"</span>,
+  <span class="p">"from_asset"</span>: <span class="s">"USDT"</span>,
+  <span class="p">"to_asset"</span>: <span class="s">"BTC"</span>,
+  <span class="p">"amount_usd"</span>: <span class="n">47.50</span>,
+  <span class="p">"drift_pct"</span>: <span class="n">8.3</span>,
+  <span class="p">"result"</span>: <span class="s">"Succeeded"</span>
+}</pre>
+  </div>
+  <div class="code-panel" id="tab-install">
+<pre><span class="c"># Clone</span>
+git clone https://github.com/kaleidoswap/kaleidoagent.git
+cd kaleidoagent
+
+<span class="c"># Install agent + webapp</span>
+npm run install:all
+
+<span class="c"># Configure secrets</span>
+cp .env.example .env
+<span class="c"># → set ANTHROPIC_API_KEY</span>
+<span class="c"># → edit agent.config.json: WDK_SEED, RLN_NODE_URL</span>
+
+<span class="c"># Build both</span>
+npm run build:all
+
+<span class="c"># Start</span>
+npm start
+
+<span class="c"># Open dashboard</span>
+open http://localhost:5173
+
+<span class="c"># Check status</span>
+curl http://localhost:4242/status | jq .
+
+<span class="c"># Trigger rebalance manually</span>
+curl -X POST http://localhost:4242/run \
+  -H 'Content-Type: application/json' \
+  -d '{"task":"rebalance"}'
+
+<span class="c"># Docker</span>
+cp .env.container.example .env.container
+docker compose --env-file .env.container \
+  -f docker-compose.container.yml up -d</pre>
   </div>
 </section>
 
-<!-- LSPS1 -->
-<section id="lsp">
-  <div class="container">
-    <div class="section-header fade-in">
-      <span class="section-number">04</span>
-      <span class="section-title">LSPS1 Auto-Channel</span>
-      <div class="section-line"></div>
+<!-- TECH STACK -->
+<section class="section" id="stack">
+  <div class="section-label">Tech Stack</div>
+  <h2 class="section-title reveal">What's Inside</h2>
+
+  <div class="tech-grid">
+    <div class="tech-card reveal">
+      <div class="tech-layer">Reasoning</div>
+      <div class="tech-name">Claude AI</div>
+      <div class="tech-desc">Anthropic Sonnet 4.6 via MCP tool calls. OpenAI GPT-4 supported as drop-in alternative.</div>
     </div>
-    <h2 class="fade-in">Liquidity runs low.<br><em>Agent buys a channel.</em></h2>
-    <p class="section-desc fade-in">When the heartbeat loop detects that outbound Lightning liquidity has dropped below the configured threshold, the agent autonomously purchases a new inbound channel from KaleidoSwap's LSP — all via LSPS1 protocol with a single Lightning payment.</p>
-
-    <div class="lsp-grid fade-in">
-      <div class="lsp-desc-block">
-        <div class="lsp-trigger">
-          <strong>Trigger condition</strong>
-          <code>total_outbound_sat &lt; lsp.min_outbound_liquidity_sat</code><br>
-          <span style="color:var(--text-dim); font-size:11px;">AND <code style="color:var(--amber)">lsp.auto_buy_channel = true</code></span>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:12px;">
-          <div class="risk-card" style="padding:16px 18px;">
-            <div class="risk-name">lsp_balance_sat</div>
-            <div class="risk-desc">Inbound liquidity the LSP will provide to the agent (e.g. 2,000,000 sats)</div>
-          </div>
-          <div class="risk-card" style="padding:16px 18px;">
-            <div class="risk-name">client_balance_sat</div>
-            <div class="risk-desc">Initial outbound liquidity from client side (usually 0)</div>
-          </div>
-          <div class="risk-card" style="padding:16px 18px;">
-            <div class="risk-name">channel_expiry_blocks</div>
-            <div class="risk-desc">Channel lifetime in blocks (4320 = ~30 days)</div>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div class="terminal">
-          <div class="terminal-bar">
-            <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-            <div class="terminal-title">lsps1 channel purchase flow</div>
-          </div>
-          <div class="terminal-body">
-            <div class="flow-steps">
-              <div class="flow-step" style="grid-template-columns: 220px auto 1fr;">
-                <span class="flow-tool t-blue">wdk_get_node_info</span>
-                <span class="flow-arrow">→</span>
-                <span class="flow-result t-dim">client_pubkey (taker Lightning node)</span>
-              </div>
-              <div class="flow-step" style="grid-template-columns: 220px auto 1fr;">
-                <span class="flow-tool t-blue">wdk_connect_peer</span>
-                <span class="flow-arrow">→</span>
-                <span class="flow-result t-dim">connect to LSP node (pubkey@host:port)</span>
-              </div>
-              <div class="flow-step" style="grid-template-columns: 220px auto 1fr;">
-                <span class="flow-tool t-amber">kaleidoswap_lsp_estimate_fees</span>
-                <span class="flow-arrow">→</span>
-                <span class="flow-result t-dim">fee breakdown in sats</span>
-              </div>
-              <div class="flow-step" style="grid-template-columns: 220px auto 1fr;">
-                <span class="flow-tool t-amber">kaleidoswap_lsp_create_order</span>
-                <span class="flow-arrow">→</span>
-                <span class="flow-result t-dim">order_id, bolt11_invoice, order_total_sat</span>
-              </div>
-              <div class="flow-step" style="grid-template-columns: 220px auto 1fr;">
-                <span class="flow-tool t-blue">wdk_pay_invoice</span>
-                <span class="flow-arrow">→</span>
-                <span class="flow-result t-dim">Lightning payment sent to LSP</span>
-              </div>
-              <div class="flow-step" style="grid-template-columns: 220px auto 1fr;">
-                <span class="flow-tool t-amber">kaleidoswap_lsp_get_order</span>
-                <span class="flow-arrow">→</span>
-                <span class="flow-result"><span class="t-green">CHANNEL_OPENING</span> <span class="t-muted">→</span> <span class="t-green">COMPLETED</span></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="tech-card reveal">
+      <div class="tech-layer">Wallet</div>
+      <div class="tech-name">WDK</div>
+      <div class="tech-desc">Tether's Wallet Development Kit — Spark L2 + RLN Lightning node. 100% non-custodial.</div>
     </div>
-  </div>
-</section>
-
-<!-- RISK CONTROLS -->
-<section id="risk">
-  <div class="container">
-    <div class="section-header fade-in">
-      <span class="section-number">05</span>
-      <span class="section-title">Risk Controls</span>
-      <div class="section-line"></div>
+    <div class="tech-card reveal">
+      <div class="tech-layer">DEX</div>
+      <div class="tech-name">KaleidoSwap</div>
+      <div class="tech-desc">Lightning DEX for RGB assets. Atomic HTLC + REST orders + LSPS1 channel liquidity.</div>
     </div>
-    <h2 class="fade-in">Guardrails at<br><em>every decision point.</em></h2>
-    <p class="section-desc fade-in">Every rebalance run checks all risk parameters before executing any trade. Safe by default — <code style="color:var(--green)">dry_run=true</code> unless explicitly overridden. No single failure cascades.</p>
-
-    <div class="risk-grid fade-in">
-      <div class="risk-card">
-        <div class="risk-icon">🔒</div>
-        <div class="risk-name">dry_run</div>
-        <div class="risk-desc">Default ON. Agent describes what it would do but never places real orders. Set <code style="color:var(--green)">DRY_RUN=false</code> to enable live trading. Checked before every swap.</div>
-      </div>
-      <div class="risk-card">
-        <div class="risk-icon">💰</div>
-        <div class="risk-name">max_swap_usd</div>
-        <div class="risk-desc">Hard cap per trade in USD. Swap amount is always clamped to this value regardless of portfolio size or drift magnitude.</div>
-      </div>
-      <div class="risk-card">
-        <div class="risk-icon">⚡</div>
-        <div class="risk-name">min_btc_reserve_sats</div>
-        <div class="risk-desc">Minimum Lightning BTC balance to preserve. Agent will never swap BTC below this floor — ensures node always has routing capacity.</div>
-      </div>
-      <div class="risk-card">
-        <div class="risk-icon">📋</div>
-        <div class="risk-name">max_concurrent_orders</div>
-        <div class="risk-desc">Agent checks open orders before placing a new one. If at the limit, skips this run entirely. Prevents position accumulation.</div>
-      </div>
-      <div class="risk-card">
-        <div class="risk-icon">🛑</div>
-        <div class="risk-name">stop_loss_btc_sats</div>
-        <div class="risk-desc">Emergency halt. If BTC balance drops below this threshold, all trading is suspended immediately. Hard floor, no exceptions.</div>
-      </div>
-      <div class="risk-card">
-        <div class="risk-icon">📐</div>
-        <div class="risk-name">rebalance_threshold_pct</div>
-        <div class="risk-desc">Minimum allocation drift to trigger a rebalance. Prevents overtrading on small fluctuations. Default 5% — only acts on meaningful deviation.</div>
-      </div>
+    <div class="tech-card reveal">
+      <div class="tech-layer">Protocol</div>
+      <div class="tech-name">MCP</div>
+      <div class="tech-desc">Model Context Protocol — 60+ tools exposed to the LLM across 2 MCP server processes.</div>
     </div>
-
-    <!-- Config Preview -->
-    <div class="config-preview fade-in" style="margin-top:32px;">
-      <span class="json-brace">{</span><br>
-      &nbsp;&nbsp;<span class="json-key">"portfolio"</span><span class="json-brace">: {</span><br>
-      &nbsp;&nbsp;&nbsp;&nbsp;<span class="json-key">"targets"</span><span class="json-brace">: {</span>
-        <span class="json-key">"BTC"</span><span class="json-brace">:</span> <span class="json-num">70</span><span class="json-brace">,</span>
-        <span class="json-key">"USDT"</span><span class="json-brace">:</span> <span class="json-num">20</span><span class="json-brace">,</span>
-        <span class="json-key">"XAUT"</span><span class="json-brace">:</span> <span class="json-num">10</span>
-      <span class="json-brace">},</span><br>
-      &nbsp;&nbsp;&nbsp;&nbsp;<span class="json-key">"rebalance_threshold_pct"</span><span class="json-brace">:</span> <span class="json-num">5</span><span class="json-brace">,</span><br>
-      &nbsp;&nbsp;&nbsp;&nbsp;<span class="json-key">"max_swap_usd"</span><span class="json-brace">:</span> <span class="json-num">200</span><span class="json-brace">,</span><br>
-      &nbsp;&nbsp;&nbsp;&nbsp;<span class="json-key">"min_btc_reserve_sats"</span><span class="json-brace">:</span> <span class="json-num">50000</span><span class="json-brace">,</span><br>
-      &nbsp;&nbsp;&nbsp;&nbsp;<span class="json-key">"stop_loss_btc_sats"</span><span class="json-brace">:</span> <span class="json-num">30000</span><span class="json-brace">,</span><br>
-      &nbsp;&nbsp;&nbsp;&nbsp;<span class="json-key">"dry_run"</span><span class="json-brace">:</span> <span class="json-bool">true</span><span class="json-brace">,</span><br>
-      &nbsp;&nbsp;&nbsp;&nbsp;<span class="json-key">"trading_mode"</span><span class="json-brace">:</span> <span class="json-str">"atomic"</span><br>
-      &nbsp;&nbsp;<span class="json-brace">}</span><br>
-      <span class="json-brace">}</span>
+    <div class="tech-card reveal">
+      <div class="tech-layer">Runtime</div>
+      <div class="tech-name">Nanobot</div>
+      <div class="tech-desc">Long-running agent gateway with Telegram operator surface and persistent task scheduling.</div>
     </div>
-  </div>
-</section>
-
-<!-- MCP TOOLS -->
-<section id="tools">
-  <div class="container">
-    <div class="section-header fade-in">
-      <span class="section-number">06</span>
-      <span class="section-title">MCP Tools</span>
-      <div class="section-line"></div>
+    <div class="tech-card reveal">
+      <div class="tech-layer">Assets</div>
+      <div class="tech-name">RGB</div>
+      <div class="tech-desc">USDT and XAUT issued as RGB assets on Bitcoin Lightning. Native, sovereign, on-chain settlement.</div>
     </div>
-    <h2 class="fade-in">42 tools across<br><em>3 MCP servers.</em></h2>
-    <p class="section-desc fade-in">Every tool is callable by Claude during any loop. The agent composes multi-tool sequences autonomously — no hardcoded call graphs. New tools automatically become available in the next loop.</p>
-
-    <div class="fade-in">
-      <!-- kaleidoswap-mcp -->
-      <div class="mcp-server">
-        <div class="mcp-server-header">
-          <div class="mcp-server-name t-amber">kaleidoswap-mcp</div>
-          <div class="mcp-count">15 tools · KaleidoSwap API</div>
-        </div>
-        <div class="pills">
-          <span class="pill pill-amber">get_assets</span>
-          <span class="pill pill-amber">get_pairs</span>
-          <span class="pill pill-amber">get_quote</span>
-          <span class="pill pill-amber">get_spreads</span>
-          <span class="pill pill-amber">place_order</span>
-          <span class="pill pill-amber">get_order_status</span>
-          <span class="pill pill-amber">get_open_orders</span>
-          <span class="pill pill-amber">cancel_order</span>
-          <span class="pill pill-amber">get_position</span>
-          <span class="pill pill-amber">atomic_init</span>
-          <span class="pill pill-amber">atomic_execute</span>
-          <span class="pill pill-amber">atomic_status</span>
-          <span class="pill pill-amber">lsp_estimate_fees</span>
-          <span class="pill pill-amber">lsp_create_order</span>
-          <span class="pill pill-amber">lsp_get_order</span>
-        </div>
-      </div>
-
-      <!-- wdk-wallet-rln-mcp -->
-      <div class="mcp-server">
-        <div class="mcp-server-header">
-          <div class="mcp-server-name t-blue">wdk-wallet-rln-mcp</div>
-          <div class="mcp-count">18 tools · RGB Lightning Node (WDK)</div>
-        </div>
-        <div class="pills">
-          <span class="pill pill-blue">wdk_get_node_info</span>
-          <span class="pill pill-blue">wdk_get_balances</span>
-          <span class="pill pill-blue">wdk_list_assets</span>
-          <span class="pill pill-blue">wdk_get_asset_balance</span>
-          <span class="pill pill-blue">wdk_list_channels</span>
-          <span class="pill pill-blue">wdk_create_rgb_invoice</span>
-          <span class="pill pill-blue">wdk_send_asset</span>
-          <span class="pill pill-blue">wdk_create_ln_invoice</span>
-          <span class="pill pill-blue">wdk_pay_invoice</span>
-          <span class="pill pill-blue">wdk_refresh_transfers</span>
-          <span class="pill pill-blue">wdk_get_transactions</span>
-          <span class="pill pill-blue">wdk_create_utxos</span>
-          <span class="pill pill-blue">wdk_drain_to_address</span>
-          <span class="pill pill-blue">wdk_connect_peer</span>
-          <span class="pill pill-blue">wdk_atomic_taker</span>
-          <span class="pill pill-blue">wdk_list_swaps</span>
-          <span class="pill pill-blue">wdk_get_swap</span>
-          <span class="pill pill-blue">wdk_mpp_pay</span>
-        </div>
-      </div>
-
-      <!-- mpp-gateway-mcp -->
-      <div class="mcp-server">
-        <div class="mcp-server-header">
-          <div class="mcp-server-name t-purple">mpp-gateway-mcp</div>
-          <div class="mcp-count">9 tools · L402 + MPP market data</div>
-        </div>
-        <div class="pills">
-          <span class="pill pill-purple">l402_get_price</span>
-          <span class="pill pill-purple">l402_get_market_data</span>
-          <span class="pill pill-purple">l402_get_ohlcv</span>
-          <span class="pill pill-purple">l402_get_sentiment</span>
-          <span class="pill pill-purple">l402_request_challenge</span>
-          <span class="pill pill-purple">l402_fetch_resource</span>
-          <span class="pill pill-purple">mpp_request_challenge</span>
-          <span class="pill pill-purple">mpp_submit_credential</span>
-          <span class="pill pill-purple">mpp_parse_challenge_header</span>
-        </div>
-      </div>
+    <div class="tech-card reveal">
+      <div class="tech-layer">Backend</div>
+      <div class="tech-name">TypeScript</div>
+      <div class="tech-desc">Node.js 20. Vitest test suite. Docker + Nginx container for production deployment.</div>
     </div>
-  </div>
-</section>
-
-<!-- STACK -->
-<section id="stack">
-  <div class="container">
-    <div class="section-header fade-in">
-      <span class="section-number">07</span>
-      <span class="section-title">Stack</span>
-      <div class="section-line"></div>
-    </div>
-    <h2 class="fade-in">Everything open.<br><em>Nothing custodial.</em></h2>
-    <p class="section-desc fade-in">Built entirely on open protocols and self-custodial infrastructure. No third-party custody, no API keys for assets, no centralized order book.</p>
-
-    <div class="stack-grid fade-in">
-      <div class="stack-item">
-        <div class="stack-layer">Runtime</div>
-        <div class="stack-value">Node.js 20 + TypeScript</div>
-        <div class="stack-detail">Strict mode · ESM · full type safety</div>
-      </div>
-      <div class="stack-item">
-        <div class="stack-layer">AI Model</div>
-        <div class="stack-value">Claude (claude-sonnet-4-6)</div>
-        <div class="stack-detail">Anthropic SDK · agentic loop · tool use</div>
-      </div>
-      <div class="stack-item">
-        <div class="stack-layer">Wallet</div>
-        <div class="stack-value">RGB Lightning Node (RLN)</div>
-        <div class="stack-detail">Tether WDK · self-custodial · open-source</div>
-      </div>
-      <div class="stack-item">
-        <div class="stack-layer">Swap Protocol</div>
-        <div class="stack-value">KaleidoSwap</div>
-        <div class="stack-detail">Atomic HTLC · LSPS1 · REST orders</div>
-      </div>
-      <div class="stack-item">
-        <div class="stack-layer">Transport</div>
-        <div class="stack-value">MCP stdio</div>
-        <div class="stack-detail">Model Context Protocol · tool composability</div>
-      </div>
-      <div class="stack-item">
-        <div class="stack-layer">Assets</div>
-        <div class="stack-value">BTC · USDT (RGB) · XAU₮ (RGB)</div>
-        <div class="stack-detail">Lightning Network Layer 2 · RGB Protocol</div>
-      </div>
-      <div class="stack-item">
-        <div class="stack-layer">WDK Packages</div>
-        <div class="stack-value">wdk-wallet-rln</div>
-        <div class="stack-detail">@kaleidoswap/wdk-wallet-rln — RLN WalletManager</div>
-      </div>
-      <div class="stack-item">
-        <div class="stack-layer">WDK Plugin</div>
-        <div class="stack-value">wdk-protocol-swap-kaleidoswap</div>
-        <div class="stack-detail">@tetherto/wdk — SwapProtocol extension</div>
-      </div>
-      <div class="stack-item">
-        <div class="stack-layer">Dashboard</div>
-        <div class="stack-value">React + Vite + Tailwind</div>
-        <div class="stack-detail">Webapp on :5173 · chat NL interface · live status</div>
-      </div>
+    <div class="tech-card reveal">
+      <div class="tech-layer">Dashboard</div>
+      <div class="tech-name">React 18</div>
+      <div class="tech-desc">Vite + Tailwind CSS. Real-time portfolio view, task scheduler, wallet assistant with voice.</div>
     </div>
   </div>
 </section>
 
 <!-- FOOTER -->
 <footer>
-  <div class="footer-inner">
-    <div class="footer-left">
-      <strong>KaleidoAgent</strong><br>
-      Built for <strong>Hackathon Galáctica: WDK Edition 1</strong><br>
-      Powered by Tether WDK · KaleidoSwap · Claude AI
-    </div>
-    <div class="footer-right">
-      <span class="t-dim">Tracks:</span> Autonomous DeFi Agent · Agent Wallets<br>
-      <span class="t-dim">License:</span> Apache-2.0<br>
-      <span class="t-green">●</span> Agent running<span class="blink"></span>
-    </div>
-  </div>
+  <div class="footer-logo">Kaleido<span>Agent</span></div>
+  <ul class="footer-links">
+    <li><a href="https://github.com/kaleidoswap/kaleidoagent">GitHub</a></li>
+    <li><a href="https://kaleidoswap.com">KaleidoSwap</a></li>
+    <li><a href="https://docs.wdk.tether.io">WDK Docs</a></li>
+    <li><a href="https://dorahacks.io">DoraHacks</a></li>
+  </ul>
+  <div class="footer-copy">Apache 2.0 · WDK Hackathon Galáctica 2026</div>
 </footer>
 
 <script>
-// Scroll fade-in
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach((entry, i) => {
-    if (entry.isIntersecting) {
-      setTimeout(() => entry.target.classList.add('visible'), i * 80);
-      observer.unobserve(entry.target);
+// ── Terminal animation ──────────────────────────────────
+const lines = [
+  [{c:'t-prompt',t:'$'},{c:'',t:' kaleidoagent start'}],
+  [{c:'t-ok',t:'✓'},{c:'',t:' MCP connected — kaleido-mcp (60 tools)'}],
+  [{c:'t-ok',t:'✓'},{c:'',t:' Loaded 3 tasks · Status API :4242'}],
+  [{c:'t-comment',t:'# heartbeat loop fired ──────────────'}],
+  [{c:'t-info',t:'→'},{c:'',t:' rln_get_node_info'}],
+  [{c:'t-info',t:'→'},{c:'',t:' rln_list_channels'}],
+  [{c:'t-warn',t:'!'},{c:'',t:' outbound 12,400 sats — critical'}],
+  [{c:'t-info',t:'→'},{c:'',t:' kaleidoswap_lsp_estimate_fees'}],
+  [{c:'t-info',t:'→'},{c:'',t:' kaleidoswap_lsp_create_order'}],
+  [{c:'t-info',t:'→'},{c:'',t:' wdk_pay_invoice  (2,400 sats)'}],
+  [{c:'t-ok',t:'✓'},{c:'',t:' CHANNEL_OPENING → COMPLETED'}],
+  [{c:'t-comment',t:'# rebalance loop fired ──────────────'}],
+  [{c:'t-info',t:'→'},{c:'',t:' spark_get_balance + rln_get_balances'}],
+  [{c:'',t:'  BTC 61%  '},{c:'t-warn',t:'USDT 29%'},{c:'',t:'  XAUT 10%'}],
+  [{c:'t-warn',t:'!'},{c:'',t:' BTC drift -9%  →  rebalancing'}],
+  [{c:'t-info',t:'→'},{c:'',t:' kaleidoswap_get_quote USDT→BTC'}],
+  [{c:'t-info',t:'→'},{c:'',t:' kaleidoswap_atomic_init'}],
+  [{c:'t-info',t:'→'},{c:'',t:' wdk_atomic_taker'}],
+  [{c:'t-info',t:'→'},{c:'',t:' kaleidoswap_atomic_execute'}],
+  [{c:'t-ok',t:'✓'},{c:'',t:' Swap Succeeded — BTC 70%  USDT 20%  XAUT 10%'}],
+  [{c:'t-prompt',t:'$'},{c:'',t:' '},{c:'cursor',t:''}],
+];
+
+const termEl = document.getElementById('terminal');
+let idx = 0;
+
+function addLine() {
+  if (idx >= lines.length) return;
+  const parts = lines[idx++];
+  const el = document.createElement('div');
+  el.className = 't-line';
+  parts.forEach(p => {
+    if (p.c === 'cursor') {
+      const cur = document.createElement('span');
+      cur.className = 't-cursor';
+      el.appendChild(cur);
+    } else {
+      const sp = document.createElement('span');
+      if (p.c) sp.className = p.c;
+      sp.textContent = p.t;
+      el.appendChild(sp);
     }
   });
-}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  termEl.appendChild(el);
+  termEl.scrollTop = termEl.scrollHeight;
+  if (idx < lines.length) setTimeout(addLine, idx < 4 ? 280 : 220);
+}
+setTimeout(addLine, 900);
 
-document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+// ── Swap step auto-cycle ────────────────────────────────
+const steps = document.querySelectorAll('.swap-step');
+let activeIdx = 0, autoTimer;
 
-// Typewriter for hero
-(function() {
-  const tagline = document.querySelector('.hero-tagline');
-  if (!tagline) return;
-  const text = tagline.textContent;
-  tagline.textContent = '';
-  tagline.style.opacity = '1';
-  let i = 0;
-  const cursor = document.createElement('span');
-  cursor.className = 'blink';
-  tagline.appendChild(cursor);
-  const iv = setInterval(() => {
-    if (i < text.length) {
-      tagline.insertBefore(document.createTextNode(text[i++]), cursor);
-    } else {
-      clearInterval(iv);
-      setTimeout(() => cursor.remove(), 2000);
-    }
-  }, 18);
-})();
-
-// Animate hero stats counter
-function animateCounter(el, target, duration = 1200) {
-  const start = performance.now();
-  const isFloat = target % 1 !== 0;
-  const update = (now) => {
-    const progress = Math.min((now - start) / duration, 1);
-    const eased = 1 - Math.pow(1 - progress, 3);
-    const value = eased * target;
-    el.textContent = isFloat ? value.toFixed(1) + 's' : Math.round(value).toString();
-    if (progress < 1) requestAnimationFrame(update);
-  };
-  requestAnimationFrame(update);
+function activateStep(i) {
+  steps.forEach((s, j) => s.classList.toggle('active', i === j));
+  activeIdx = i;
 }
 
-const statsObserver = new IntersectionObserver((entries) => {
-  if (entries[0].isIntersecting) {
-    const vals = [42, 3, 5, 0, 3];
-    document.querySelectorAll('.stat-value').forEach((el, i) => {
-      if (i === 2) { // "5s"
-        animateCounter(el, 5);
-        el.textContent = '0s';
-        setTimeout(() => {
-          let v = 0;
-          const iv = setInterval(() => {
-            v += 0.5;
-            el.textContent = v.toFixed(0) + 's';
-            if (v >= 5) { el.textContent = '5s'; clearInterval(iv); }
-          }, 80);
-        }, 300);
-      } else {
-        animateCounter(el, vals[i]);
-      }
-    });
-    statsObserver.disconnect();
-  }
-}, { threshold: 0.5 });
+steps.forEach((s, i) => {
+  s.addEventListener('mouseenter', () => { clearInterval(autoTimer); activateStep(i); });
+  s.addEventListener('mouseleave', () => startAuto());
+});
 
-const heroStats = document.querySelector('.hero-stats');
-if (heroStats) statsObserver.observe(heroStats);
+function startAuto() {
+  clearInterval(autoTimer);
+  autoTimer = setInterval(() => activateStep((activeIdx + 1) % steps.length), 1800);
+}
+startAuto();
 
-// Flow step highlight on hover
-document.querySelectorAll('.flow-step').forEach(step => {
-  step.addEventListener('mouseenter', () => {
-    step.style.background = 'rgba(0,255,136,0.03)';
-    step.style.borderRadius = '4px';
-    step.style.marginLeft = '-8px';
-    step.style.paddingLeft = '8px';
-    step.style.transition = 'all 0.15s';
-  });
-  step.addEventListener('mouseleave', () => {
-    step.style.background = '';
-    step.style.marginLeft = '';
-    step.style.paddingLeft = '';
+// ── Code tabs ───────────────────────────────────────────
+document.querySelectorAll('.code-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const t = tab.dataset.target;
+    document.querySelectorAll('.code-tab').forEach(x => x.classList.toggle('active', x === tab));
+    document.querySelectorAll('.code-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + t));
   });
 });
+
+// ── Scroll reveals ──────────────────────────────────────
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    const siblings = Array.from(entry.target.parentElement.querySelectorAll('.reveal'));
+    const i = siblings.indexOf(entry.target);
+    setTimeout(() => entry.target.classList.add('visible'), i * 80);
+    obs.unobserve(entry.target);
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+// ── Allocation bars ─────────────────────────────────────
+const barObs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    entry.target.querySelectorAll('.alloc-fill').forEach(f => f.style.width = f.dataset.width + '%');
+    barObs.unobserve(entry.target);
+  });
+}, { threshold: 0.3 });
+document.querySelectorAll('.arch-side-card').forEach(el => barObs.observe(el));
 </script>
 </body>
 </html>

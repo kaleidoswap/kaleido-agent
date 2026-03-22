@@ -72,7 +72,7 @@ export function Header({ connection, status, onSettingsClick }: Props) {
           </>
         )}
         {connection === 'offline' && (
-          <span className="text-gray-600">start kaleidoagent on :4242</span>
+          <span className="text-gray-600">start KaleidoAgent manually to bring up :4242 + Nanobot</span>
         )}
         <button
           onClick={onSettingsClick}

@@ -8,13 +8,13 @@
  * Concurrent runs of the same task are silently skipped.
  */
 
-import { AgentRunner } from './agent-runner.js'
+import type { AgentRunner } from './agent-runner.js'
 import { Logger } from './logger.js'
 import { agentState } from './agent-state.js'
 import { tasksStore } from './tasks-store.js'
 
 export class Scheduler {
-  private runner: AgentRunner
+  private runner: Pick<AgentRunner, 'run' | 'setDryRun'>
   private logger: Logger
   private portfolioParams: Record<string, unknown>
   private timers: Map<string, ReturnType<typeof setInterval>> = new Map()
@@ -23,7 +23,7 @@ export class Scheduler {
   private activeTasks = new Set<string>()
 
   constructor(
-    runner: AgentRunner,
+    runner: Pick<AgentRunner, 'run' | 'setDryRun'>,
     logger: Logger,
     portfolioParams: Record<string, unknown>,
   ) {
@@ -35,6 +35,19 @@ export class Scheduler {
   async start(): Promise<void> {
     if (this.running) return
     this.running = true
+    await this.loadTimers()
+  }
+
+  async reload(): Promise<void> {
+    if (!this.running) return
+    for (const t of this.timers.values()) clearInterval(t)
+    this.timers.clear()
+    for (const t of this.startupTimeouts) clearTimeout(t)
+    this.startupTimeouts = []
+    await this.loadTimers()
+  }
+
+  private async loadTimers(): Promise<void> {
 
     const tasks = await tasksStore.list()
     const enabled = tasks.filter((t) => t.enabled && t.schedule_sec > 0)

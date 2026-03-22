@@ -5,8 +5,8 @@
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { resolveStatePath } from './runtime-paths.js'
 
 export interface AgentTask {
   id: string
@@ -23,7 +23,7 @@ export interface AgentTask {
   last_run_at: string | null
 }
 
-const TASKS_PATH = process.env.TASKS_PATH ?? join(process.cwd(), 'tasks.json')
+const TASKS_PATH = process.env.TASKS_PATH ?? resolveStatePath('tasks.json')
 
 async function readTasks(): Promise<AgentTask[]> {
   try {

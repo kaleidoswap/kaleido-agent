@@ -6,14 +6,25 @@
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import Anthropic from '@anthropic-ai/sdk'
 import type { McpToolDef } from './providers/index.js'
 
-export interface McpServerConfig {
-  command: string
-  args: string[]
-  env?: Record<string, string>
-}
+export type McpServerConfig =
+  | {
+      command: string
+      args: string[]
+      env?: Record<string, string>
+      url?: never
+      headers?: never
+    }
+  | {
+      url: string
+      headers?: Record<string, string>
+      command?: never
+      args?: never
+      env?: never
+    }
 
 interface RegisteredServer {
   name: string
@@ -30,11 +41,15 @@ export class McpManager {
   async connect(servers: Record<string, McpServerConfig>): Promise<void> {
     for (const [name, cfg] of Object.entries(servers)) {
       try {
-        const transport = new StdioClientTransport({
-          command: cfg.command,
-          args: cfg.args,
-          env: { ...process.env, ...(cfg.env ?? {}) } as Record<string, string>,
-        })
+        const transport = 'url' in cfg
+          ? new StreamableHTTPClientTransport(new URL(cfg.url as string), {
+              requestInit: cfg.headers ? { headers: cfg.headers } : undefined,
+            })
+          : new StdioClientTransport({
+              command: cfg.command,
+              args: cfg.args,
+              env: { ...process.env, ...(cfg.env ?? {}) } as Record<string, string>,
+            })
 
         const client = new Client({ name: `kaleidoagent-${name}`, version: '1.0.0' })
         await client.connect(transport)

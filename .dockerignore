@@ -1,0 +1,12 @@
+.git
+.claude
+.agents
+.nanobot
+logs
+node_modules
+dist
+webapp
+site
+tests
+.env
+.env.container

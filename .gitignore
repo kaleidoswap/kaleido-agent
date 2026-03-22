@@ -4,3 +4,9 @@ dist/
 .env
 .DS_Store
 logs/
+.env.container
+.env
+.claude
+.nanobot/config.json
+.nanobot/workspace/sessions
+.nanobot/gateway.pid

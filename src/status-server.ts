@@ -17,14 +17,16 @@ import { configStore } from './config-store.js'
 import { agentConfigStore } from './agent-config-store.js'
 import { executeConfirmedSwap, type SwapActionInput } from './chat-actions.js'
 import { tasksStore, type AgentTask } from './tasks-store.js'
-import type { ChatRunner, ChatMessage } from './chat-runner.js'
+import type { ChatMessage, ChatRunner } from './chat-runner.js'
 import type { AgentRunner } from './agent-runner.js'
 import type { Scheduler } from './scheduler.js'
 import type { McpManager } from './mcp-manager.js'
+import type { NanobotManager } from './nanobot-manager.js'
+import { getSkillsDir } from './runtime-paths.js'
 
 // ─── Skills helpers ──────────────────────────────────────────────────────────
 
-const SKILLS_DIR = join(process.cwd(), 'skills')
+const SKILLS_DIR = getSkillsDir()
 
 interface SkillInfo {
   id: string
@@ -171,11 +173,19 @@ async function refreshWalletSnapshot(mcp: McpManager): Promise<WalletSnapshot> {
 
 export function startStatusServer(
   port = 4242,
-  chatRunner?: ChatRunner,
+  chatRunner?: Pick<ChatRunner, 'chat'> & { setDryRun?: (dryRun: boolean) => void },
   scheduler?: Scheduler,
-  runner?: AgentRunner,
+  runner?: Pick<AgentRunner, 'setDryRun'>,
   mcp?: McpManager,
+  nanobot?: NanobotManager,
 ): http.Server {
+  const syncNanobot = async () => {
+    if (!nanobot) return
+    const tasks = await tasksStore.list()
+    await nanobot.sync(tasks)
+    await scheduler?.reload()
+  }
+
   const server = http.createServer(async (req, res) => {
     // CORS — allow the Chrome extension origin
     res.setHeader('Access-Control-Allow-Origin', '*')
@@ -258,6 +268,12 @@ export function startStatusServer(
           anthropic_api_key: patch.anthropic_api_key,
           openai_api_key: patch.openai_api_key,
         })
+        nanobot?.updateRuntime(
+          configStore.provider,
+          configStore.model,
+          configStore.anthropicApiKey,
+          configStore.openaiApiKey,
+        )
 
         const configFile = agentConfigStore.update({
           agent: patch.agent_mode ? { mode: patch.agent_mode } : undefined,
@@ -271,11 +287,15 @@ export function startStatusServer(
         agentState.updateRuntimeConfig(configStore.provider, configStore.model, configFile.agent.mode)
         agentState.setDryRun(configFile.portfolio.dry_run)
         runner?.setDryRun(configFile.portfolio.dry_run)
+        if (typeof chatRunner?.setDryRun === 'function') {
+          chatRunner.setDryRun(configFile.portfolio.dry_run)
+        }
 
         scheduler?.updatePortfolioParams({
           ...configFile.portfolio,
           dry_run: configFile.portfolio.dry_run,
         })
+        await syncNanobot()
 
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({
@@ -408,6 +428,7 @@ export function startStatusServer(
           return
         }
         agentConfigStore.setSkillEnabled(id, enabled)
+        await syncNanobot()
         const skills = await listSkills()
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ ok: true, skills }))
@@ -452,6 +473,7 @@ export function startStatusServer(
           enabled: data.enabled ?? true,
           run_on_startup: data.run_on_startup ?? false,
         })
+        await syncNanobot()
         res.writeHead(201, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ ok: true, task }))
       } catch (err) {
@@ -473,6 +495,7 @@ export function startStatusServer(
           res.end(JSON.stringify({ error: 'Task not found' }))
           return
         }
+        await syncNanobot()
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ ok: true, task }))
       } catch (err) {
@@ -487,6 +510,7 @@ export function startStatusServer(
       const id = req.url.slice('/tasks/'.length)
       try {
         const deleted = await tasksStore.delete(id)
+        if (deleted) await syncNanobot()
         res.writeHead(deleted ? 200 : 404, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ ok: deleted }))
       } catch (err) {
@@ -500,8 +524,10 @@ export function startStatusServer(
     res.end('Not Found')
   })
 
-  server.listen(port, '127.0.0.1', () => {
-    process.stderr.write(`[status-server] Listening on http://127.0.0.1:${port}\n`)
+  const host = process.env.AGENT_HOST || '127.0.0.1'
+
+  server.listen(port, host, () => {
+    process.stderr.write(`[status-server] Listening on http://${host}:${port}\n`)
     // Kick off an initial wallet fetch shortly after boot, then refresh every 30s
     if (mcp) {
       setTimeout(() => refreshWalletSnapshot(mcp).catch(() => {}), 5_000)

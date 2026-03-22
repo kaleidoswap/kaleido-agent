@@ -7,9 +7,10 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
+import { getSkillsDir } from './runtime-paths.js'
 
 const execAsync = promisify(exec)
-const SKILLS_DIR = join(process.cwd(), 'skills')
+const SKILLS_DIR = getSkillsDir()
 
 // Matches !`any command here` — same syntax as Claude Code skill injections
 const INJECTION_RE = /!`([^`]+)`/g

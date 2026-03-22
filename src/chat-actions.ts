@@ -148,8 +148,8 @@ export async function executeConfirmedSwap(
     to_amount_raw: quote.to_asset.amount_raw,
   })
 
-  await callToolJson(mcp, 'rln_atomic_taker', { swapstring: init.swapstring })
-  const nodeInfo = await callToolJson<NodeInfoResponse>(mcp, 'rln_get_node_info', {})
+  await callToolJson(mcp, 'wdk_atomic_taker', { swapstring: init.swapstring })
+  const nodeInfo = await callToolJson<NodeInfoResponse>(mcp, 'wdk_get_node_info', {})
   if (!nodeInfo.pubkey) throw new Error('RLN node did not return a pubkey')
 
   await callToolJson(mcp, 'kaleidoswap_atomic_execute', {
@@ -169,7 +169,7 @@ export async function executeConfirmedSwap(
   }
 
   if (finalStatus === 'Succeeded') {
-    await callToolJson(mcp, 'rln_refresh_transfers', { skip_sync: true })
+    await callToolJson(mcp, 'wdk_refresh_transfers', { skip_sync: true })
   }
 
   return {

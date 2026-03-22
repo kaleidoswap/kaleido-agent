@@ -26,15 +26,41 @@ export interface ScheduleConfig {
   daily_summary_cron: string
 }
 
+export interface NanobotTelegramConfig {
+  allow_from?: string[]
+}
+
+export interface NanobotConfigFile {
+  gateway_port?: number
+  telegram?: NanobotTelegramConfig
+}
+
 export type AgentMode = 'mcp' | 'skill'
+
+export type McpServerConfigFile =
+  | {
+      command: string
+      args: string[]
+      env?: Record<string, string>
+      url?: never
+      headers?: never
+    }
+  | {
+      url: string
+      headers?: Record<string, string>
+      command?: never
+      args?: never
+      env?: never
+    }
 
 export interface AgentConfigFile {
   agent: { model: string; max_tokens: number; max_tool_calls_per_run: number; mode?: AgentMode }
-  mcp: Record<string, { command: string; args: string[]; env?: Record<string, string> }>
+  mcp: Record<string, McpServerConfigFile>
   portfolio: PortfolioConfig
   schedule: ScheduleConfig
   notifications: { log_file: string; log_level: string }
   skills?: { enabled: string[] }
+  nanobot?: NanobotConfigFile
 }
 
 function cloneConfig(config: AgentConfigFile): AgentConfigFile {

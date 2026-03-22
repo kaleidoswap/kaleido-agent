@@ -17,6 +17,14 @@
     "dev:webapp": "npm --prefix webapp run dev -- --host 127.0.0.1 --port 5173",
     "dev:all": "sh ./scripts/dev-all.sh",
     "start": "sh ./scripts/start-agent.sh start",
+    "daemon:start": "sh ./scripts/agent-service.sh start",
+    "daemon:stop": "sh ./scripts/agent-service.sh stop",
+    "daemon:restart": "sh ./scripts/agent-service.sh restart",
+    "daemon:status": "sh ./scripts/agent-service.sh status",
+    "daemon:logs": "sh ./scripts/agent-service.sh logs",
+    "sync-skills": "npm run build:agent && node dist/nanobot-admin.js sync-skills",
+    "validate": "npm run build:agent && node dist/nanobot-admin.js validate",
+    "gateway:status": "npm run build:agent && node dist/nanobot-admin.js gateway-status",
     "start:webapp": "npm --prefix webapp run preview -- --host 127.0.0.1 --port 5173",
     "test": "vitest run tests/unit",
     "test:agent": "vitest run tests/unit",
@@ -30,7 +38,8 @@
     "@anthropic-ai/sdk": "^0.39.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "dotenv": "^17.3.1",
-    "openai": "^6.32.0"
+    "openai": "^6.32.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^22.19.15",

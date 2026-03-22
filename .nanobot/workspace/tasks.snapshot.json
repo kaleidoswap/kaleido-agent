@@ -1,0 +1,71 @@
+[
+  {
+    "id": "heartbeat",
+    "name": "Heartbeat",
+    "description": "Node health check, channel audit, RGB transfer flush",
+    "skill": "channel-manager",
+    "schedule_sec": 300,
+    "run_on_startup": true,
+    "allocated_btc_sat": 0,
+    "allocated_usdt": 0,
+    "allocated_xaut": 0,
+    "enabled": false,
+    "created_at": "2026-03-22T14:07:57.716Z",
+    "last_run_at": "2026-03-22T16:28:14.058Z"
+  },
+  {
+    "id": "rebalance",
+    "name": "Portfolio Rebalance",
+    "description": "Detect allocation drift and execute rebalancing swaps",
+    "skill": "portfolio-manager",
+    "schedule_sec": 3600,
+    "run_on_startup": false,
+    "allocated_btc_sat": 0,
+    "allocated_usdt": 0,
+    "allocated_xaut": 0,
+    "enabled": false,
+    "created_at": "2026-03-22T14:07:57.716Z",
+    "last_run_at": null
+  },
+  {
+    "id": "daily_summary",
+    "name": "Daily Summary",
+    "description": "Full portfolio snapshot and market report",
+    "skill": "kaleidoagent",
+    "schedule_sec": 86400,
+    "run_on_startup": false,
+    "allocated_btc_sat": 0,
+    "allocated_usdt": 0,
+    "allocated_xaut": 0,
+    "enabled": false,
+    "created_at": "2026-03-22T14:07:57.716Z",
+    "last_run_at": null
+  },
+  {
+    "name": "L402 News Trader",
+    "description": "",
+    "skill": "mpp",
+    "schedule_sec": 3600,
+    "allocated_btc_sat": 50000,
+    "allocated_usdt": 10,
+    "allocated_xaut": 0,
+    "enabled": false,
+    "id": "a18a0fb1-4805-4fd5-a1a4-691f9158fc40",
+    "created_at": "2026-03-21T23:41:00.382Z",
+    "last_run_at": "2026-03-22T16:32:43.067Z"
+  },
+  {
+    "name": "LIQUIDITY MONITOR",
+    "description": "",
+    "skill": "channel-manager",
+    "schedule_sec": 3600,
+    "allocated_btc_sat": 60000,
+    "allocated_usdt": 0,
+    "allocated_xaut": 0,
+    "enabled": false,
+    "run_on_startup": false,
+    "id": "7afa2cbf-0a99-4b33-be38-68d363e461d9",
+    "created_at": "2026-03-22T15:37:02.438Z",
+    "last_run_at": "2026-03-22T15:37:22.182Z"
+  }
+]

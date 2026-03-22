@@ -75,6 +75,13 @@ export interface AgentStatusPayload {
   cumulative_cost_usd: number
   cumulative_input_tokens: number
   cumulative_output_tokens: number
+  runtime: {
+    backend: 'nanobot'
+    installed: boolean
+    gateway_running: boolean
+    gateway_port: number | null
+    health_error?: string
+  } | null
   loops: Record<string, LoopStats>
   recent_runs: RecentRun[]
 }
@@ -91,6 +98,7 @@ class AgentStateStore {
   private cumulativeCostUsd = 0
   private cumulativeInputTokens = 0
   private cumulativeOutputTokens = 0
+  private runtime: AgentStatusPayload['runtime'] = null
   private running = false
   private activeLoops = new Set<string>()
   private loopStats: Record<string, LoopStats> = {}
@@ -161,6 +169,11 @@ class AgentStateStore {
     this.walletSnapshot = snapshot
   }
 
+  setRuntimeStatus(runtime: AgentStatusPayload['runtime']): void {
+    this.runtime = runtime
+    this.running = runtime?.gateway_running ?? this.running
+  }
+
   stop(): void {
     this.running = false
   }
@@ -180,6 +193,7 @@ class AgentStateStore {
       cumulative_cost_usd: this.cumulativeCostUsd,
       cumulative_input_tokens: this.cumulativeInputTokens,
       cumulative_output_tokens: this.cumulativeOutputTokens,
+      runtime: this.runtime,
       loops: this.loopStats,
       recent_runs: this.recentRuns,
     }

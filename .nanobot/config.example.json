@@ -1,0 +1,97 @@
+{
+  "providers": {
+    "anthropic": {
+      "apiKey": "YOUR_ANTHROPIC_API_KEY"
+    },
+    "openai": {
+      "apiKey": "YOUR_OPENAI_API_KEY"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "provider": "anthropic",
+      "model": "anthropic/claude-haiku-4-5-20251001",
+      "workspace": "./workspace"
+    }
+  },
+  "tools": {
+    "mcpServers": {
+      "kaleido_control": {
+        "command": "node",
+        "args": [
+          "./dist/control-mcp.js"
+        ],
+        "env": {
+          "CONTROL_API_URL": "http://127.0.0.1:4242",
+          "KALEIDO_BIN": "kaleido",
+          "KALEIDO_ENV_NAME": ""
+        }
+      },
+      "kaleido": {
+        "command": "kaleido-mcp",
+        "args": [],
+        "env": {
+          "WDK_SEED": "your twelve word bip39 mnemonic seed phrase goes here",
+          "SPARK_NETWORK": "MAINNET",
+          "RLN_NODE_URL": "http://localhost:3001",
+          "KALEIDOSWAP_API_URL": "https://api.kaleidoswap.com"
+        },
+        "enabledTools": [
+          "rln_get_node_info",
+          "rln_get_balances",
+          "rln_get_asset_balance",
+          "rln_list_assets",
+          "rln_get_address",
+          "rln_create_rgb_invoice",
+          "rln_create_ln_invoice",
+          "rln_pay_invoice",
+          "rln_send_btc",
+          "rln_send_asset",
+          "rln_list_channels",
+          "rln_connect_peer",
+          "rln_open_channel",
+          "rln_list_payments",
+          "rln_refresh_transfers",
+          "rln_atomic_taker",
+          "rln_list_swaps",
+          "rln_get_swap",
+          "rln_mpp_pay",
+          "spark_get_balance",
+          "spark_get_address",
+          "spark_get_token_balance",
+          "spark_get_deposit_address",
+          "spark_create_lightning_invoice",
+          "spark_pay_lightning_invoice",
+          "spark_quote_lightning_payment",
+          "spark_send_sats",
+          "spark_transfer_token",
+          "spark_quote_withdraw",
+          "spark_withdraw",
+          "spark_get_transfers",
+          "spark_mpp_pay"
+        ]
+      },
+      "kaleidoswap": {
+        "url": "http://127.0.0.1:3010"
+      },
+      "wdk_wallet": {
+        "url": "http://127.0.0.1:3011"
+      },
+      "mpp_gateway": {
+        "url": "http://127.0.0.1:3012"
+      }
+    }
+  },
+  "gateway": {
+    "port": 18790
+  },
+  "channels": {
+    "telegram": {
+      "enabled": false,
+      "token": "YOUR_TELEGRAM_BOT_TOKEN",
+      "allowFrom": [
+        "*"
+      ]
+    }
+  }
+}

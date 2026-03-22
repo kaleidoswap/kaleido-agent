@@ -19,19 +19,22 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { McpManager } from './mcp-manager.js'
-import { AgentRunner } from './agent-runner.js'
 import { Scheduler } from './scheduler.js'
 import { Logger } from './logger.js'
 import { agentState } from './agent-state.js'
 import { startStatusServer } from './status-server.js'
-import { ChatRunner } from './chat-runner.js'
 import { configStore } from './config-store.js'
 import { agentConfigStore, type AgentConfigFile } from './agent-config-store.js'
 import { tasksStore } from './tasks-store.js'
-import { AGENT_SYSTEM_PROMPT } from './prompts.js'
 import { ensureNodeRunning } from './node-bootstrap.js'
+import { NanobotManager } from './nanobot-manager.js'
+import { NanobotTaskRunner } from './nanobot-task-runner.js'
+import { NanobotChatRunner } from './nanobot-chat-runner.js'
+import { getProjectRoot, getStateDir, resolveStatePath } from './runtime-paths.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
+const projectRoot = getProjectRoot()
+const stateDir = getStateDir()
 
 // ---------------------------------------------------------------------------
 // Load config
@@ -43,7 +46,7 @@ const configPath = resolve(
 const cfg = JSON.parse(readFileSync(configPath, 'utf8')) as AgentConfigFile
 agentConfigStore.init(configPath, cfg)
 
-const envPath = resolve(process.cwd(), '.env')
+const envPath = resolveStatePath('.env')
 configStore.init(envPath, cfg.agent.model)
 
 const agentMode = cfg.agent.mode ?? 'mcp'
@@ -55,13 +58,22 @@ const dryRun = process.env.DRY_RUN
 
 // Override kaleido-mcp env from process environment
 const kaleidoMcp = cfg.mcp.kaleido
-if (kaleidoMcp) {
+if (kaleidoMcp && 'command' in kaleidoMcp) {
   kaleidoMcp.env = {
     ...kaleidoMcp.env,
     ...(process.env.WDK_SEED           ? { WDK_SEED: process.env.WDK_SEED }                        : {}),
     ...(process.env.KALEIDOSWAP_API_URL ? { KALEIDOSWAP_API_URL: process.env.KALEIDOSWAP_API_URL } : {}),
     ...(process.env.RLN_NODE_URL        ? { RLN_NODE_URL: process.env.RLN_NODE_URL }               : {}),
     ...(process.env.SPARK_NETWORK       ? { SPARK_NETWORK: process.env.SPARK_NETWORK }             : {}),
+  }
+}
+
+if (process.env.KALEIDO_MCP_URL) {
+  cfg.mcp.kaleido = {
+    url: process.env.KALEIDO_MCP_URL,
+    ...(process.env.MCP_AUTH_TOKEN
+      ? { headers: { Authorization: `Bearer ${process.env.MCP_AUTH_TOKEN}` } }
+      : {}),
   }
 }
 
@@ -82,7 +94,7 @@ async function main() {
   agentState.init(dryRun, configStore.model, cfg.portfolio.targets, configStore.provider, agentMode)
 
   const logger = new Logger(
-    resolve(process.cwd(), cfg.notifications.log_file),
+    resolve(stateDir, cfg.notifications.log_file),
     cfg.notifications.log_level
   )
 
@@ -96,12 +108,18 @@ async function main() {
   const rlnNodeUrl = process.env.RLN_NODE_URL ?? kaleidoEnv.RLN_NODE_URL ?? 'http://localhost:3001'
   const kaleidoApiUrl = process.env.KALEIDOSWAP_API_URL ?? kaleidoEnv.KALEIDOSWAP_API_URL
 
-  await ensureNodeRunning({
-    nodeUrl: rlnNodeUrl,
-    apiUrl: kaleidoApiUrl,
-    envName: process.env.KALEIDO_ENV_NAME,
-    kaleidoBin: process.env.KALEIDO_BIN,
-  })
+  try {
+    await ensureNodeRunning({
+      nodeUrl: rlnNodeUrl,
+      apiUrl: kaleidoApiUrl,
+      envName: process.env.KALEIDO_ENV_NAME,
+      kaleidoBin: process.env.KALEIDO_BIN,
+    })
+  } catch (err) {
+    process.stderr.write(
+      `[kaleidoagent] WARNING: node bootstrap failed, continuing with degraded wallet features: ${err instanceof Error ? err.message : String(err)}\n`,
+    )
+  }
 
   // Connect to MCP only in mcp mode
   const mcp = new McpManager()
@@ -111,33 +129,65 @@ async function main() {
     process.stderr.write(`[kaleidoagent] Skill mode — skipping MCP server connection.\n`)
   }
 
-  const runner = new AgentRunner(mcp, {
-    model: cfg.agent.model,
-    maxTokens: cfg.agent.max_tokens,
-    maxToolCallsPerRun: cfg.agent.max_tool_calls_per_run,
-    systemPrompt: AGENT_SYSTEM_PROMPT,
-    dryRun,
-    agentMode,
+  const nanobot = new NanobotManager({
+    projectRoot,
+    stateDir,
+    distDir: resolve(projectRoot, 'dist'),
+    agentConfig: cfg,
+    provider: configStore.provider,
+    model: configStore.model,
+    anthropicApiKey: configStore.anthropicApiKey,
+    openaiApiKey: configStore.openaiApiKey,
   })
+  const taskList = await tasksStore.list()
+  const validation = await nanobot.validate(taskList)
+  if (!validation.ok) {
+    process.stderr.write(`[kaleidoagent] Nanobot validation warnings:\n${validation.errors.map((line) => `  - ${line}`).join('\n')}\n`)
+  }
+  try {
+    await nanobot.startGateway(taskList)
+  } catch (err) {
+    process.stderr.write(`[kaleidoagent] WARNING: failed to start Nanobot gateway: ${err instanceof Error ? err.message : String(err)}\n`)
+  }
 
-  // Chat runner always uses MCP (falls back gracefully if not connected)
-  const chatRunner = new ChatRunner(mcp, cfg.agent.model)
+  const runner = new NanobotTaskRunner(nanobot, dryRun)
+
+  const chatRunner = new NanobotChatRunner(nanobot, dryRun)
 
   const scheduler = new Scheduler(runner, logger, portfolioParams)
-  const statusServer = startStatusServer(4242, chatRunner, scheduler, runner, agentMode === 'mcp' ? mcp : undefined)
+  const statusServer = startStatusServer(4242, chatRunner, scheduler, runner, agentMode === 'mcp' ? mcp : undefined, nanobot)
+
+  const updateRuntimeStatus = async () => {
+    const runtime = await nanobot.getRuntimeInfo()
+    agentState.setRuntimeStatus({
+      backend: 'nanobot',
+      installed: runtime.installed,
+      gateway_running: runtime.running,
+      gateway_port: runtime.gateway_port,
+      ...(runtime.health_error ? { health_error: runtime.health_error } : {}),
+    })
+  }
+  await updateRuntimeStatus()
+  const runtimeTimer = setInterval(() => {
+    void updateRuntimeStatus()
+  }, 15_000)
 
   process.on('SIGINT', async () => {
     process.stderr.write('\n[kaleidoagent] Shutting down...\n')
+    clearInterval(runtimeTimer)
     scheduler.stop()
     agentState.stop()
     statusServer.close()
+    await nanobot.stopGateway()
     await mcp.disconnect()
     process.exit(0)
   })
   process.on('SIGTERM', async () => {
+    clearInterval(runtimeTimer)
     scheduler.stop()
     agentState.stop()
     statusServer.close()
+    await nanobot.stopGateway()
     await mcp.disconnect()
     process.exit(0)
   })

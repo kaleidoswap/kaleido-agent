@@ -181,7 +181,7 @@ function AddSkillHint() {
         Create a directory under{' '}
         <code className="text-orange-400/70">skills/</code> with a{' '}
         <code className="text-orange-400/70">SKILL.md</code> file.
-        The agent loads skills on startup.
+        KaleidoAgent syncs these into the shared Nanobot workspace on startup.
       </p>
       <div className="mt-3 bg-black/30 border border-white/5 rounded-lg px-3 py-2 text-left">
         <p className="text-[10px] font-mono text-gray-600">
@@ -273,7 +273,7 @@ export function SkillsPanel({ connection }: Props) {
         ) : skills.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-24 gap-2 text-center">
             <p className="text-sm text-gray-500">No skills found</p>
-            <p className="text-[11px] font-mono text-gray-700">Skills are loaded from the skills/ directory</p>
+            <p className="text-[11px] font-mono text-gray-700">Skills are loaded from the local skills/ directory and mirrored into Nanobot</p>
           </div>
         ) : (
           <div className="space-y-5">

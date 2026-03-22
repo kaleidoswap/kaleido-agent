@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react'
-import agentConfigFile from '../../../agent.config.json'
 import { getConfig, updateConfig, type AgentConfig } from '../api/agent'
 import { ConnectionState } from '../hooks/useAgentStatus'
 
-const kaleidoMcpEnv = agentConfigFile.mcp?.kaleido?.env ?? {}
-const rlnUrl = kaleidoMcpEnv.RLN_NODE_URL || 'http://localhost:3001'
-const sparkNetwork = kaleidoMcpEnv.SPARK_NETWORK || 'REGTEST'
-const kaleidoUrl = kaleidoMcpEnv.KALEIDOSWAP_API_URL || 'https://api.staging.kaleidoswap.com'
+const rlnUrl = 'http://localhost:3001'
+const sparkNetwork = 'REGTEST'
+const kaleidoUrl = 'https://api.staging.kaleidoswap.com'
 
 interface Props {
   connection: ConnectionState

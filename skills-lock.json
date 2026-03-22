@@ -2,39 +2,39 @@
   "version": 1,
   "skills": {
     "kaleidoagent": {
-      "source": "/Users/walter/Lavoro/Kaleidoswap/kaleidoagent/skills/kaleidoagent",
+      "source": "./skills/kaleidoagent",
       "sourceType": "local"
     },
     "channel-manager": {
-      "source": "/Users/walter/Lavoro/Kaleidoswap/kaleidoagent/skills/channel-manager",
+      "source": "./skills/channel-manager",
       "sourceType": "local"
     },
     "cross-l2": {
-      "source": "/Users/walter/Lavoro/Kaleidoswap/kaleidoagent/skills/cross-l2",
+      "source": "./skills/cross-l2",
       "sourceType": "local"
     },
     "dca": {
-      "source": "/Users/walter/Lavoro/Kaleidoswap/kaleidoagent/skills/dca",
+      "source": "./skills/dca",
       "sourceType": "local"
     },
     "kaleidoswap": {
-      "source": "/Users/walter/Lavoro/Kaleidoswap/kaleidoagent/skills/kaleidoswap",
+      "source": "./skills/kaleidoswap",
       "sourceType": "local"
     },
     "mpp": {
-      "source": "/Users/walter/Lavoro/Kaleidoswap/kaleidoagent/skills/mpp",
+      "source": "./skills/mpp",
       "sourceType": "local"
     },
     "portfolio-manager": {
-      "source": "/Users/walter/Lavoro/Kaleidoswap/kaleidoagent/skills/portfolio-manager",
+      "source": "./skills/portfolio-manager",
       "sourceType": "local"
     },
     "wallet-assistant": {
-      "source": "/Users/walter/Lavoro/Kaleidoswap/kaleidoagent/skills/wallet-assistant",
+      "source": "./skills/wallet-assistant",
       "sourceType": "local"
     },
     "node-manager": {
-      "source": "/Users/walter/Lavoro/Kaleidoswap/kaleidoagent/skills/node-manager",
+      "source": "./skills/node-manager",
       "sourceType": "local"
     }
   }

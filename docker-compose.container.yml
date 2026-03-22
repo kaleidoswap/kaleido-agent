@@ -1,8 +1,6 @@
 services:
   kaleido-mcp:
-    build:
-      context: ..
-      dockerfile: kaleido-mcp/Dockerfile
+    image: ghcr.io/kaleidoswap/kaleido-mcp:latest
     environment:
       PORT: 3013
       WDK_SEED: ${WDK_SEED:-}
@@ -17,9 +15,7 @@ services:
     restart: unless-stopped
 
   kaleidoswap-mcp:
-    build:
-      context: ..
-      dockerfile: kaleidoswap-mcp/Dockerfile
+    image: ghcr.io/kaleidoswap/kaleidoswap-mcp:latest
     environment:
       PORT: 3010
       KALEIDOSWAP_API_URL: ${KALEIDOSWAP_API_URL:-https://api.staging.kaleidoswap.com}
@@ -27,9 +23,7 @@ services:
     restart: unless-stopped
 
   wdk-wallet-rln-mcp:
-    build:
-      context: ..
-      dockerfile: wdk-wallet-rln-mcp/Dockerfile
+    image: ghcr.io/kaleidoswap/wdk-wallet-rln-mcp:latest
     environment:
       PORT: 3011
       RLN_NODE_URL: ${RLN_NODE_URL:-http://host.docker.internal:3001}
@@ -39,9 +33,7 @@ services:
     restart: unless-stopped
 
   wdk-wallet-spark-mcp:
-    build:
-      context: ..
-      dockerfile: wdk-wallet-spark-mcp/Dockerfile
+    image: ghcr.io/kaleidoswap/wdk-wallet-spark-mcp:latest
     environment:
       PORT: 3014
       WDK_SPARK_SEED: ${WDK_SPARK_SEED:-}
@@ -52,9 +44,7 @@ services:
     restart: unless-stopped
 
   mpp-gateway-mcp:
-    build:
-      context: ..
-      dockerfile: mpp-gateway-mcp/Dockerfile
+    image: ghcr.io/kaleidoswap/mpp-gateway-mcp:latest
     environment:
       PORT: 3012
       MPP_GATEWAY_URL: ${MPP_GATEWAY_URL:-}

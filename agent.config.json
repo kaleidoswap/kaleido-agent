@@ -7,10 +7,8 @@
   },
   "mcp": {
     "kaleido": {
-      "command": "node",
-      "args": [
-        "../kaleido-mcp/dist/index.js"
-      ],
+      "command": "kaleido-mcp",
+      "args": [],
       "env": {
         "WDK_SEED": "",
         "SPARK_NETWORK": "REGTEST",

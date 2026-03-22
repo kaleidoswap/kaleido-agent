@@ -37,7 +37,7 @@ describe.skipIf(!HAS_API_KEY)('Integration: heartbeat loop', () => {
       },
       wdk_wallet: {
         command: 'node',
-        args: [resolve(ROOT, '../wdk-wallet-mcp/dist/index.js')],
+        args: [resolve(ROOT, '../wdk-wallet-rln-mcp/dist/index.js')],
         env: { RLN_NODE_URL },
       },
       l402_gateway: {
@@ -58,7 +58,7 @@ describe.skipIf(!HAS_API_KEY)('Integration: heartbeat loop', () => {
     expect(names).toContain('kaleidoswap_get_assets')
     expect(names).toContain('kaleidoswap_atomic_init')
     expect(names).toContain('kaleidoswap_lsp_estimate_fees')
-    // wdk-wallet-mcp tools
+    // wdk-wallet-rln-mcp tools
     expect(names).toContain('wdk_get_node_info')
     expect(names).toContain('wdk_atomic_taker')
     // mpp-gateway-mcp tools
@@ -137,7 +137,7 @@ describe('Integration: MCP tool smoke tests (no API key needed)', () => {
       },
       wdk_wallet: {
         command: 'node',
-        args: [resolve(ROOT, '../wdk-wallet-mcp/dist/index.js')],
+        args: [resolve(ROOT, '../wdk-wallet-rln-mcp/dist/index.js')],
         env: { RLN_NODE_URL },
       },
       l402_gateway: {

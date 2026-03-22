@@ -2,7 +2,7 @@
  * ChatRunner — powers the interactive wallet assistant chat.
  *
  * Runs a single agentic turn using Anthropic + all connected MCP tools
- * (wdk-wallet-mcp, kaleidoswap-mcp), then returns a structured response
+ * (wdk-wallet-rln-mcp, kaleidoswap-mcp), then returns a structured response
  * the rate-extension can render.
  *
  * Unlike the scheduled loops in AgentRunner, this is request/response:
@@ -35,10 +35,15 @@ export interface ToolCallTrace {
   error: boolean
 }
 
+export type TraceStep =
+  | { type: 'thinking'; text: string }
+  | { type: 'tool'; name: string; input: string; result: string; error: boolean }
+
 export interface ChatResponse {
   text: string
   action: ChatAction
-  tool_calls: ToolCallTrace[]
+  tool_calls: ToolCallTrace[]  // kept for backward compat
+  trace: TraceStep[]           // interleaved thinking + tool steps
 }
 
 const ACTION_RE = /<action>([\s\S]*?)<\/action>/
@@ -103,6 +108,7 @@ export class ChatRunner {
     let toolCallCount = 0
     let finalText = ''
     const toolTrace: ToolCallTrace[] = []
+    const trace: TraceStep[] = []
 
     // Agentic loop
     while (toolCallCount < MAX_TOOL_CALLS) {
@@ -116,6 +122,10 @@ export class ChatRunner {
 
       if (turn.text) {
         finalText = turn.text
+        // Capture intermediate reasoning (not the final answer)
+        if (turn.stop_reason !== 'end_turn' && turn.tool_calls.length > 0) {
+          trace.push({ type: 'thinking', text: turn.text })
+        }
       }
 
       if (turn.stop_reason === 'end_turn') break
@@ -140,14 +150,15 @@ export class ChatRunner {
           isError = true
         }
 
-        // Record trace entry
         const inputSummary = JSON.stringify(call.input)
-        toolTrace.push({
+        const traceEntry: ToolCallTrace = {
           name: call.name,
           input: inputSummary.length > 120 ? inputSummary.slice(0, 120) + '…' : inputSummary,
           result: result.length > 200 ? result.slice(0, 200) + '…' : result,
           error: isError,
-        })
+        }
+        toolTrace.push(traceEntry)
+        trace.push({ type: 'tool', ...traceEntry })
 
         results.push({ id: call.id, result })
       }
@@ -156,6 +167,6 @@ export class ChatRunner {
     }
 
     const { cleanText, action } = parseAction(finalText)
-    return { text: cleanText || 'Done.', action, tool_calls: toolTrace }
+    return { text: cleanText || 'Done.', action, tool_calls: toolTrace, trace }
   }
 }

@@ -8,5 +8,6 @@ import { OpenAIProvider } from './openai-provider.js'
 
 export function createProvider(name: AIProviderName): AIProvider {
   if (name === 'openai') return new OpenAIProvider()
-  return new AnthropicProvider()
+  if (name === 'anthropic') return new AnthropicProvider()
+  throw new Error(`Unknown AI provider: "${name}". Valid values are "anthropic" or "openai".`)
 }

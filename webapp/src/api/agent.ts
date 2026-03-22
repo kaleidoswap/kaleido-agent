@@ -1,5 +1,8 @@
 const BASE = '/api/agent'
 
+export type LoopType = string   // now equals task ID (e.g. "heartbeat", "rebalance", or a UUID)
+export type AgentMode = 'mcp' | 'skill'
+
 export interface LoopStats {
   runs: number
   errors: number
@@ -19,12 +22,29 @@ export interface RecentRun {
   response_preview: string
 }
 
+export interface WalletSnapshot {
+  fetched_at: string
+  rln: {
+    btc_onchain_sats: number
+    lightning_balance_sat: number
+    channel_count: number
+    total_outbound_sat: number
+    total_inbound_sat: number
+  } | null
+  spark: {
+    balance_sats: number
+  } | null
+  error?: string
+}
+
 export interface AgentStatus {
   running: boolean
   uptime_sec: number
   dry_run: boolean
   model: string
   provider: string
+  agent_mode: AgentMode
+  active_loops: string[]
   portfolio_targets: Record<string, number>
   portfolio_snapshot: {
     total_usdt: number | null
@@ -36,14 +56,11 @@ export interface AgentStatus {
       amount_sat: number | null
     }>
   } | null
+  wallet_snapshot: WalletSnapshot | null
   cumulative_cost_usd: number
   cumulative_input_tokens: number
   cumulative_output_tokens: number
-  loops: {
-    rebalance: LoopStats
-    heartbeat: LoopStats
-    daily_summary: LoopStats
-  }
+  loops: Record<string, LoopStats>
   recent_runs: RecentRun[]
 }
 
@@ -67,10 +84,15 @@ export interface ToolCallTrace {
   error: boolean
 }
 
+export type TraceStep =
+  | { type: 'thinking'; text: string }
+  | { type: 'tool'; name: string; input: string; result: string; error: boolean }
+
 export interface ChatResponse {
   text: string
   action: ChatAction
   tool_calls: ToolCallTrace[]
+  trace?: TraceStep[]
 }
 
 export async function checkHealth(): Promise<boolean> {
@@ -112,6 +134,132 @@ export async function sendChat(messages: ChatMessage[]): Promise<ChatResponse> {
   return res.json()
 }
 
+/** Trigger a task by its ID (or legacy loop name for backwards compat) */
+export async function triggerTask(taskId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${BASE}/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ task_id: taskId }),
+      signal: AbortSignal.timeout(120000),
+    })
+    const payload = (await res.json()) as { ok?: boolean; error?: string }
+    if (!res.ok) {
+      return { ok: false, error: payload.error ?? `Run error: ${res.status}` }
+    }
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) }
+  }
+}
+
+/** @deprecated Use triggerTask instead */
+export async function triggerLoop(loop: LoopType): Promise<{ ok: boolean; error?: string }> {
+  return triggerTask(loop)
+}
+
+// ─── Skills API ───
+
+export interface SkillInfo {
+  id: string
+  name: string
+  enabled: boolean
+}
+
+export async function getSkills(): Promise<SkillInfo[]> {
+  try {
+    const res = await fetch(`${BASE}/skills`, { signal: AbortSignal.timeout(3000) })
+    if (!res.ok) return []
+    const data = await res.json() as { skills: SkillInfo[] }
+    return data.skills ?? []
+  } catch {
+    return []
+  }
+}
+
+export async function patchSkill(id: string, enabled: boolean): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE}/skills`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, enabled }),
+      signal: AbortSignal.timeout(3000),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+// ─── Tasks API ───
+
+export interface AgentTask {
+  id: string
+  name: string
+  description: string
+  skill: string
+  schedule_sec: number
+  allocated_btc_sat: number
+  allocated_usdt: number
+  allocated_xaut: number
+  enabled: boolean
+  created_at: string
+  last_run_at: string | null
+}
+
+export async function getTasks(): Promise<AgentTask[]> {
+  try {
+    const res = await fetch(`${BASE}/tasks`, { signal: AbortSignal.timeout(3000) })
+    if (!res.ok) return []
+    const data = await res.json() as { tasks: AgentTask[] }
+    return data.tasks ?? []
+  } catch {
+    return []
+  }
+}
+
+export async function createTask(task: Omit<AgentTask, 'id' | 'created_at' | 'last_run_at'>): Promise<AgentTask | null> {
+  try {
+    const res = await fetch(`${BASE}/tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(task),
+      signal: AbortSignal.timeout(5000),
+    })
+    if (!res.ok) return null
+    const data = await res.json() as { task: AgentTask }
+    return data.task
+  } catch {
+    return null
+  }
+}
+
+export async function updateTask(id: string, patch: Partial<AgentTask>): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE}/tasks/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+      signal: AbortSignal.timeout(3000),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+export async function deleteTask(id: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE}/tasks/${id}`, {
+      method: 'DELETE',
+      signal: AbortSignal.timeout(3000),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 // ─── Config API ───
 
 export interface ModelOption {
@@ -146,17 +294,13 @@ export interface AgentScheduleConfig {
 export interface AgentConfig {
   provider: 'anthropic' | 'openai'
   model: string
+  agent_mode: AgentMode
   has_anthropic_key: boolean
   has_openai_key: boolean
   anthropic_models: ModelOption[]
   openai_models: ModelOption[]
   portfolio: AgentPortfolioConfig
   schedule: AgentScheduleConfig
-  assets: {
-    btc_asset_id: string
-    usdt_asset_id: string
-    xaut_asset_id: string
-  }
 }
 
 export async function getConfig(): Promise<AgentConfig | null> {
@@ -172,6 +316,7 @@ export async function getConfig(): Promise<AgentConfig | null> {
 export async function updateConfig(patch: {
   provider?: 'anthropic' | 'openai'
   model?: string
+  agent_mode?: AgentMode
   anthropic_api_key?: string
   openai_api_key?: string
   portfolio?: Partial<AgentPortfolioConfig> & {

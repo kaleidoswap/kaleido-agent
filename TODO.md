@@ -2,7 +2,7 @@
 
 ## Critical Path (blocking)
 
-- [x] Add `wdk_connect_peer` tool to `wdk-wallet-mcp` — needed for LSPS1 flow before ordering a channel
+- [x] Add `wdk_connect_peer` tool to `wdk-wallet-rln-mcp` — needed for LSPS1 flow before ordering a channel
 - [ ] **Test LSPS1 channel purchase end-to-end**
   - Connect taker to LSP via `wdk_connect_peer <lsp_pubkey>@<host>:<port>`
   - `kaleidoswap_lsp_estimate_fees` → confirm fee (~6320 sats for 100k sat channel)
@@ -28,7 +28,7 @@
   - `kaleidoswap_atomic_init`, `kaleidoswap_atomic_execute`, `kaleidoswap_atomic_status`
   - `kaleidoswap_lsp_estimate_fees` — verify `required_channel_confirmations` default = 0
   - `kaleidoswap_lsp_create_order`, `kaleidoswap_lsp_get_order`
-- [ ] Unit tests for new `wdk-wallet-mcp` tools
+- [ ] Unit tests for new `wdk-wallet-rln-mcp` tools
   - `wdk_connect_peer` — happy path + error
   - `wdk_atomic_taker`, `wdk_list_swaps` (verify `{maker, taker}` shape), `wdk_get_swap`
 - [ ] Integration tests for local regtest
@@ -41,11 +41,11 @@
 
 - [ ] Commit and push all recent changes
   - `kaleidoswap-mcp`: `estimateLspFees` fix (`required_channel_confirmations` + `funding_confirms_within_blocks`)
-  - `wdk-wallet-mcp`: `wdk_connect_peer` tool added (18 tools total)
+  - `wdk-wallet-rln-mcp`: `wdk_connect_peer` tool added (18 tools total)
   - `kaleidoagent`: regtest config (`localhost:8000`, correct asset IDs, `trading_mode: atomic`)
 - [ ] Version bumps
   - `kaleidoswap-mcp`: `1.0.0` → `1.1.0` (6 new tools)
-  - `wdk-wallet-mcp`: `1.0.0` → `1.1.0` (4 new tools)
+  - `wdk-wallet-rln-mcp`: `1.0.0` → `1.1.0` (4 new tools)
   - `kaleidoagent`: `1.0.0` → `1.1.0` (dual trading modes, LSPS1, token tracking)
   - `l402-gateway-mcp`: no changes
 - [ ] Tag releases on GitHub (`v1.1.0` on each changed repo)

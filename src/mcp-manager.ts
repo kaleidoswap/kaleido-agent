@@ -29,42 +29,50 @@ export class McpManager {
 
   async connect(servers: Record<string, McpServerConfig>): Promise<void> {
     for (const [name, cfg] of Object.entries(servers)) {
-      const transport = new StdioClientTransport({
-        command: cfg.command,
-        args: cfg.args,
-        env: { ...process.env, ...(cfg.env ?? {}) } as Record<string, string>,
-      })
-
-      const client = new Client({ name: `kaleidoagent-${name}`, version: '1.0.0' })
-      await client.connect(transport)
-
-      const { tools } = await client.listTools()
-      const toolNames = new Set(tools.map((t) => t.name))
-
-      // Convert MCP tool definitions → Anthropic SDK tool format
-      for (const t of tools) {
-        this.allTools.push({
-          name: t.name,
-          description: t.description ?? '',
-          input_schema: (t.inputSchema as Anthropic.Tool['input_schema']) ?? {
-            type: 'object',
-            properties: {},
-          },
+      try {
+        const transport = new StdioClientTransport({
+          command: cfg.command,
+          args: cfg.args,
+          env: { ...process.env, ...(cfg.env ?? {}) } as Record<string, string>,
         })
-        this.rawToolDefs.push({
-          name: t.name,
-          description: t.description ?? '',
-          inputSchema: (t.inputSchema as Record<string, unknown>) ?? { type: 'object', properties: {} },
-        })
-        this.rawToolDefsByName.set(t.name, {
-          name: t.name,
-          description: t.description ?? '',
-          inputSchema: (t.inputSchema as Record<string, unknown>) ?? { type: 'object', properties: {} },
-        })
+
+        const client = new Client({ name: `kaleidoagent-${name}`, version: '1.0.0' })
+        await client.connect(transport)
+
+        const { tools } = await client.listTools()
+        const toolNames = new Set(tools.map((t) => t.name))
+
+        // Convert MCP tool definitions → Anthropic SDK tool format
+        for (const t of tools) {
+          if (this.rawToolDefsByName.has(t.name)) {
+            process.stderr.write(`[mcp-manager] WARNING: tool name collision "${t.name}" from "${name}", overwriting previous definition\n`)
+          }
+          this.allTools.push({
+            name: t.name,
+            description: t.description ?? '',
+            input_schema: (t.inputSchema as Anthropic.Tool['input_schema']) ?? {
+              type: 'object',
+              properties: {},
+            },
+          })
+          this.rawToolDefs.push({
+            name: t.name,
+            description: t.description ?? '',
+            inputSchema: (t.inputSchema as Record<string, unknown>) ?? { type: 'object', properties: {} },
+          })
+          this.rawToolDefsByName.set(t.name, {
+            name: t.name,
+            description: t.description ?? '',
+            inputSchema: (t.inputSchema as Record<string, unknown>) ?? { type: 'object', properties: {} },
+          })
+        }
+
+        this.servers.push({ name, client, toolNames })
+        process.stderr.write(`[mcp-manager] Connected to "${name}" — ${tools.length} tools\n`)
+      } catch (err) {
+        process.stderr.write(`[mcp-manager] WARNING: Failed to connect to "${name}": ${err}\n`)
+        process.stderr.write(`[mcp-manager] Continuing without "${name}" — agent will run in degraded mode\n`)
       }
-
-      this.servers.push({ name, client, toolNames })
-      process.stderr.write(`[mcp-manager] Connected to "${name}" — ${tools.length} tools\n`)
     }
   }
 

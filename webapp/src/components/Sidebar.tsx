@@ -1,10 +1,14 @@
-import { AgentStatus } from '../api/agent'
+import { AgentStatus, LoopType } from '../api/agent'
 import { ConnectionState } from '../hooks/useAgentStatus'
 import { LoopCard } from './LoopCard'
+import { WalletCard } from './WalletCard'
 
 interface Props {
   status: AgentStatus | null
   connection: ConnectionState
+  runningLoop: LoopType | null
+  runError: string | null
+  onRunLoop: (loop: LoopType) => void
 }
 
 function AllocationBar({ asset, pct, target }: { asset: string; pct: number; target: number }) {
@@ -57,7 +61,7 @@ function OfflinePlaceholder() {
   )
 }
 
-export function Sidebar({ status, connection }: Props) {
+export function Sidebar({ status, connection, runningLoop, runError, onRunLoop }: Props) {
   if (connection === 'offline' || !status) {
     return (
       <aside className="w-72 shrink-0 flex flex-col border-r border-white/5 bg-[#0d0d0d] overflow-y-auto">
@@ -68,6 +72,7 @@ export function Sidebar({ status, connection }: Props) {
 
   const snapshot = status.portfolio_snapshot
   const targets = status.portfolio_targets
+  const activeLoops = new Set(status.active_loops)
 
   return (
     <aside className="w-72 shrink-0 flex flex-col border-r border-white/5 bg-[#0d0d0d] overflow-y-auto">
@@ -105,26 +110,56 @@ export function Sidebar({ status, connection }: Props) {
         {/* Divider */}
         <div className="border-t border-white/5" />
 
-        {/* Agent loops */}
+        {/* Wallet balances */}
         <section>
           <h2 className="text-[10px] font-mono text-gray-600 uppercase tracking-widest mb-3">
-            Agent Loops
+            Wallets
           </h2>
+          <WalletCard snapshot={status.wallet_snapshot ?? null} />
+        </section>
+
+        {/* Divider */}
+        <div className="border-t border-white/5" />
+
+        {/* Agent loops */}
+        <section>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-[10px] font-mono text-gray-600 uppercase tracking-widest">
+              Agent Loops
+            </h2>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-orange-400/80">
+              manual only
+            </span>
+          </div>
+          {runError && (
+            <p className="mb-2 text-[10px] font-mono text-red-400/80">
+              {runError}
+            </p>
+          )}
           <div className="space-y-2">
             <LoopCard
               name="rebalance"
               icon="⟳"
               stats={status.loops.rebalance}
+              isRunning={runningLoop === 'rebalance' || activeLoops.has('rebalance')}
+              disabled={runningLoop !== null && runningLoop !== 'rebalance'}
+              onRun={() => onRunLoop('rebalance')}
             />
             <LoopCard
               name="heartbeat"
               icon="♥"
               stats={status.loops.heartbeat}
+              isRunning={runningLoop === 'heartbeat' || activeLoops.has('heartbeat')}
+              disabled={runningLoop !== null && runningLoop !== 'heartbeat'}
+              onRun={() => onRunLoop('heartbeat')}
             />
             <LoopCard
               name="daily summary"
               icon="☀"
               stats={status.loops.daily_summary}
+              isRunning={runningLoop === 'daily_summary' || activeLoops.has('daily_summary')}
+              disabled={runningLoop !== null && runningLoop !== 'daily_summary'}
+              onRun={() => onRunLoop('daily_summary')}
             />
           </div>
         </section>

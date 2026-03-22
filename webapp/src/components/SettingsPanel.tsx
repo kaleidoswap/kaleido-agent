@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getConfig, updateConfig, AgentConfig } from '../api/agent'
+import { getConfig, updateConfig, AgentConfig, AgentMode } from '../api/agent'
 
 interface Props {
   open: boolean
@@ -26,6 +26,7 @@ export function SettingsPanel({ open, onClose }: Props) {
   const [channelExpiryBlocks, setChannelExpiryBlocks] = useState('4320')
   const [minOutboundLiquiditySat, setMinOutboundLiquiditySat] = useState('200000')
   const [autoBuyChannel, setAutoBuyChannel] = useState(false)
+  const [agentMode, setAgentMode] = useState<AgentMode>('mcp')
   const [showKey, setShowKey] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'error'>('idle')
@@ -37,6 +38,7 @@ export function SettingsPanel({ open, onClose }: Props) {
       setConfig(cfg)
       setProvider(cfg.provider)
       setModel(cfg.model)
+      setAgentMode(cfg.agent_mode ?? 'mcp')
       setApiKey('')
       setTargets({
         BTC: String(cfg.portfolio.targets.BTC ?? 0),
@@ -80,11 +82,27 @@ export function SettingsPanel({ open, onClose }: Props) {
   }
 
   const handleSave = async () => {
+    const btc = Number(targets.BTC || 0)
+    const usdt = Number(targets.USDT || 0)
+    const xaut = Number(targets.XAUT || 0)
+    if (btc < 0 || usdt < 0 || xaut < 0) {
+      setSaveStatus('error')
+      setTimeout(() => setSaveStatus('idle'), 3000)
+      return
+    }
+    const targetSum = btc + usdt + xaut
+    if (Math.round(targetSum) !== 100) {
+      setSaveStatus('error')
+      setTimeout(() => setSaveStatus('idle'), 3000)
+      return
+    }
+
     setSaving(true)
     setSaveStatus('idle')
     const patch: Parameters<typeof updateConfig>[0] = {
       provider,
       model,
+      agent_mode: agentMode,
       portfolio: {
         targets: {
           BTC: Number(targets.BTC || 0),
@@ -228,6 +246,31 @@ export function SettingsPanel({ open, onClose }: Props) {
             </select>
           </div>
 
+          {/* Agent Mode */}
+          <div>
+            <p className="text-[10px] font-mono text-gray-600 uppercase tracking-widest mb-2">
+              Agent Mode
+            </p>
+            <div className="flex gap-2">
+              {(['mcp', 'skill'] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setAgentMode(m)}
+                  className={`flex-1 py-1.5 px-3 rounded text-xs font-mono font-semibold transition-all border ${
+                    agentMode === m
+                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
+                      : 'bg-white/[0.02] border-white/5 text-gray-500 hover:text-gray-300 hover:border-white/10'
+                  }`}
+                >
+                  {m === 'mcp' ? 'MCP' : 'Skill (CLI)'}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-700 mt-1 font-mono">
+              {agentMode === 'mcp' ? 'Uses MCP servers with 60+ tools' : 'Uses kaleido CLI via skill files'}
+            </p>
+          </div>
+
           <div>
             <p className="text-[10px] font-mono text-gray-600 uppercase tracking-widest mb-2">
               Portfolio Targets
@@ -281,6 +324,9 @@ export function SettingsPanel({ open, onClose }: Props) {
             <p className="text-[10px] font-mono text-gray-600 uppercase tracking-widest mb-2">
               Schedule
             </p>
+            <p className="mb-2 text-[10px] font-mono text-gray-700">
+              Stored for reference, but loops only run when launched manually from the dashboard.
+            </p>
             <div className="space-y-2">
               <ConfigField label="rebalance interval sec" value={rebalanceIntervalSec} onChange={setRebalanceIntervalSec} />
               <ConfigField label="heartbeat interval sec" value={heartbeatIntervalSec} onChange={setHeartbeatIntervalSec} />
@@ -328,7 +374,7 @@ export function SettingsPanel({ open, onClose }: Props) {
         {/* Footer note */}
         <div className="px-5 py-3 border-t border-white/5">
           <p className="text-[10px] font-mono text-gray-700">
-            Chat picks this up immediately. Scheduled loops use it on the next run.
+            Chat picks this up immediately. Manual loop runs use it the next time you press Run.
           </p>
         </div>
       </div>

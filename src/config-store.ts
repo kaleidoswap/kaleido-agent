@@ -4,6 +4,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 import type { AIProviderName } from './providers/index.js'
+import type { AgentMode } from './agent-config-store.js'
 
 export interface RuntimeConfig {
   provider: AIProviderName
@@ -37,6 +38,7 @@ class ConfigStore {
   private _anthropicApiKey = ''
   private _openaiApiKey = ''
   private _envPath = ''
+  agentMode: AgentMode = 'mcp'
 
   init(envPath: string, initialModel: string) {
     this._envPath = envPath
@@ -113,7 +115,11 @@ class ConfigStore {
     if (this._openaiApiKey) lines.push(`OPENAI_API_KEY=${this._openaiApiKey}`)
     lines.push(`AGENT_PROVIDER=${this._provider}`)
     lines.push(`AGENT_MODEL=${this._model}`)
-    try { writeFileSync(this._envPath, lines.join('\n') + '\n', 'utf8') } catch { /* ignore */ }
+    try {
+      writeFileSync(this._envPath, lines.join('\n') + '\n', 'utf8')
+    } catch (err) {
+      process.stderr.write(`[config-store] WARNING: failed to write .env: ${err instanceof Error ? err.message : String(err)}\n`)
+    }
   }
 }
 

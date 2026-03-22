@@ -4,9 +4,6 @@ dotenv.config({ override: true })
 /**
  * KaleidoAgent — Autonomous Bitcoin L2 Portfolio Rebalancer
  *
- * Uses Claude AI + two MCP servers to autonomously rebalance a portfolio
- * of BTC, USDT (RGB), and XAUT (RGB) on the Lightning Network via KaleidoSwap.
- *
  * Required env vars:
  *   ANTHROPIC_API_KEY     Claude API key
  *
@@ -15,6 +12,7 @@ dotenv.config({ override: true })
  *   RLN_NODE_URL          RLN daemon URL (default: http://localhost:3001)
  *   DRY_RUN               Set to "false" to enable live trading (default: true)
  *   CONFIG_PATH           Path to agent.config.json (default: ./agent.config.json)
+ *   KALEIDO_BIN           Path to kaleido CLI binary (default: kaleido)
  */
 
 import { readFileSync } from 'node:fs'
@@ -29,6 +27,7 @@ import { startStatusServer } from './status-server.js'
 import { ChatRunner } from './chat-runner.js'
 import { configStore } from './config-store.js'
 import { agentConfigStore, type AgentConfigFile } from './agent-config-store.js'
+import { tasksStore } from './tasks-store.js'
 import { AGENT_SYSTEM_PROMPT } from './prompts.js'
 import { ensureNodeRunning } from './node-bootstrap.js'
 
@@ -44,94 +43,87 @@ const configPath = resolve(
 const cfg = JSON.parse(readFileSync(configPath, 'utf8')) as AgentConfigFile
 agentConfigStore.init(configPath, cfg)
 
-// Init config store with env path and initial model
 const envPath = resolve(process.cwd(), '.env')
 configStore.init(envPath, cfg.agent.model)
 
-// Env overrides
+const agentMode = cfg.agent.mode ?? 'mcp'
+configStore.agentMode = agentMode
+
 const dryRun = process.env.DRY_RUN !== 'false'
 
-// Override MCP server env from process environment
-if (process.env.KALEIDOSWAP_API_URL) {
-  cfg.mcp.kaleidoswap.env = {
-    ...cfg.mcp.kaleidoswap.env,
-    KALEIDOSWAP_API_URL: process.env.KALEIDOSWAP_API_URL,
-  }
-}
-if (process.env.RLN_NODE_URL) {
-  cfg.mcp.wdk_wallet.env = {
-    ...cfg.mcp.wdk_wallet.env,
-    RLN_NODE_URL: process.env.RLN_NODE_URL,
+// Override kaleido-mcp env from process environment
+const kaleidoMcp = cfg.mcp.kaleido
+if (kaleidoMcp) {
+  kaleidoMcp.env = {
+    ...kaleidoMcp.env,
+    ...(process.env.WDK_SEED           ? { WDK_SEED: process.env.WDK_SEED }                        : {}),
+    ...(process.env.KALEIDOSWAP_API_URL ? { KALEIDOSWAP_API_URL: process.env.KALEIDOSWAP_API_URL } : {}),
+    ...(process.env.RLN_NODE_URL        ? { RLN_NODE_URL: process.env.RLN_NODE_URL }               : {}),
+    ...(process.env.SPARK_NETWORK       ? { SPARK_NETWORK: process.env.SPARK_NETWORK }             : {}),
   }
 }
 
-// Merge portfolio params + assets into agent context
-const portfolioParams = {
-  ...cfg.portfolio,
-  dry_run: dryRun,
-  assets: cfg.assets,
-}
+const portfolioParams = { ...cfg.portfolio, dry_run: dryRun }
 
 // ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
 async function main() {
   if (!process.env.ANTHROPIC_API_KEY && !process.env.OPENAI_API_KEY) {
-    process.stderr.write('[kaleidoagent] WARNING: No API key set (ANTHROPIC_API_KEY or OPENAI_API_KEY). Set via config UI or env.\n')
+    process.stderr.write('[kaleidoagent] WARNING: No API key set. Set via config UI or env.\n')
   }
 
   process.stderr.write(
-    `[kaleidoagent] Starting — provider: ${configStore.provider} | model: ${configStore.model} | dry_run: ${dryRun}\n`
+    `[kaleidoagent] Starting — provider: ${configStore.provider} | model: ${configStore.model} | mode: ${agentMode} | dry_run: ${dryRun}\n`
   )
 
-  // Init state store — server starts after MCP connects so chat is ready immediately
-  agentState.init(dryRun, configStore.model, cfg.portfolio.targets, configStore.provider)
+  agentState.init(dryRun, configStore.model, cfg.portfolio.targets, configStore.provider, agentMode)
 
   const logger = new Logger(
     resolve(process.cwd(), cfg.notifications.log_file),
     cfg.notifications.log_level
   )
 
-  const rlnNodeUrl = process.env.RLN_NODE_URL ?? cfg.mcp.wdk_wallet.env?.RLN_NODE_URL ?? 'http://localhost:3001'
-  const kaleidoApiUrl = process.env.KALEIDO_API_URL
-    ?? cfg.mcp.kaleido_node.env?.KALEIDO_API_URL
-    ?? cfg.mcp.kaleidoswap.env?.KALEIDOSWAP_API_URL
+  // Seed default loop tasks (heartbeat, rebalance, daily_summary) on first run
+  await tasksStore.seedDefaults({
+    heartbeat_interval_sec: cfg.schedule.heartbeat_interval_sec,
+    rebalance_interval_sec: cfg.schedule.rebalance_interval_sec,
+  })
+
+  const kaleidoEnv = cfg.mcp.kaleido?.env ?? {}
+  const rlnNodeUrl = process.env.RLN_NODE_URL ?? kaleidoEnv.RLN_NODE_URL ?? 'http://localhost:3001'
+  const kaleidoApiUrl = process.env.KALEIDOSWAP_API_URL ?? kaleidoEnv.KALEIDOSWAP_API_URL
 
   await ensureNodeRunning({
     nodeUrl: rlnNodeUrl,
     apiUrl: kaleidoApiUrl,
-    envName: process.env.KALEIDO_ENV_NAME ?? cfg.mcp.kaleido_node.env?.KALEIDO_ENV_NAME,
+    envName: process.env.KALEIDO_ENV_NAME,
     kaleidoBin: process.env.KALEIDO_BIN,
   })
 
-  // Connect to all MCP servers
+  // Connect to MCP only in mcp mode
   const mcp = new McpManager()
-  await mcp.connect(cfg.mcp)
+  if (agentMode === 'mcp') {
+    await mcp.connect(cfg.mcp)
+  } else {
+    process.stderr.write(`[kaleidoagent] Skill mode — skipping MCP server connection.\n`)
+  }
 
-  // Start status + chat server now that MCP tools are available
-  const chatRunner = new ChatRunner(mcp, cfg.agent.model)
   const runner = new AgentRunner(mcp, {
     model: cfg.agent.model,
     maxTokens: cfg.agent.max_tokens,
     maxToolCallsPerRun: cfg.agent.max_tool_calls_per_run,
     systemPrompt: AGENT_SYSTEM_PROMPT,
     dryRun,
+    agentMode,
   })
 
-  const scheduler = new Scheduler(
-    runner,
-    {
-      rebalanceIntervalSec: cfg.schedule.rebalance_interval_sec,
-      heartbeatIntervalSec: cfg.schedule.heartbeat_interval_sec,
-      dailySummaryCron: cfg.schedule.daily_summary_cron,
-      portfolioParams,
-    },
-    logger
-  )
+  // Chat runner always uses MCP (falls back gracefully if not connected)
+  const chatRunner = new ChatRunner(mcp, cfg.agent.model)
 
-  const statusServer = startStatusServer(4242, chatRunner, scheduler)
+  const scheduler = new Scheduler(runner, logger, portfolioParams)
+  const statusServer = startStatusServer(4242, chatRunner, scheduler, agentMode === 'mcp' ? mcp : undefined)
 
-  // Graceful shutdown
   process.on('SIGINT', async () => {
     process.stderr.write('\n[kaleidoagent] Shutting down...\n')
     scheduler.stop()
@@ -148,9 +140,9 @@ async function main() {
     process.exit(0)
   })
 
-  scheduler.start()
+  await scheduler.start()
 
-  logger.info(`KaleidoAgent started — dry_run=${dryRun}`)
+  logger.info(`KaleidoAgent started — mode=${agentMode} dry_run=${dryRun}`)
   process.stderr.write('[kaleidoagent] Running. Press Ctrl+C to stop.\n')
 }
 

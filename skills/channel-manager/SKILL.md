@@ -4,7 +4,7 @@ description: >
   Lightning channel health monitoring and management for RGB Lightning nodes.
   Use when checking channel liquidity, detecting low outbound capacity,
   or purchasing new channels via the KaleidoSwap LSP (LSPS1 protocol).
-  Requires wdk-wallet-mcp and kaleidoswap-mcp.
+  Requires wdk-wallet-rln-mcp and kaleidoswap-mcp.
 license: Apache-2.0
 metadata:
   author: kaleidoswap
@@ -13,6 +13,46 @@ metadata:
 ---
 
 # Channel Manager Skill
+
+## Live State (injected at runtime)
+
+**Node status:**
+!`kaleido --json node status`
+
+**Lightning channels:**
+!`kaleido --json channel list`
+
+**BTC wallet balance:**
+!`kaleido --json wallet balance`
+
+---
+
+## Available Tool (Skill Mode)
+
+`run_kaleido_command({ command })` — runs `kaleido --json <command>`.
+
+**Channel inspection:**
+- `"channel list"` — list channels with outbound/inbound capacity
+- `"node status"` — node pubkey, peers, sync status
+- `"node info"` — detailed node info
+- `"peer connect <pubkey@host:port>"` — connect to a Lightning peer
+
+**LSP (Lightning Service Provider) — channel purchase:**
+- `"lsp info"` — show LSP capabilities and supported channel sizes
+- `"lsp network-info"` — LSP node pubkey and network details
+- `"lsp estimate-fees --capacity-sat <n> [--push-sat <n>]"` — estimate fees for a channel order
+- `"lsp order-create --capacity-sat <n> [--push-sat <n>] [--public/--private]"` — create LSP channel order → returns bolt11 invoice + order_id
+- `"lsp order-get <order-id>"` — poll LSP order status until COMPLETED/FAILED
+
+**Payments:**
+- `"payment send <bolt11>"` — pay invoice (e.g., LSP invoice to open channel)
+- `"wallet estimate-fee [--target-blocks <n>]"` — on-chain fee rate estimate
+
+**Swaps:**
+- `"swap history --status PENDING"` — open orders
+- `"asset fail-transfers"` — mark stuck transfers as failed
+
+---
 
 You monitor the health of Lightning channels on an RLN node and take action
 when liquidity falls below configured thresholds. You can also help users
@@ -70,41 +110,29 @@ If **any channel is critical** AND `auto_buy_channel: true`:
 
 1. Get LSP info and connect to peer:
    ```
-   kaleidoswap_lsp_get_info()
-   → { lsp_connection_url: "pubkey@host:port", options: {...} }
-
-   wdk_connect_peer({ address: lsp_connection_url })
+   lsp info          → shows supported channel sizes and options
+   lsp network-info  → { pubkey, connection_url }
+   peer connect <connection_url>
    ```
 
-2. Get the node pubkey (needed for LSP calls):
+2. Check BTC balance covers fee + reserve:
    ```
-   wdk_get_node_info() → { pubkey }
-   ```
-
-3. Check BTC balance covers fee + reserve:
-   ```
-   wdk_get_balances()
-   kaleidoswap_lsp_estimate_fees({
-     client_pubkey: pubkey,
-     lsp_balance_sat, client_balance_sat, channel_expiry_blocks
-   })
-   → { fee: { fee_total_sat } }
+   wallet balance
+   lsp estimate-fees --capacity-sat <lsp_balance_sat> [--push-sat <client_balance_sat>]
+   → { fee_total_sat, ... }
    ```
    If BTC balance < fee_total_sat + min_btc_reserve_sats → abort, report insufficient funds.
 
-4. If `dry_run: true` → log "Would buy channel, fee=X sats" and STOP here.
+3. If `dry_run: true` → log "Would buy channel, fee=X sats" and STOP here.
 
-5. Execute LSPS1 flow (see [references/lsp.md](references/lsp.md)):
+4. Execute LSPS1 flow:
    ```
-   kaleidoswap_lsp_create_order({
-     client_pubkey, lsp_balance_sat, client_balance_sat, channel_expiry_blocks
-   })
+   lsp order-create --capacity-sat <lsp_balance_sat> [--push-sat <client_balance_sat>]
    → { order_id, bolt11_invoice, order_total_sat }
 
-   wdk_pay_invoice({ invoice: bolt11_invoice })
+   payment send <bolt11_invoice>
 
-   Poll kaleidoswap_lsp_get_order({ order_id }) every 5s
-   until status: "COMPLETED" | "FAILED"
+   lsp order-get <order_id>   ← poll every 5s until status COMPLETED | FAILED
    ```
 
 If `auto_buy_channel: false` → report the issue, suggest manual action.
@@ -114,28 +142,27 @@ If `auto_buy_channel: false` → report the issue, suggest manual action.
 When user says "buy a channel" or "I need more inbound/outbound":
 
 1. Ask: LSP capacity wanted (default: `lsp_balance_sat`) and client contribution (default: 0)
-2. Get LSP info and connect:
+2. Get LSP info:
    ```
-   kaleidoswap_lsp_get_info() → lsp_connection_url
-   wdk_connect_peer({ address: lsp_connection_url })
-   wdk_get_node_info() → pubkey
+   lsp info
+   lsp network-info  → connection_url
+   peer connect <connection_url>
    ```
 3. Estimate cost:
    ```
-   kaleidoswap_lsp_estimate_fees({
-     client_pubkey: pubkey, lsp_balance_sat, client_balance_sat, channel_expiry_blocks
-   })
+   lsp estimate-fees --capacity-sat <n> [--push-sat <m>]
+   → { fee_total_sat, ... }
    ```
 4. Show: fee in sats, channel size, expiry (~30 days = 4320 blocks)
 5. Ask for confirmation: "Buy {lsp_balance_sat} sat channel for {fee_total_sat} sats fee?"
 6. On confirm:
    ```
-   kaleidoswap_lsp_create_order({ client_pubkey, lsp_balance_sat, client_balance_sat, channel_expiry_blocks })
-   → { order_id, bolt11_invoice, order_total_sat }
+   lsp order-create --capacity-sat <n> [--push-sat <m>]
+   → { order_id, bolt11_invoice }
 
-   wdk_pay_invoice({ invoice: bolt11_invoice })
+   payment send <bolt11_invoice>
 
-   Poll kaleidoswap_lsp_get_order({ order_id }) every 5s until "COMPLETED"
+   lsp order-get <order_id>   ← poll every 5s until COMPLETED
    ```
 
 ## Step 5: Output Report
@@ -166,9 +193,8 @@ When user says "buy a channel" or "I need more inbound/outbound":
 ## Safety Rules
 
 1. Never buy a channel if it would leave BTC < `min_btc_reserve_sats`.
-2. Always call `kaleidoswap_lsp_get_info()` and `wdk_connect_peer()` before creating an order.
-3. Always get `client_pubkey` from `wdk_get_node_info()` — pass it to estimate_fees and create_order.
-4. Verify fee estimate before paying the LSP invoice.
-5. In `dry_run` mode: report only, do not buy channels.
-6. If LSP order fails after payment: log and escalate — do NOT retry automatically.
-7. One channel purchase per loop cycle maximum.
+2. Always call `lsp info` and `peer connect <url>` before creating an order.
+3. Always run `lsp estimate-fees` before `lsp order-create` — verify fee vs. available balance.
+4. In `dry_run` mode: report only, do not buy channels.
+5. If LSP order fails after payment: log and escalate — do NOT retry automatically.
+6. One channel purchase per loop cycle maximum.

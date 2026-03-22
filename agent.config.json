@@ -1,37 +1,22 @@
 {
   "agent": {
     "model": "claude-sonnet-4-6",
-    "max_tokens": 2048,
-    "max_tool_calls_per_run": 20
+    "max_tokens": 4096,
+    "max_tool_calls_per_run": 30,
+    "mode": "mcp"
   },
   "mcp": {
-    "kaleidoswap": {
+    "kaleido": {
       "command": "node",
-      "args": ["../kaleidoswap-mcp/dist/index.js"],
+      "args": [
+        "../kaleido-mcp/dist/index.js"
+      ],
       "env": {
+        "WDK_SEED": "",
+        "SPARK_NETWORK": "MAINNET",
+        "SPARK_USDT_TOKEN": "",
+        "RLN_NODE_URL": "http://localhost:3001",
         "KALEIDOSWAP_API_URL": "https://api.staging.kaleidoswap.com"
-      }
-    },
-    "wdk_wallet": {
-      "command": "node",
-      "args": ["../wdk-wallet-mcp/dist/index.js"],
-      "env": {
-        "RLN_NODE_URL": "http://localhost:3001"
-      }
-    },
-    "mpp_gateway": {
-      "command": "node",
-      "args": ["../mpp-gateway-mcp/dist/index.js"],
-      "env": {
-        "MPP_GATEWAY_URL": ""
-      }
-    },
-    "kaleido_node": {
-      "command": "node",
-      "args": ["../kaleido-node-mcp/dist/index.js"],
-      "env": {
-        "KALEIDO_NODE_URL": "http://localhost:3001",
-        "KALEIDO_API_URL": "https://api.staging.kaleidoswap.com"
       }
     }
   },
@@ -49,25 +34,33 @@
     "dry_run": true,
     "trading_mode": "atomic",
     "lsp": {
-      "lsp_balance_sat": 2000000,
-      "client_balance_sat": 0,
+      "lsp_balance_sat": 500000,
+      "client_balance_sat": 20000,
       "channel_expiry_blocks": 4320,
-      "min_outbound_liquidity_sat": 200000,
+      "min_outbound_liquidity_sat": 2000,
       "auto_buy_channel": true
     }
   },
   "schedule": {
-    "rebalance_interval_sec": 3600,
-    "heartbeat_interval_sec": 3600,
+    "rebalance_interval_sec": 0,
+    "heartbeat_interval_sec": 300,
     "daily_summary_cron": "00:00"
-  },
-  "assets": {
-    "btc_asset_id": "BTC",
-    "usdt_asset_id": "rgb:i~xXdG4J-JfXE_QX-RRVCDbQ-ggISPWO-P2yxBGT-nQX19SQ",
-    "xaut_asset_id": "rgb:Vf25LAhx-tcikQu3-O3msZ7~-DcNF4YH-8FCe1FC-Brh2rIc"
   },
   "notifications": {
     "log_file": "logs/kaleidoagent.log",
     "log_level": "INFO"
+  },
+  "skills": {
+    "enabled": [
+      "mpp",
+      "cross-l2",
+      "node-manager",
+      "dca",
+      "kaleidoagent",
+      "kaleidoswap",
+      "portfolio-manager",
+      "channel-manager",
+      "wallet-assistant"
+    ]
   }
 }

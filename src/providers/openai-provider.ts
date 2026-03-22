@@ -50,7 +50,12 @@ export class OpenAIProvider implements AIProvider {
       return {
         id: tc.id,
         name: fn.name,
-        input: (() => { try { return JSON.parse(fn.arguments) } catch { return {} } })(),
+        input: (() => {
+          try { return JSON.parse(fn.arguments) } catch {
+            process.stderr.write(`[openai-provider] WARNING: failed to parse tool arguments for "${fn.name}": ${fn.arguments}\n`)
+            return {}
+          }
+        })(),
       }
     })
 

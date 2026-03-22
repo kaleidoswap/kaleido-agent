@@ -26,17 +26,15 @@ export interface ScheduleConfig {
   daily_summary_cron: string
 }
 
+export type AgentMode = 'mcp' | 'skill'
+
 export interface AgentConfigFile {
-  agent: { model: string; max_tokens: number; max_tool_calls_per_run: number }
+  agent: { model: string; max_tokens: number; max_tool_calls_per_run: number; mode?: AgentMode }
   mcp: Record<string, { command: string; args: string[]; env?: Record<string, string> }>
   portfolio: PortfolioConfig
   schedule: ScheduleConfig
-  assets: {
-    btc_asset_id: string
-    usdt_asset_id: string
-    xaut_asset_id: string
-  }
   notifications: { log_file: string; log_level: string }
+  skills?: { enabled: string[] }
 }
 
 function cloneConfig(config: AgentConfigFile): AgentConfigFile {
@@ -57,20 +55,29 @@ class AgentConfigStore {
     return cloneConfig(this.config)
   }
 
+  getMode(): AgentMode {
+    return this.config?.agent.mode ?? 'mcp'
+  }
+
   getPublicConfig() {
     const cfg = this.getConfig()
     return {
+      agent_mode: cfg.agent.mode ?? 'mcp',
       portfolio: cfg.portfolio,
       schedule: cfg.schedule,
-      assets: cfg.assets,
     }
   }
 
   update(patch: {
+    agent?: { mode?: AgentMode }
     portfolio?: Partial<PortfolioConfig> & { lsp?: Partial<PortfolioLspConfig> }
     schedule?: Partial<ScheduleConfig>
   }): AgentConfigFile {
     if (!this.config) throw new Error('Agent config store not initialized')
+
+    if (patch.agent?.mode) {
+      this.config.agent.mode = patch.agent.mode
+    }
 
     if (patch.portfolio) {
       this.config.portfolio = {
@@ -94,6 +101,22 @@ class AgentConfigStore {
 
     this.write()
     return this.getConfig()
+  }
+
+  getEnabledSkills(): string[] {
+    return this.config?.skills?.enabled ?? []
+  }
+
+  setSkillEnabled(id: string, enabled: boolean): void {
+    if (!this.config) throw new Error('Agent config store not initialized')
+    const current = new Set(this.config.skills?.enabled ?? [])
+    if (enabled) {
+      current.add(id)
+    } else {
+      current.delete(id)
+    }
+    this.config.skills = { enabled: Array.from(current) }
+    this.write()
   }
 
   private write(): void {

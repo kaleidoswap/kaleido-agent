@@ -1,9 +1,10 @@
 /**
  * AgentState — in-memory state store for the status server.
- * Tracks loop stats, recent run history, and cumulative costs.
+ * Tracks task stats, recent run history, and cumulative costs.
+ * Task stats are created dynamically on first use (no hardcoded task list).
  */
 
-import type { RunResult, LoopType } from './agent-runner.js'
+import type { RunResult } from './agent-runner.js'
 
 export interface LoopStats {
   runs: number
@@ -24,12 +25,29 @@ export interface RecentRun {
   response_preview: string
 }
 
+export interface WalletSnapshot {
+  fetched_at: string
+  rln: {
+    btc_onchain_sats: number
+    lightning_balance_sat: number
+    channel_count: number
+    total_outbound_sat: number
+    total_inbound_sat: number
+  } | null
+  spark: {
+    balance_sats: number
+  } | null
+  error?: string
+}
+
 export interface AgentStatusPayload {
   running: boolean
   uptime_sec: number
   dry_run: boolean
   model: string
   provider: string
+  agent_mode: string
+  active_loops: string[]
   portfolio_targets: Record<string, number>
   portfolio_snapshot: {
     total_usdt: number | null
@@ -41,6 +59,7 @@ export interface AgentStatusPayload {
       amount_sat: number | null
     }>
   } | null
+  wallet_snapshot: WalletSnapshot | null
   cumulative_cost_usd: number
   cumulative_input_tokens: number
   cumulative_output_tokens: number
@@ -53,50 +72,45 @@ class AgentStateStore {
   private dryRun = true
   private model = ''
   private provider = 'anthropic'
+  private agentMode = 'mcp'
   private portfolioTargets: Record<string, number> = {}
   private portfolioSnapshot: AgentStatusPayload['portfolio_snapshot'] = null
+  private walletSnapshot: WalletSnapshot | null = null
   private cumulativeCostUsd = 0
   private cumulativeInputTokens = 0
   private cumulativeOutputTokens = 0
   private running = false
-
-  private loopStats: Record<string, LoopStats> = {
-    rebalance: { runs: 0, errors: 0, last_run_at: null, last_duration_ms: null, last_tool_calls: null, last_error: null, last_response: null },
-    heartbeat: { runs: 0, errors: 0, last_run_at: null, last_duration_ms: null, last_tool_calls: null, last_error: null, last_response: null },
-    daily_summary: { runs: 0, errors: 0, last_run_at: null, last_duration_ms: null, last_tool_calls: null, last_error: null, last_response: null },
-  }
-
+  private activeLoops = new Set<string>()
+  private loopStats: Record<string, LoopStats> = {}
   private recentRuns: RecentRun[] = []
 
-  init(dryRun: boolean, model: string, portfolioTargets: Record<string, number>, provider = 'anthropic'): void {
+  init(dryRun: boolean, model: string, portfolioTargets: Record<string, number>, provider = 'anthropic', agentMode = 'mcp'): void {
     this.dryRun = dryRun
     this.model = model
     this.provider = provider
+    this.agentMode = agentMode
     this.portfolioTargets = portfolioTargets
     this.running = true
     this.startTime = Date.now()
   }
 
-  updateRuntimeConfig(provider: string, model: string): void {
+  updateRuntimeConfig(provider: string, model: string, agentMode?: string): void {
     this.provider = provider
     this.model = model
+    if (agentMode) this.agentMode = agentMode
   }
 
   recordRunResult(result: RunResult): void {
-    const stats = this.loopStats[result.loop]
-    if (stats) {
-      stats.runs++
-      stats.last_run_at = result.timestamp
-      stats.last_duration_ms = result.duration_ms
-      stats.last_tool_calls = result.tool_calls
-      stats.last_error = null
-      stats.last_response = result.final_response.slice(0, 800)
-    }
+    const stats = this.ensureStats(result.loop)
+    stats.runs++
+    stats.last_run_at = result.timestamp
+    stats.last_duration_ms = result.duration_ms
+    stats.last_tool_calls = result.tool_calls
+    stats.last_error = null
+    stats.last_response = result.final_response.slice(0, 800)
 
     const snapshot = this.extractPortfolioSnapshot(result.final_response)
-    if (snapshot) {
-      this.portfolioSnapshot = snapshot
-    }
+    if (snapshot) this.portfolioSnapshot = snapshot
 
     this.cumulativeCostUsd += result.usage.estimated_cost_usd
     this.cumulativeInputTokens += result.usage.input_tokens
@@ -110,17 +124,23 @@ class AgentStateStore {
       cost_usd: result.usage.estimated_cost_usd,
       response_preview: result.final_response.slice(0, 300),
     })
-
     if (this.recentRuns.length > 20) this.recentRuns.pop()
   }
 
-  recordLoopError(loop: LoopType, message: string): void {
-    const stats = this.loopStats[loop]
-    if (stats) {
-      stats.errors++
-      stats.last_error = message
-      stats.last_run_at = new Date().toISOString()
-    }
+  recordLoopError(loop: string, message: string): void {
+    const stats = this.ensureStats(loop)
+    stats.errors++
+    stats.last_error = message
+    stats.last_run_at = new Date().toISOString()
+  }
+
+  setLoopActive(loop: string, active: boolean): void {
+    if (active) this.activeLoops.add(loop)
+    else this.activeLoops.delete(loop)
+  }
+
+  setWalletSnapshot(snapshot: WalletSnapshot): void {
+    this.walletSnapshot = snapshot
   }
 
   stop(): void {
@@ -134,8 +154,11 @@ class AgentStateStore {
       dry_run: this.dryRun,
       model: this.model,
       provider: this.provider,
+      agent_mode: this.agentMode,
+      active_loops: Array.from(this.activeLoops),
       portfolio_targets: this.portfolioTargets,
       portfolio_snapshot: this.portfolioSnapshot,
+      wallet_snapshot: this.walletSnapshot,
       cumulative_cost_usd: this.cumulativeCostUsd,
       cumulative_input_tokens: this.cumulativeInputTokens,
       cumulative_output_tokens: this.cumulativeOutputTokens,
@@ -144,9 +167,28 @@ class AgentStateStore {
     }
   }
 
+  private ensureStats(loop: string): LoopStats {
+    if (!this.loopStats[loop]) {
+      this.loopStats[loop] = {
+        runs: 0,
+        errors: 0,
+        last_run_at: null,
+        last_duration_ms: null,
+        last_tool_calls: null,
+        last_error: null,
+        last_response: null,
+      }
+    }
+    return this.loopStats[loop]
+  }
+
   private extractPortfolioSnapshot(finalResponse: string): AgentStatusPayload['portfolio_snapshot'] {
     try {
-      const parsed = JSON.parse(finalResponse) as {
+      let jsonStr = finalResponse.trim()
+      const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/)
+      if (fenceMatch) jsonStr = fenceMatch[1].trim()
+
+      const parsed = JSON.parse(jsonStr) as {
         portfolio?: {
           total_usdt?: unknown
           assets?: Record<string, Record<string, unknown>>
@@ -173,7 +215,6 @@ class AgentStateStore {
       )
 
       if (Object.keys(assets).length === 0) return null
-
       return {
         total_usdt: typeof parsed.portfolio.total_usdt === 'number' ? parsed.portfolio.total_usdt : null,
         assets,

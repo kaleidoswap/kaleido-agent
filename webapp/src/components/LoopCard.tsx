@@ -1,9 +1,22 @@
 import { LoopStats } from '../api/agent'
 
+const EMPTY_STATS: LoopStats = {
+  runs: 0,
+  errors: 0,
+  last_run_at: null,
+  last_duration_ms: null,
+  last_tool_calls: null,
+  last_error: null,
+  last_response: null,
+}
+
 interface Props {
   name: string
   icon: string
-  stats: LoopStats
+  stats?: LoopStats
+  isRunning?: boolean
+  onRun?: () => void
+  disabled?: boolean
 }
 
 function timeAgo(iso: string | null): string {
@@ -22,7 +35,8 @@ function formatDuration(ms: number | null): string {
   return `${(ms / 1000).toFixed(1)}s`
 }
 
-export function LoopCard({ name, icon, stats }: Props) {
+export function LoopCard({ name, icon, stats: statsProp, isRunning = false, onRun, disabled = false }: Props) {
+  const stats = statsProp ?? EMPTY_STATS
   const hasError = !!stats.last_error
   const hasRun = stats.runs > 0
 
@@ -46,6 +60,15 @@ export function LoopCard({ name, icon, stats }: Props) {
               error
             </span>
           )}
+          {onRun && (
+            <button
+              onClick={onRun}
+              disabled={disabled || isRunning}
+              className="text-[10px] uppercase tracking-wide font-mono rounded border border-orange-500/20 bg-orange-500/10 px-2 py-0.5 text-orange-300 transition hover:bg-orange-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isRunning ? 'running' : 'run'}
+            </button>
+          )}
           <span className="text-[11px] font-mono text-gray-600">×{stats.runs}</span>
         </div>
       </div>
@@ -54,6 +77,7 @@ export function LoopCard({ name, icon, stats }: Props) {
       <div className="flex items-center justify-between text-[11px] font-mono">
         <span className="text-gray-500">{timeAgo(stats.last_run_at)}</span>
         <div className="flex items-center gap-3 text-gray-600">
+          {isRunning && <span className="text-orange-400">active</span>}
           {hasRun && (
             <>
               <span>{formatDuration(stats.last_duration_ms)}</span>

@@ -9,9 +9,9 @@ interface Props {
 
 export function ActionModal({ action, onDispatch, onClose }: Props) {
   const [copied, setCopied] = useState(false)
-  if (!action || action.type === 'none') return null
+  const payload = useMemo(() => (action ? JSON.stringify(action, null, 2) : ''), [action])
 
-  const payload = useMemo(() => JSON.stringify(action, null, 2), [action])
+  if (!action || action.type === 'none') return null
 
   const handleCopy = async () => {
     try {

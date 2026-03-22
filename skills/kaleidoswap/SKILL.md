@@ -4,7 +4,7 @@ description: >
   Trade RGB assets on Bitcoin Lightning using the KaleidoSwap protocol.
   Use when quoting a swap, executing an atomic swap, placing a REST order,
   checking order status, or managing open orders.
-  Requires kaleidoswap-mcp and wdk-wallet-mcp.
+  Requires kaleidoswap-mcp and wdk-wallet-rln-mcp.
 license: Apache-2.0
 metadata:
   author: kaleidoswap
@@ -20,7 +20,7 @@ Trades are settled via atomic HTLC swaps or REST deposit-based orders.
 ## Required MCP Servers
 
 - **kaleidoswap-mcp** — quotes, orders, atomic execution
-- **wdk-wallet-mcp** — RLN node: balances, invoices, HTLC signing
+- **wdk-wallet-rln-mcp** — RLN node: balances, invoices, HTLC signing
 
 ## Core Concepts
 

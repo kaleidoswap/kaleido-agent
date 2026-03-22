@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "webapp",
+      "runtimeExecutable": "/Users/walter/.nvm/versions/node/v24.12.0/bin/npm",
+      "runtimeArgs": ["--prefix", "webapp", "run", "dev"],
+      "port": 5173
+    }
+  ]
+}

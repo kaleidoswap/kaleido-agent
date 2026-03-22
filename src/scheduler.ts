@@ -1,139 +1,123 @@
 /**
- * Scheduler — runs the KaleidoAgent loops on their configured intervals.
+ * Scheduler — task-driven autonomous loop runner for KaleidoAgent.
  *
- * Loops:
- *  - rebalance     : every N seconds (configurable, default 300s)
- *  - heartbeat     : every N seconds (configurable, default 300s)
- *  - daily_summary : once per day at a configurable time (default "00:00")
+ * Loads all enabled tasks from tasks.json and creates one interval timer per task.
+ * Tasks with run_on_startup=true also fire once 5 seconds after start().
+ *
+ * Tasks can be triggered manually via trigger(taskId) from the HTTP API.
+ * Concurrent runs of the same task are silently skipped.
  */
 
-import { AgentRunner, LoopType } from './agent-runner.js'
+import { AgentRunner } from './agent-runner.js'
 import { Logger } from './logger.js'
 import { agentState } from './agent-state.js'
-
-export interface SchedulerConfig {
-  rebalanceIntervalSec: number
-  heartbeatIntervalSec: number
-  dailySummaryCron: string   // "HH:MM" in local time, e.g. "00:00"
-  portfolioParams: Record<string, unknown>
-}
+import { tasksStore } from './tasks-store.js'
 
 export class Scheduler {
   private runner: AgentRunner
-  private config: SchedulerConfig
   private logger: Logger
-  private timers: ReturnType<typeof setInterval>[] = []
+  private portfolioParams: Record<string, unknown>
+  private timers: Map<string, ReturnType<typeof setInterval>> = new Map()
+  private startupTimeouts: ReturnType<typeof setTimeout>[] = []
   private running = false
+  private activeTasks = new Set<string>()
 
-  constructor(runner: AgentRunner, config: SchedulerConfig, logger: Logger) {
+  constructor(
+    runner: AgentRunner,
+    logger: Logger,
+    portfolioParams: Record<string, unknown>,
+  ) {
     this.runner = runner
-    this.config = config
     this.logger = logger
+    this.portfolioParams = portfolioParams
   }
 
-  start(): void {
+  async start(): Promise<void> {
     if (this.running) return
     this.running = true
 
-    process.stderr.write(
-      `[scheduler] Starting loops — rebalance:${this.config.rebalanceIntervalSec}s ` +
-      `heartbeat:${this.config.heartbeatIntervalSec}s ` +
-      `daily_summary:${this.config.dailySummaryCron}\n`
-    )
+    const tasks = await tasksStore.list()
+    const enabled = tasks.filter((t) => t.enabled && t.schedule_sec > 0)
 
-    // Run heartbeat immediately on startup, then on interval
-    this.runLoop('heartbeat').catch(() => {})
+    for (const task of enabled) {
+      const intervalMs = task.schedule_sec * 1000
+      process.stderr.write(`[scheduler] "${task.name}" (${task.id}): every ${task.schedule_sec}s\n`)
 
-    this.timers.push(
-      setInterval(
-        () => this.runLoop('rebalance').catch(() => {}),
-        this.config.rebalanceIntervalSec * 1000
-      )
-    )
+      const timer = setInterval(() => {
+        if (this.running) void this.runTask(task.id, task.skill)
+      }, intervalMs)
+      this.timers.set(task.id, timer)
 
-    this.timers.push(
-      setInterval(
-        () => this.runLoop('heartbeat').catch(() => {}),
-        this.config.heartbeatIntervalSec * 1000
-      )
-    )
+      if (task.run_on_startup) {
+        process.stderr.write(`[scheduler] "${task.name}": running at startup (5s delay)\n`)
+        this.startupTimeouts.push(
+          setTimeout(() => {
+            if (this.running) void this.runTask(task.id, task.skill)
+          }, 5_000),
+        )
+      }
+    }
 
-    this.scheduleDailySummary()
+    if (enabled.length === 0) {
+      process.stderr.write('[scheduler] No enabled tasks — run tasks manually via HTTP API.\n')
+    }
   }
 
   stop(): void {
     this.running = false
-    for (const t of this.timers) clearInterval(t)
-    this.timers = []
+    for (const t of this.timers.values()) clearInterval(t)
+    this.timers.clear()
+    for (const t of this.startupTimeouts) clearTimeout(t)
+    this.startupTimeouts = []
   }
 
-  updateConfig(next: Partial<SchedulerConfig>): void {
-    this.config = {
-      ...this.config,
-      ...next,
-      portfolioParams: next.portfolioParams ?? this.config.portfolioParams,
+  updatePortfolioParams(params: Record<string, unknown>): void {
+    this.portfolioParams = params
+  }
+
+  getActiveTasks(): string[] {
+    return Array.from(this.activeTasks)
+  }
+
+  /** Manual trigger from HTTP API — throws if any task is already running */
+  async trigger(taskId: string): Promise<void> {
+    if (!this.running) throw new Error('Scheduler is not running')
+    if (this.activeTasks.size > 0) {
+      const active = Array.from(this.activeTasks).join(', ')
+      throw new Error(`Task already running: ${active}`)
+    }
+    const tasks = await tasksStore.list()
+    const task = tasks.find((t) => t.id === taskId)
+    if (!task) throw new Error(`Task not found: ${taskId}`)
+    await this.runTask(task.id, task.skill)
+  }
+
+  private async runTask(taskId: string, skillName: string): Promise<void> {
+    if (this.activeTasks.has(taskId)) {
+      process.stderr.write(`[scheduler] ⏭ Skipping "${taskId}" — already running\n`)
+      return
     }
 
-    if (!this.running) return
+    this.activeTasks.add(taskId)
+    agentState.setLoopActive(taskId, true)
+    process.stderr.write(`[scheduler] → starting "${taskId}" (skill: ${skillName})\n`)
 
-    for (const t of this.timers) clearInterval(t)
-    this.timers = []
-
-    this.timers.push(
-      setInterval(
-        () => this.runLoop('rebalance').catch(() => {}),
-        this.config.rebalanceIntervalSec * 1000
-      )
-    )
-
-    this.timers.push(
-      setInterval(
-        () => this.runLoop('heartbeat').catch(() => {}),
-        this.config.heartbeatIntervalSec * 1000
-      )
-    )
-
-    this.scheduleDailySummary()
-  }
-
-  private async runLoop(loop: LoopType): Promise<void> {
-    if (!this.running) return
-    process.stderr.write(`[scheduler] → starting ${loop} loop\n`)
     try {
-      const result = await this.runner.run(loop, this.config.portfolioParams)
+      const result = await this.runner.run(taskId, skillName, this.portfolioParams)
       this.logger.log(result)
       agentState.recordRunResult(result)
+      await tasksStore.update(taskId, { last_run_at: result.timestamp })
       process.stderr.write(
-        `[scheduler] ✓ ${loop} done in ${result.duration_ms}ms (${result.tool_calls} tool calls)\n`
+        `[scheduler] ✓ "${taskId}" done in ${result.duration_ms}ms (${result.tool_calls} tool calls)\n`,
       )
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      process.stderr.write(`[scheduler] ✗ ${loop} failed: ${msg}\n`)
-      this.logger.error(loop, msg)
-      agentState.recordLoopError(loop, msg)
+      process.stderr.write(`[scheduler] ✗ "${taskId}" failed: ${msg}\n`)
+      this.logger.error(taskId, msg)
+      agentState.recordLoopError(taskId, msg)
+    } finally {
+      this.activeTasks.delete(taskId)
+      agentState.setLoopActive(taskId, false)
     }
-  }
-
-  private scheduleDailySummary(): void {
-    const [targetHour, targetMin] = this.config.dailySummaryCron
-      .split(':')
-      .map(Number)
-
-    let lastFiredDate = ''
-
-    const check = () => {
-      const now = new Date()
-      const dateKey = now.toDateString()
-      if (
-        now.getHours() === targetHour &&
-        now.getMinutes() === targetMin &&
-        dateKey !== lastFiredDate
-      ) {
-        lastFiredDate = dateKey
-        this.runLoop('daily_summary').catch(() => {})
-      }
-    }
-
-    this.timers.push(setInterval(check, 60 * 1000))
   }
 }

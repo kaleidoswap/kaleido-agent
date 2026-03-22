@@ -6,7 +6,7 @@ description: >
   (generate invoice or address), wants to send a payment, asks for swap quotes,
   or wants to check channel status. Responds in plain language and returns
   structured action blocks the UI can parse.
-  Requires wdk-wallet-mcp and kaleidoswap-mcp.
+  Requires wdk-wallet-rln-mcp and kaleidoswap-mcp.
 license: Apache-2.0
 metadata:
   author: kaleidoswap
@@ -22,7 +22,7 @@ For RLN tool details → [references/rln.md](references/rln.md)
 
 ## Available Tools
 
-### Wallet / Node (wdk-wallet-mcp)
+### Wallet / Node (wdk-wallet-rln-mcp)
 - `wdk_get_node_info` — node ID, pubkey, alias, status, peer count
 - `wdk_get_balances` — BTC on-chain + Lightning outbound + RGB assets
 - `wdk_list_assets` — all RGB assets held by the node

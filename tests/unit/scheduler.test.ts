@@ -31,7 +31,7 @@ describe('Scheduler', () => {
     vi.useRealTimers()
   })
 
-  it('start() fires heartbeat immediately on startup', async () => {
+  it('start() does not fire loops automatically', async () => {
     const runner = makeRunner()
     const scheduler = new Scheduler(runner, {
       rebalanceIntervalSec: 300,
@@ -41,56 +41,54 @@ describe('Scheduler', () => {
     }, makeLogger())
 
     scheduler.start()
-    // Flush microtasks/promises only — don't advance timers
-    await Promise.resolve()
     await Promise.resolve()
 
-    expect(runner.run).toHaveBeenCalledWith('heartbeat', {})
+    expect(runner.run).not.toHaveBeenCalled()
     scheduler.stop()
   })
 
-  it('start() schedules rebalance on interval', async () => {
+  it('trigger() runs the requested loop with current portfolio params', async () => {
     const runner = makeRunner()
     const scheduler = new Scheduler(runner, {
       rebalanceIntervalSec: 60,
-      heartbeatIntervalSec: 9999,
+      heartbeatIntervalSec: 60,
       dailySummaryCron: '23:59',
       portfolioParams: { dry_run: true },
     }, makeLogger())
 
     scheduler.start()
-    await Promise.resolve()
-    vi.clearAllMocks()
+    await scheduler.trigger('rebalance')
 
-    await vi.advanceTimersByTimeAsync(60_000)
-
-    const rebalanceCalls = vi.mocked(runner.run).mock.calls.filter(([l]) => l === 'rebalance')
-    expect(rebalanceCalls.length).toBeGreaterThanOrEqual(1)
-    expect(rebalanceCalls[0][1]).toEqual({ dry_run: true })
+    expect(runner.run).toHaveBeenCalledWith('rebalance', { dry_run: true })
     scheduler.stop()
   })
 
-  it('start() schedules heartbeat on interval', async () => {
+  it('trigger() rejects when another loop is already running', async () => {
     const runner = makeRunner()
+    let release = () => {}
+    vi.mocked(runner.run).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve(makeRunResult('heartbeat'))
+        }),
+    )
     const scheduler = new Scheduler(runner, {
-      rebalanceIntervalSec: 9999,
-      heartbeatIntervalSec: 30,
+      rebalanceIntervalSec: 60,
+      heartbeatIntervalSec: 60,
       dailySummaryCron: '23:59',
       portfolioParams: {},
     }, makeLogger())
 
     scheduler.start()
-    await Promise.resolve()
-    vi.clearAllMocks()
+    const firstRun = scheduler.trigger('heartbeat')
 
-    await vi.advanceTimersByTimeAsync(30_000)
-
-    const heartbeatCalls = vi.mocked(runner.run).mock.calls.filter(([l]) => l === 'heartbeat')
-    expect(heartbeatCalls.length).toBeGreaterThanOrEqual(1)
+    await expect(scheduler.trigger('rebalance')).rejects.toThrow('Loop already running: heartbeat')
+    release()
+    await firstRun
     scheduler.stop()
   })
 
-  it('stop() prevents further loop execution', async () => {
+  it('stop() prevents manual execution', async () => {
     const runner = makeRunner()
     const scheduler = new Scheduler(runner, {
       rebalanceIntervalSec: 10,
@@ -100,36 +98,29 @@ describe('Scheduler', () => {
     }, makeLogger())
 
     scheduler.start()
-    await Promise.resolve()
     scheduler.stop()
-    vi.clearAllMocks()
-
-    await vi.advanceTimersByTimeAsync(60_000)
+    await expect(scheduler.trigger('heartbeat')).rejects.toThrow('Scheduler is not running')
     expect(runner.run).not.toHaveBeenCalled()
   })
 
-  it('start() is idempotent — calling twice does not double-schedule', async () => {
+  it('start() is idempotent', async () => {
     const runner = makeRunner()
     const scheduler = new Scheduler(runner, {
       rebalanceIntervalSec: 60,
-      heartbeatIntervalSec: 9999,
+      heartbeatIntervalSec: 60,
       dailySummaryCron: '23:59',
       portfolioParams: {},
     }, makeLogger())
 
     scheduler.start()
-    scheduler.start() // no-op
-    await Promise.resolve()
-    vi.clearAllMocks()
+    scheduler.start()
+    await scheduler.trigger('rebalance')
 
-    await vi.advanceTimersByTimeAsync(60_000)
-
-    const rebalanceCalls = vi.mocked(runner.run).mock.calls.filter(([l]) => l === 'rebalance')
-    expect(rebalanceCalls.length).toBe(1)
+    expect(runner.run).toHaveBeenCalledTimes(1)
     scheduler.stop()
   })
 
-  it('logs the result after each successful loop', async () => {
+  it('logs the result after each successful manual loop', async () => {
     const runner = makeRunner()
     const logger = makeLogger()
     const scheduler = new Scheduler(runner, {
@@ -140,8 +131,7 @@ describe('Scheduler', () => {
     }, logger)
 
     scheduler.start()
-    await Promise.resolve()
-    await Promise.resolve()
+    await scheduler.trigger('heartbeat')
 
     expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({ loop: 'heartbeat' }))
     scheduler.stop()
@@ -160,34 +150,26 @@ describe('Scheduler', () => {
     }, logger)
 
     scheduler.start()
-    await Promise.resolve()
-    await Promise.resolve()
-    await Promise.resolve()
+    await scheduler.trigger('heartbeat')
 
     expect(logger.error).toHaveBeenCalledWith('heartbeat', 'API timeout')
     scheduler.stop()
   })
 
-  it('daily_summary fires at the configured HH:MM', async () => {
+  it('updateConfig() applies new portfolio params to the next manual run', async () => {
     const runner = makeRunner()
     const scheduler = new Scheduler(runner, {
-      rebalanceIntervalSec: 9999,
-      heartbeatIntervalSec: 9999,
-      dailySummaryCron: '12:00',
-      portfolioParams: {},
+      rebalanceIntervalSec: 60,
+      heartbeatIntervalSec: 60,
+      dailySummaryCron: '23:59',
+      portfolioParams: { dry_run: true },
     }, makeLogger())
 
-    // Set fake time to 11:59
-    vi.setSystemTime(new Date('2026-01-01T11:59:00'))
     scheduler.start()
-    await Promise.resolve()
-    vi.clearAllMocks()
+    scheduler.updateConfig({ portfolioParams: { dry_run: false, reason: 'manual' } })
+    await scheduler.trigger('daily_summary')
 
-    // Advance 1 minute — clock hits 12:00
-    await vi.advanceTimersByTimeAsync(60_000)
-
-    const summaryCalls = vi.mocked(runner.run).mock.calls.filter(([l]) => l === 'daily_summary')
-    expect(summaryCalls.length).toBeGreaterThanOrEqual(1)
+    expect(runner.run).toHaveBeenCalledWith('daily_summary', { dry_run: false, reason: 'manual' })
     scheduler.stop()
   })
 })

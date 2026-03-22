@@ -4,7 +4,7 @@ description: >
   Autonomous portfolio rebalancing for Bitcoin L2 assets.
   Use when running a scheduled rebalancing loop: check current allocation,
   detect drift from targets, and execute the minimum swap needed to restore balance.
-  Requires kaleidoswap-mcp and wdk-wallet-mcp.
+  Requires kaleidoswap-mcp and wdk-wallet-rln-mcp.
 license: Apache-2.0
 metadata:
   author: kaleidoswap
@@ -13,6 +13,66 @@ metadata:
 ---
 
 # Portfolio Manager Skill
+
+## Live State (injected at runtime)
+
+**Node status:**
+!`kaleido --json node status`
+
+**BTC wallet balance:**
+!`kaleido --json wallet balance`
+
+**RGB assets held:**
+!`kaleido --json asset list`
+
+**Lightning channels:**
+!`kaleido --json channel list`
+
+**Open/pending swap orders:**
+!`kaleido --json swap history --status PENDING --limit 10`
+
+---
+
+## Available Tool (Skill Mode)
+
+`run_kaleido_command({ command })` — runs `kaleido --json <command>`.
+
+**Quotes & market:**
+- `"market quote BTC/USDT --from-amount <sats> --from-layer BTC_LN --to-layer RGB_LN"` — get swap quote
+- `"market quote XAUT/USDT --from-amount 1 --from-layer RGB_LN --to-layer RGB_LN"` — XAUT price
+- `"market assets"` — list tradeable assets with precision
+- `"market pairs"` — available trading pairs
+- `"market routes BTC/USDT"` — available swap routes for a pair
+
+**Swap execution (high-level — preferred):**
+- `"swap execute BTC/USDT --from-amount <sats> --from-layer BTC_LN --to-layer RGB_LN --yes"` — full market swap (quote → order → execute)
+- `"swap execute USDT/BTC --from-amount <raw> --from-layer RGB_LN --to-layer BTC_LN --yes"` — sell USDT
+- `"swap atomic-status --payment-hash <hash>"` — check atomic swap status
+
+**Atomic node-level swap (low-level):**
+- `"swap run --qty-from <n> --qty-to <n> --to-asset <rgb:...> --yes"` — BTC → RGB (maker-init → taker → execute in one command)
+- `"swap run --from-asset <rgb:...> --qty-from <n> --qty-to <n> --yes"` — RGB → BTC
+- `"maker init --qty-from <n> --qty-to <n> [--from-asset <rgb:...>] [--to-asset <rgb:...>] [--timeout 100]"` — init maker side, returns swapstring
+- `"taker whitelist <swapstring>"` — whitelist swap on taker side
+- `"taker pubkey"` — get taker pubkey
+- `"maker execute --swapstring <s> --payment-secret <s> --taker-pubkey <pk>"` — finalise maker side
+
+**Order tracking:**
+- `"swap history --status PENDING"` — open orders
+- `"swap history --limit 20"` — recent swaps
+
+**Asset management:**
+- `"asset list"` — RGB assets held
+- `"asset sync"` — sync RGB wallet with blockchain (run after swaps)
+- `"asset fail-transfers"` — mark stuck pending transfers as failed
+- `"asset invoice <asset-id> --amount <raw>"` — create RGB invoice
+- `"asset send <asset-id> <raw-amount> <rgb-invoice>"` — send RGB asset
+
+**Payments:**
+- `"payment invoice --amount-msat <msat>"` — create LN invoice
+- `"payment send <bolt11>"` — pay LN invoice
+
+---
 
 You are an autonomous portfolio rebalancer. Each time you run, you:
 1. Measure the current portfolio allocation
@@ -105,27 +165,30 @@ Convert to from-asset display amount using the quote rate.
 
 ## Step 4: Execute the Swap
 
-**Get a fresh quote:**
+**In skill mode, prefer the high-level CLI swap commands:**
+
 ```
-kaleidoswap_get_pairs()                   → find the correct route
-kaleidoswap_get_quote({
-  from_asset_id, from_layer, from_amount,  // display amount
-  to_asset_id, to_layer
-})
-→ { rfq_id, from_asset: { amount_raw }, to_asset: { amount_raw }, ... }
+swap execute BTC/USDT --from-amount <sats> --from-layer BTC_LN --to-layer RGB_LN --yes
+  → executes full flow: quote → order → atomic execute
+
+swap atomic-status --payment-hash <hash>
+  → poll until status Succeeded / Expired / Failed
 ```
 
 **Execute per `trading_mode`:**
-- `"atomic"` → atomic only (preferred):
-  1. `kaleidoswap_atomic_init({ rfq_id, from_asset_id, from_amount_raw, to_asset_id, to_amount_raw })`
-     → `{ swapstring, payment_hash }`
-  2. `wdk_atomic_taker({ swapstring })`
-  3. `wdk_get_node_info()` → `pubkey`
-  4. `kaleidoswap_atomic_execute({ swapstring, taker_pubkey: pubkey, payment_hash })`
-  5. Poll `kaleidoswap_atomic_status({ payment_hash })` every 2s
-     until `status` is `"Succeeded"`, `"Expired"`, or `"Failed"`
-- `"rest"` → REST order only (see kaleidoswap SKILL.md Step 3b)
-- `"both"` → try atomic first; if `Expired`/`Failed`, fall back to REST
+- `"atomic"` → use `swap execute <PAIR> --from-amount <n> --yes` (handles maker-init, taker whitelist, execute, status internally)
+  - If you need full control of the atomic steps:
+    1. `swap run --qty-from <n> --qty-to <n> [--from-asset] [--to-asset] --yes` — handles all 3 steps in one call
+    - OR manually:
+      1. `maker init --qty-from <n> --qty-to <n> [--from-asset] [--to-asset]` → swapstring, payment_hash
+      2. `taker whitelist <swapstring>`
+      3. `taker pubkey` → pubkey
+      4. `maker execute --swapstring <s> --payment-secret <s> --taker-pubkey <pk>`
+      5. `swap atomic-status --payment-hash <hash>` — poll until Succeeded
+- `"rest"` → use `market quote` + `payment send` / `asset send` flow
+- `"both"` → try `swap execute --yes`; if Expired/Failed, fall back to REST
+
+**After any swap:** run `asset sync` to update RGB wallet state.
 
 ## Step 5: Output Report
 

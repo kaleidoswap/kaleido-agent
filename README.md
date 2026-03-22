@@ -9,7 +9,7 @@ Uses Claude AI + three MCP servers to maintain target allocations across BTC, US
 ```
 kaleido-agent
   ├── kaleidoswap-mcp    — KaleidoSwap API: quotes, orders, atomic swaps, LSP channels
-  ├── wdk-wallet-mcp     — RLN node: balances, invoices, payments, atomic taker
+  ├── wdk-wallet-rln-mcp     — RLN node: balances, invoices, payments, atomic taker
   └── mpp-gateway-mcp   — Market data: prices, OHLCV, Fear & Greed sentiment
 ```
 
@@ -58,7 +58,7 @@ kaleidoswap_lsp_get_order      → poll → CHANNEL_OPENING | COMPLETED
 
 - Node.js 20+
 - [`kaleido` CLI](https://github.com/kaleidoswap/kaleido) installed locally if you want KaleidoAgent to auto-start the node when `RLN_NODE_URL` is down
-- Built MCP servers: `kaleidoswap-mcp`, `wdk-wallet-mcp`, `mpp-gateway-mcp`
+- Built MCP servers: `kaleidoswap-mcp`, `wdk-wallet-rln-mcp`, `mpp-gateway-mcp`
 - Anthropic API key
 
 ## Installation
@@ -69,7 +69,7 @@ npm run build
 
 # Build the MCP servers too
 cd ../kaleidoswap-mcp && npm install && npm run build
-cd ../wdk-wallet-mcp && npm install && npm run build
+cd ../wdk-wallet-rln-mcp && npm install && npm run build
 cd ../mpp-gateway-mcp && npm install && npm run build
 ```
 

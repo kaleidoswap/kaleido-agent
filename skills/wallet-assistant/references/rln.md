@@ -1,6 +1,6 @@
 # RLN (RGB Lightning Node) — Reference
 
-The RLN node is accessed through `wdk-wallet-mcp`. It manages:
+The RLN node is accessed through `wdk-wallet-rln-mcp`. It manages:
 - BTC in Lightning channels
 - RGB assets (USDT, XAUT, etc.) in RGB-enabled LN channels
 - On-chain BTC receive addresses

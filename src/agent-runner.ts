@@ -45,9 +45,14 @@ export interface RunResult {
   timestamp: string
   tool_calls: number
   final_response: string
+  trace: RunTraceStep[]
   duration_ms: number
   usage: TokenUsage
 }
+
+export type RunTraceStep =
+  | { type: 'thinking'; text: string }
+  | { type: 'tool'; name: string; input: string; result: string; error: boolean }
 
 // Cost per million tokens by model (USD)
 const COST_PER_M: Record<string, { input: number; output: number }> = {
@@ -91,6 +96,10 @@ export class AgentRunner {
     this.config = config
   }
 
+  setDryRun(dryRun: boolean): void {
+    this.config.dryRun = dryRun
+  }
+
   /**
    * Run a task turn. taskId identifies the task (e.g. "heartbeat", "rebalance", or a UUID).
    * skillName is the skill directory under skills/ (e.g. "channel-manager").
@@ -118,6 +127,7 @@ export class AgentRunner {
     let toolCallCount = 0
     let totalInputTokens = 0
     let totalOutputTokens = 0
+    const trace: RunTraceStep[] = []
 
     const model = configStore.model || this.config.model
     const provider = createProvider(configStore.provider)
@@ -151,6 +161,9 @@ export class AgentRunner {
       if (turn.text) {
         finalResponse = turn.text
         this.log(`  [model] ${turn.text.slice(0, 300)}`)
+        if (turn.stop_reason !== 'end_turn' && turn.tool_calls.length > 0) {
+          trace.push({ type: 'thinking', text: turn.text })
+        }
       }
 
       if (turn.stop_reason === 'end_turn') break
@@ -163,19 +176,29 @@ export class AgentRunner {
         toolCallCount++
         this.log(`  [tool→] ${call.name}(${JSON.stringify(call.input)})`)
         let result: string
+        let isError = false
         try {
           result = await this.mcp.callTool(call.name, call.input)
           this.log(`  [tool←] ${result.length > 200 ? result.slice(0, 200) + '…' : result}`)
         } catch (err) {
           result = JSON.stringify({ error: err instanceof Error ? err.message : String(err) })
           this.log(`  [tool✗] ${result}`)
+          isError = true
         }
+        const inputSummary = JSON.stringify(call.input)
+        trace.push({
+          type: 'tool',
+          name: call.name,
+          input: inputSummary.length > 240 ? inputSummary.slice(0, 240) + '…' : inputSummary,
+          result: result.length > 400 ? result.slice(0, 400) + '…' : result,
+          error: isError,
+        })
         results.push({ id: call.id, result })
       }
       provider.appendToolResults(messages, results)
     }
 
-    return this.buildResult(taskId, start, toolCallCount, totalInputTokens, totalOutputTokens, effectiveCosts, costFactor, finalResponse)
+    return this.buildResult(taskId, start, toolCallCount, totalInputTokens, totalOutputTokens, effectiveCosts, costFactor, finalResponse, trace)
   }
 
   // ─── Skill mode ────────────────────────────────────────────────────────────
@@ -189,6 +212,7 @@ export class AgentRunner {
     let toolCallCount = 0
     let totalInputTokens = 0
     let totalOutputTokens = 0
+    const trace: RunTraceStep[] = []
 
     const model = configStore.model || this.config.model
     const provider = createProvider(configStore.provider)
@@ -228,6 +252,9 @@ export class AgentRunner {
       if (turn.text) {
         finalResponse = turn.text
         this.log(`  [model] ${turn.text.slice(0, 300)}`)
+        if (turn.stop_reason !== 'end_turn' && turn.tool_calls.length > 0) {
+          trace.push({ type: 'thinking', text: turn.text })
+        }
       }
 
       if (turn.stop_reason === 'end_turn') break
@@ -239,25 +266,41 @@ export class AgentRunner {
       for (const call of turn.tool_calls) {
         toolCallCount++
         if (call.name !== 'run_kaleido_command') {
+          trace.push({
+            type: 'tool',
+            name: call.name,
+            input: JSON.stringify(call.input),
+            result: JSON.stringify({ error: `Unknown tool in skill mode: ${call.name}` }),
+            error: true,
+          })
           results.push({ id: call.id, result: JSON.stringify({ error: `Unknown tool in skill mode: ${call.name}` }) })
           continue
         }
         const command = String((call.input as Record<string, unknown>).command ?? '')
         this.log(`  [kaleido→] ${command}`)
         let result: string
+        let isError = false
         try {
           result = await this.execKaleidoCommand(command)
           this.log(`  [kaleido←] ${result.length > 200 ? result.slice(0, 200) + '…' : result}`)
         } catch (err) {
           result = JSON.stringify({ error: err instanceof Error ? err.message : String(err) })
           this.log(`  [kaleido✗] ${result}`)
+          isError = true
         }
+        trace.push({
+          type: 'tool',
+          name: call.name,
+          input: JSON.stringify(call.input),
+          result: result.length > 400 ? result.slice(0, 400) + '…' : result,
+          error: isError,
+        })
         results.push({ id: call.id, result })
       }
       provider.appendToolResults(messages, results)
     }
 
-    return this.buildResult(taskId, start, toolCallCount, totalInputTokens, totalOutputTokens, effectiveCosts, costFactor, finalResponse)
+    return this.buildResult(taskId, start, toolCallCount, totalInputTokens, totalOutputTokens, effectiveCosts, costFactor, finalResponse, trace)
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -297,7 +340,8 @@ export class AgentRunner {
     totalOutputTokens: number,
     effectiveCosts: { input: number; output: number },
     costFactor: number,
-    finalResponse: string
+    finalResponse: string,
+    trace: RunTraceStep[],
   ): RunResult {
     const totalCost = (totalInputTokens * effectiveCosts.input + totalOutputTokens * effectiveCosts.output) * costFactor
     const duration = Date.now() - start
@@ -309,6 +353,7 @@ export class AgentRunner {
       timestamp: new Date().toISOString(),
       tool_calls: toolCallCount,
       final_response: finalResponse,
+      trace,
       duration_ms: duration,
       usage: {
         input_tokens: totalInputTokens,

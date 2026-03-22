@@ -192,7 +192,22 @@ function ActionChip({ action, onAction }: { action: ChatAction; onAction: (a: Ch
   )
 }
 
-function MessageBubble({ msg, onAction }: { msg: Message; onAction: (a: ChatAction) => void }) {
+function shouldShowConfirmReply(msg: Message): boolean {
+  if (msg.role !== 'assistant' || msg.loading) return false
+  if (msg.action?.type === 'swap') return true
+
+  return /\b(confirm|confirmation|proceed|go ahead|continue)\b/i.test(msg.content)
+}
+
+function MessageBubble({
+  msg,
+  onAction,
+  onQuickReply,
+}: {
+  msg: Message
+  onAction: (a: ChatAction) => void
+  onQuickReply: (text: string) => void
+}) {
   const isUser = msg.role === 'user'
 
   if (isUser) {
@@ -226,6 +241,30 @@ function MessageBubble({ msg, onAction }: { msg: Message; onAction: (a: ChatActi
             </div>
             {msg.action && msg.action.type !== 'none' && (
               <ActionChip action={msg.action} onAction={onAction} />
+            )}
+            {shouldShowConfirmReply(msg) && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {msg.action?.type === 'swap' && (
+                  <button
+                    onClick={() => onAction(msg.action!)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-mono text-emerald-300 transition-colors hover:bg-emerald-500/20"
+                  >
+                    Confirm Swap
+                  </button>
+                )}
+                <button
+                  onClick={() => onQuickReply('Confirm')}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-mono text-gray-300 transition-colors hover:bg-white/[0.06]"
+                >
+                  Reply "Confirm"
+                </button>
+                <button
+                  onClick={() => onQuickReply('Cancel')}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-mono text-gray-500 transition-colors hover:bg-white/[0.06] hover:text-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
             )}
             <AgentTrace trace={msg.trace ?? []} />
           </div>
@@ -443,7 +482,12 @@ export function ChatPanel({
           />
         ) : (
           messages.map((msg, i) => (
-            <MessageBubble key={i} msg={msg} onAction={onAction} />
+            <MessageBubble
+              key={i}
+              msg={msg}
+              onAction={onAction}
+              onQuickReply={(text) => void submit(text)}
+            />
           ))
         )}
         <div ref={bottomRef} />

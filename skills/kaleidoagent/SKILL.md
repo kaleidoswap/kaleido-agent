@@ -47,10 +47,13 @@ metadata:
 - `"market pairs"` — available trading pairs
 - `"market routes BTC/USDT"` — swap routes for a pair
 - `"market analytics"` — order statistics and volume data
+- `"market info"` — maker node info (pubkey, version)
 
 **Trade history:**
 - `"swap history --limit 50"` — recent swaps
 - `"swap history --status PENDING"` — open orders
+- `"swap node-swaps"` — list node-level atomic swaps
+- `"asset transfers [--limit 50]"` — asset transfer history
 - `"payment list"` — Lightning payment history
 
 **Swap execution:**
@@ -67,6 +70,7 @@ metadata:
 **Asset management:**
 - `"asset sync"` — sync RGB wallet (run after swaps)
 - `"asset fail-transfers"` — mark stuck transfers as failed
+- `"asset refresh [--asset-id <id>]"` — refresh asset state (per-asset alternative to asset sync)
 
 **LSP / channels:**
 - `"lsp info"` — LSP capabilities and channel options
@@ -77,6 +81,9 @@ metadata:
 
 **Payments:**
 - `"payment send <bolt11>"` — pay LN invoice
+- `"payment keysend <pubkey> <msat>"` — keysend payment
+- `"payment invoice-status <bolt11>"` — invoice status check
+- `"payment decode <invoice>"` — decode a BOLT11 or RGB invoice
 - `"wallet estimate-fee [--target-blocks <n>]"` — on-chain fee rate
 
 ---
@@ -146,6 +153,7 @@ Node health, liquidity check, RGB flush.
 1. node status                    → uptime, sync, peers
 2. channel list                   → outbound liquidity per channel
 3. asset fail-transfers           → flush stuck pending RGB transfers
+                                     (or use `asset refresh [--asset-id <id>]` for per-asset refresh)
 4. swap history --status PENDING  → check for stuck orders
 5. [if low outbound + auto_buy_channel → Channel Purchase Flow using lsp *]
 ```

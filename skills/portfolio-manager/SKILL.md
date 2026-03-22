@@ -43,6 +43,7 @@ metadata:
 - `"market assets"` — list tradeable assets with precision
 - `"market pairs"` — available trading pairs
 - `"market routes BTC/USDT"` — available swap routes for a pair
+- `"market info"` — maker node info (pubkey, version)
 
 **Swap execution (high-level — preferred):**
 - `"swap execute BTC/USDT --from-amount <sats> --from-layer BTC_LN --to-layer RGB_LN --yes"` — full market swap (quote → order → execute)
@@ -60,6 +61,7 @@ metadata:
 **Order tracking:**
 - `"swap history --status PENDING"` — open orders
 - `"swap history --limit 20"` — recent swaps
+- `"swap node-swaps"` — list node-level atomic swaps
 
 **Asset management:**
 - `"asset list"` — RGB assets held
@@ -67,10 +69,14 @@ metadata:
 - `"asset fail-transfers"` — mark stuck pending transfers as failed
 - `"asset invoice <asset-id> --amount <raw>"` — create RGB invoice
 - `"asset send <asset-id> <raw-amount> <rgb-invoice>"` — send RGB asset
+- `"asset transfers [--limit 20]"` — asset transfer history
+- `"asset refresh [--asset-id <id>]"` — refresh asset state (alternative to asset sync)
 
 **Payments:**
 - `"payment invoice --amount-msat <msat>"` — create LN invoice
 - `"payment send <bolt11>"` — pay LN invoice
+- `"payment keysend <pubkey> <msat>"` — direct keysend payment
+- `"payment decode <invoice>"` — decode BOLT11 or RGB invoice
 
 ---
 

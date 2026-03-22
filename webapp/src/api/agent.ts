@@ -19,7 +19,18 @@ export interface RecentRun {
   tool_calls: number
   duration_ms: number
   cost_usd: number
+  final_response: string
   response_preview: string
+  trace: TraceStep[]
+}
+
+export interface RgbAssetBalance {
+  asset_id: string
+  ticker: string
+  precision: number
+  spendable: number
+  offchain_outbound: number
+  offchain_inbound: number
 }
 
 export interface WalletSnapshot {
@@ -30,6 +41,7 @@ export interface WalletSnapshot {
     channel_count: number
     total_outbound_sat: number
     total_inbound_sat: number
+    assets: RgbAssetBalance[]
   } | null
   spark: {
     balance_sats: number
@@ -62,6 +74,7 @@ export interface AgentStatus {
   cumulative_output_tokens: number
   loops: Record<string, LoopStats>
   recent_runs: RecentRun[]
+  tasks: AgentTask[]
 }
 
 export interface ChatMessage {
@@ -95,6 +108,14 @@ export interface ChatResponse {
   trace?: TraceStep[]
 }
 
+export interface ChatSwapExecutionResponse {
+  ok: boolean
+  text: string
+  payment_hash?: string
+  final_status?: string
+  error?: string
+}
+
 export async function checkHealth(): Promise<boolean> {
   try {
     const res = await fetch(`${BASE}/health`, { signal: AbortSignal.timeout(3000) })
@@ -107,6 +128,16 @@ export async function checkHealth(): Promise<boolean> {
 export async function getStatus(): Promise<AgentStatus | null> {
   try {
     const res = await fetch(`${BASE}/status`, { signal: AbortSignal.timeout(5000) })
+    if (!res.ok) return null
+    return res.json()
+  } catch {
+    return null
+  }
+}
+
+export async function refreshWallet(): Promise<WalletSnapshot | null> {
+  try {
+    const res = await fetch(`${BASE}/wallets`, { signal: AbortSignal.timeout(30000) })
     if (!res.ok) return null
     return res.json()
   } catch {
@@ -132,6 +163,21 @@ export async function sendChat(messages: ChatMessage[]): Promise<ChatResponse> {
     throw new Error(details)
   }
   return res.json()
+}
+
+export async function executeChatSwap(action: ChatAction): Promise<ChatSwapExecutionResponse> {
+  const res = await fetch(`${BASE}/chat/actions/swap`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action }),
+    signal: AbortSignal.timeout(90000),
+  })
+
+  const payload = await res.json() as ChatSwapExecutionResponse
+  if (!res.ok && !payload.text) {
+    payload.text = payload.error ?? `Swap error: ${res.status}`
+  }
+  return payload
 }
 
 /** Trigger a task by its ID (or legacy loop name for backwards compat) */

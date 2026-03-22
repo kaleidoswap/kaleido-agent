@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react'
-import { LoopType, triggerLoop, getSkills, type SkillInfo, type ChatAction } from './api/agent'
+import {
+  LoopType,
+  triggerLoop,
+  getSkills,
+  executeChatSwap,
+  type SkillInfo,
+  type ChatAction,
+} from './api/agent'
 import { Header } from './components/Header'
 import { Sidebar } from './components/Sidebar'
 import { ChatPanel } from './components/ChatPanel'
@@ -41,6 +48,12 @@ export default function App() {
     if (window.parent && window.parent !== window) {
       window.parent.postMessage({ type: 'kaleidoagent-action', action }, '*')
     }
+  }
+
+  const handleExecuteSwap = async (action: ChatAction) => {
+    const result = await executeChatSwap(action)
+    await refresh()
+    return result
   }
 
   const handleRunLoop = async (loop: LoopType) => {
@@ -116,7 +129,12 @@ export default function App() {
             <SkillsPanel connection={connection} />
           )}
           {activeTab === 'tasks' && (
-            <TasksPanel connection={connection} skills={skills} />
+            <TasksPanel
+              connection={connection}
+              skills={skills}
+              tasks={status?.tasks ?? []}
+              onTasksChanged={refresh}
+            />
           )}
         </main>
       </div>
@@ -124,6 +142,7 @@ export default function App() {
       <ActionModal
         action={pendingAction}
         onDispatch={handleDispatchAction}
+        onExecuteSwap={handleExecuteSwap}
         onClose={() => setPendingAction(null)}
       />
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />

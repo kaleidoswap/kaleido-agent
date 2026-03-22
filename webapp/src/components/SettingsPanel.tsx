@@ -18,6 +18,7 @@ export function SettingsPanel({ open, onClose }: Props) {
   const [maxConcurrentOrders, setMaxConcurrentOrders] = useState('3')
   const [stopLossBtc, setStopLossBtc] = useState('30000')
   const [tradingMode, setTradingMode] = useState<'atomic' | 'rest' | 'both'>('atomic')
+  const [dryRun, setDryRun] = useState(true)
   const [rebalanceIntervalSec, setRebalanceIntervalSec] = useState('300')
   const [heartbeatIntervalSec, setHeartbeatIntervalSec] = useState('300')
   const [dailySummaryCron, setDailySummaryCron] = useState('00:00')
@@ -51,6 +52,7 @@ export function SettingsPanel({ open, onClose }: Props) {
       setMaxConcurrentOrders(String(cfg.portfolio.max_concurrent_orders))
       setStopLossBtc(String(cfg.portfolio.stop_loss_btc_sats))
       setTradingMode(cfg.portfolio.trading_mode)
+      setDryRun(cfg.portfolio.dry_run)
       setRebalanceIntervalSec(String(cfg.schedule.rebalance_interval_sec))
       setHeartbeatIntervalSec(String(cfg.schedule.heartbeat_interval_sec))
       setDailySummaryCron(cfg.schedule.daily_summary_cron)
@@ -114,6 +116,7 @@ export function SettingsPanel({ open, onClose }: Props) {
         min_btc_reserve_sats: Number(minBtcReserve || 0),
         max_concurrent_orders: Number(maxConcurrentOrders || 0),
         stop_loss_btc_sats: Number(stopLossBtc || 0),
+        dry_run: dryRun,
         trading_mode: tradingMode,
         lsp: {
           lsp_balance_sat: Number(lspBalanceSat || 0),
@@ -318,6 +321,26 @@ export function SettingsPanel({ open, onClose }: Props) {
               <option value="rest">rest</option>
               <option value="both">both</option>
             </select>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-mono text-gray-600 uppercase tracking-widest mb-2">
+              Execution
+            </p>
+            <label className="flex items-center justify-between rounded border border-white/10 bg-white/[0.03] px-3 py-2">
+              <div>
+                <p className="text-xs font-mono text-gray-300">{dryRun ? 'Dry Run' : 'Live Trading'}</p>
+                <p className="text-[10px] font-mono text-gray-600">
+                  {dryRun ? 'Quotes and plans only' : 'Confirmed swaps and channel actions can execute'}
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={!dryRun}
+                onChange={(e) => setDryRun(!e.target.checked)}
+                className="h-4 w-4 accent-emerald-500"
+              />
+            </label>
           </div>
 
           <div>

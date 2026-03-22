@@ -11,7 +11,7 @@
     "allocated_xaut": 0,
     "enabled": false,
     "created_at": "2026-03-22T14:07:57.716Z",
-    "last_run_at": "2026-03-22T15:47:56.392Z"
+    "last_run_at": "2026-03-22T16:28:14.058Z"
   },
   {
     "id": "rebalance",
@@ -52,7 +52,7 @@
     "enabled": false,
     "id": "a18a0fb1-4805-4fd5-a1a4-691f9158fc40",
     "created_at": "2026-03-21T23:41:00.382Z",
-    "last_run_at": "2026-03-21T23:41:26.255Z"
+    "last_run_at": "2026-03-22T16:32:43.067Z"
   },
   {
     "name": "LIQUIDITY MONITOR",
@@ -62,7 +62,7 @@
     "allocated_btc_sat": 60000,
     "allocated_usdt": 0,
     "allocated_xaut": 0,
-    "enabled": true,
+    "enabled": false,
     "run_on_startup": false,
     "id": "7afa2cbf-0a99-4b33-be38-68d363e461d9",
     "created_at": "2026-03-22T15:37:02.438Z",

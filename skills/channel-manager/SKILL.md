@@ -36,6 +36,10 @@ metadata:
 - `"node status"` — node pubkey, peers, sync status
 - `"node info"` — detailed node info
 - `"peer connect <pubkey@host:port>"` — connect to a Lightning peer
+- `"channel estimate-fees [--capacity-sat <n>] [--lsp-balance <sat>]"` — estimate fees (alternative to `lsp estimate-fees`)
+- `"channel order-create <pubkey> [--lsp-balance <sat>] [--client-balance <sat>]"` — create channel order with explicit pubkey
+- `"channel order-get <order-id>"` — get channel order status
+- `"channel order-decide <order-id> [--accept|--reject]"` — accept/reject order (maker-side)
 
 **LSP (Lightning Service Provider) — channel purchase:**
 - `"lsp info"` — show LSP capabilities and supported channel sizes
@@ -46,6 +50,8 @@ metadata:
 
 **Payments:**
 - `"payment send <bolt11>"` — pay invoice (e.g., LSP invoice to open channel)
+- `"payment invoice-status <bolt11>"` — check invoice payment status
+- `"payment decode <invoice>"` — decode a BOLT11 or RGB invoice
 - `"wallet estimate-fee [--target-blocks <n>]"` — on-chain fee rate estimate
 
 **Swaps:**

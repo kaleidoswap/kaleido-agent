@@ -3,7 +3,7 @@
     "model": "claude-sonnet-4-6",
     "max_tokens": 4096,
     "max_tool_calls_per_run": 30,
-    "mode": "skills"
+    "mode": "mcp"
   },
   "mcp": {
     "kaleido": {
@@ -31,7 +31,7 @@
     "min_btc_reserve_sats": 50000,
     "max_concurrent_orders": 3,
     "stop_loss_btc_sats": 30000,
-    "dry_run": true,
+    "dry_run": false,
     "trading_mode": "atomic",
     "lsp": {
       "lsp_balance_sat": 500000,

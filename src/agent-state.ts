@@ -4,7 +4,7 @@
  * Task stats are created dynamically on first use (no hardcoded task list).
  */
 
-import type { RunResult } from './agent-runner.js'
+import type { RunResult, RunTraceStep } from './agent-runner.js'
 
 export interface LoopStats {
   runs: number
@@ -22,7 +22,18 @@ export interface RecentRun {
   tool_calls: number
   duration_ms: number
   cost_usd: number
+  final_response: string
   response_preview: string
+  trace: RunTraceStep[]
+}
+
+export interface RgbAssetBalance {
+  asset_id: string
+  ticker: string
+  precision: number
+  spendable: number
+  offchain_outbound: number
+  offchain_inbound: number
 }
 
 export interface WalletSnapshot {
@@ -33,6 +44,7 @@ export interface WalletSnapshot {
     channel_count: number
     total_outbound_sat: number
     total_inbound_sat: number
+    assets: RgbAssetBalance[]
   } | null
   spark: {
     balance_sats: number
@@ -100,6 +112,10 @@ class AgentStateStore {
     if (agentMode) this.agentMode = agentMode
   }
 
+  setDryRun(dryRun: boolean): void {
+    this.dryRun = dryRun
+  }
+
   recordRunResult(result: RunResult): void {
     const stats = this.ensureStats(result.loop)
     stats.runs++
@@ -122,7 +138,9 @@ class AgentStateStore {
       tool_calls: result.tool_calls,
       duration_ms: result.duration_ms,
       cost_usd: result.usage.estimated_cost_usd,
+      final_response: result.final_response,
       response_preview: result.final_response.slice(0, 300),
+      trace: result.trace,
     })
     if (this.recentRuns.length > 20) this.recentRuns.pop()
   }

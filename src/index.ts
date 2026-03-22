@@ -49,7 +49,9 @@ configStore.init(envPath, cfg.agent.model)
 const agentMode = cfg.agent.mode ?? 'mcp'
 configStore.agentMode = agentMode
 
-const dryRun = process.env.DRY_RUN !== 'false'
+const dryRun = process.env.DRY_RUN
+  ? process.env.DRY_RUN !== 'false'
+  : cfg.portfolio.dry_run
 
 // Override kaleido-mcp env from process environment
 const kaleidoMcp = cfg.mcp.kaleido
@@ -122,7 +124,7 @@ async function main() {
   const chatRunner = new ChatRunner(mcp, cfg.agent.model)
 
   const scheduler = new Scheduler(runner, logger, portfolioParams)
-  const statusServer = startStatusServer(4242, chatRunner, scheduler, agentMode === 'mcp' ? mcp : undefined)
+  const statusServer = startStatusServer(4242, chatRunner, scheduler, runner, agentMode === 'mcp' ? mcp : undefined)
 
   process.on('SIGINT', async () => {
     process.stderr.write('\n[kaleidoagent] Shutting down...\n')

@@ -20,13 +20,13 @@ help:
 install: install-agent install-webapp
 
 install-agent:
-	npm install
+	pnpm install
 
 install-webapp:
-	npm --prefix webapp install
+	pnpm --prefix webapp install
 
 dev:
-	npm run dev:all
+	pnpm run dev:all
 
 dev-agent:
 	npm run dev:agent
@@ -35,34 +35,34 @@ dev-webapp:
 	npm run dev:webapp
 
 build:
-	npm run build:all
+	pnpm run build:all
 
 build-agent:
-	npm run build:agent
+	pnpm run build:agent
 
 build-webapp:
-	npm run build:webapp
+	pnpm run build:webapp
 
 test:
-	npm run test
+	pnpm run test
 
 test-agent:
-	npm run test:agent
+	pnpm run test:agent
 
 test-integration:
-	npm run test:integration
+	pnpm run test:integration
 
 test-all:
-	npm run test:all
+	pnpm run test:all
 
 coverage:
-	npm run coverage
+	pnpm run coverage
 
 start:
-	npm run start
+	pnpm run start
 
 preview-webapp:
-	npm run start:webapp
+	pnpm run start:webapp
 
 health:
 	curl -sS http://127.0.0.1:4242/health

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
-  getTasks, createTask, updateTask, deleteTask, triggerLoop,
+  createTask, updateTask, deleteTask, triggerTask,
   type AgentTask, type SkillInfo,
 } from '../api/agent'
 import { ConnectionState } from '../hooks/useAgentStatus'
@@ -8,6 +8,8 @@ import { ConnectionState } from '../hooks/useAgentStatus'
 interface Props {
   connection: ConnectionState
   skills: SkillInfo[]
+  tasks: AgentTask[]
+  onTasksChanged: () => Promise<void>
 }
 
 const SKILL_ICONS: Record<string, string> = {
@@ -20,18 +22,6 @@ const SKILL_ICONS: Record<string, string> = {
   'channel-manager':   '🔌',
   'node-manager':      '🖥️',
   'cross-l2':          '🌉',
-}
-
-const LOOP_FOR_SKILL: Record<string, 'rebalance' | 'heartbeat' | 'daily_summary'> = {
-  'dca':               'rebalance',
-  'portfolio-manager': 'rebalance',
-  'kaleidoswap':       'rebalance',
-  'kaleidoagent':      'rebalance',
-  'mpp':               'rebalance',
-  'wallet-assistant':  'heartbeat',
-  'channel-manager':   'heartbeat',
-  'node-manager':      'heartbeat',
-  'cross-l2':          'heartbeat',
 }
 
 const INTERVAL_OPTIONS = [
@@ -436,25 +426,20 @@ function TaskCard({
 
 type FormMode = 'hidden' | 'blank' | 'template'
 
-export function TasksPanel({ connection, skills }: Props) {
-  const [tasks, setTasks] = useState<AgentTask[]>([])
-  const [loading, setLoading] = useState(true)
+export function TasksPanel({ connection, skills, tasks, onTasksChanged }: Props) {
   const [formMode, setFormMode] = useState<FormMode>('hidden')
   const [templateInitial, setTemplateInitial] = useState<Partial<AgentTask> | undefined>()
 
   const isLive = connection === 'live'
-
-  useEffect(() => {
-    void getTasks().then((data) => {
-      setTasks(data)
-      setLoading(false)
-    })
-  }, [])
+  const sortedTasks = useMemo(
+    () => [...tasks].sort((a, b) => a.created_at.localeCompare(b.created_at)),
+    [tasks],
+  )
 
   const handleCreate = async (task: Omit<AgentTask, 'id' | 'created_at' | 'last_run_at'>) => {
     const created = await createTask(task)
     if (created) {
-      setTasks((prev) => [...prev, created])
+      await onTasksChanged()
       setFormMode('hidden')
       setTemplateInitial(undefined)
     }
@@ -462,20 +447,17 @@ export function TasksPanel({ connection, skills }: Props) {
 
   const handleToggle = async (task: AgentTask) => {
     const ok = await updateTask(task.id, { enabled: !task.enabled })
-    if (ok) setTasks((prev) => prev.map((t) => t.id === task.id ? { ...t, enabled: !t.enabled } : t))
+    if (ok) await onTasksChanged()
   }
 
   const handleDelete = async (id: string) => {
     const ok = await deleteTask(id)
-    if (ok) setTasks((prev) => prev.filter((t) => t.id !== id))
+    if (ok) await onTasksChanged()
   }
 
   const handleRun = async (task: AgentTask) => {
-    const loop = LOOP_FOR_SKILL[task.skill] ?? 'heartbeat'
-    await triggerLoop(loop)
-    const now = new Date().toISOString()
-    const ok = await updateTask(task.id, { last_run_at: now })
-    if (ok) setTasks((prev) => prev.map((t) => t.id === task.id ? { ...t, last_run_at: now } : t))
+    await triggerTask(task.id)
+    await onTasksChanged()
   }
 
   const handleSelectTemplate = (t: TaskTemplate) => {
@@ -495,7 +477,7 @@ export function TasksPanel({ connection, skills }: Props) {
     setTemplateInitial(undefined)
   }
 
-  if (loading) {
+  if (!tasks) {
     return (
       <div className="flex items-center justify-center h-48">
         <p className="text-[11px] font-mono text-gray-600">Loading tasks…</p>
@@ -503,8 +485,8 @@ export function TasksPanel({ connection, skills }: Props) {
     )
   }
 
-  const enabledTasks = tasks.filter((t) => t.enabled)
-  const pausedTasks  = tasks.filter((t) => !t.enabled)
+  const enabledTasks = sortedTasks.filter((t) => t.enabled)
+  const pausedTasks  = sortedTasks.filter((t) => !t.enabled)
 
   return (
     <div className="p-5 space-y-5 max-w-2xl mx-auto">
@@ -528,11 +510,11 @@ export function TasksPanel({ connection, skills }: Props) {
       </div>
 
       {/* Templates (shown when no tasks or when user clicks + New) */}
-      {formMode === 'hidden' && tasks.length === 0 && (
+      {formMode === 'hidden' && sortedTasks.length === 0 && (
         <TemplatePicker onSelect={handleSelectTemplate} />
       )}
 
-      {formMode === 'hidden' && tasks.length > 0 && (
+      {formMode === 'hidden' && sortedTasks.length > 0 && (
         <div>
           <p className="text-[10px] font-mono text-gray-600 uppercase tracking-widest mb-2">Templates</p>
           <TemplatePicker onSelect={handleSelectTemplate} />

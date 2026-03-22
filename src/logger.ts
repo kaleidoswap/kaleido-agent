@@ -23,6 +23,7 @@ export class Logger {
       tokens_out: result.usage?.output_tokens ?? 0,
       cost_usd: result.usage?.estimated_cost_usd?.toFixed(4) ?? '0.0000',
       response: result.final_response.slice(0, 2000),
+      trace: result.trace,
     })
     this.write(line)
   }

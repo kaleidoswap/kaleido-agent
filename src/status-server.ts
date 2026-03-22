@@ -12,11 +12,13 @@
 import http from 'node:http'
 import { readdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import { agentState, type WalletSnapshot } from './agent-state.js'
+import { agentState, type WalletSnapshot, type RgbAssetBalance } from './agent-state.js'
 import { configStore } from './config-store.js'
 import { agentConfigStore } from './agent-config-store.js'
+import { executeConfirmedSwap, type SwapActionInput } from './chat-actions.js'
 import { tasksStore, type AgentTask } from './tasks-store.js'
 import type { ChatRunner, ChatMessage } from './chat-runner.js'
+import type { AgentRunner } from './agent-runner.js'
 import type { Scheduler } from './scheduler.js'
 import type { McpManager } from './mcp-manager.js'
 
@@ -88,10 +90,11 @@ function readBody(req: http.IncomingMessage): Promise<string> {
 async function refreshWalletSnapshot(mcp: McpManager): Promise<WalletSnapshot> {
   const snapshot: WalletSnapshot = { fetched_at: new Date().toISOString(), rln: null, spark: null }
   try {
-    const [balancesRaw, channelsRaw, sparkRaw] = await Promise.allSettled([
+    const [balancesRaw, channelsRaw, sparkRaw, assetsRaw] = await Promise.allSettled([
       mcp.callTool('wdk_get_balances', { skip_sync: true }),
       mcp.callTool('wdk_list_channels', {}),
       mcp.callTool('spark_get_balance', {}),
+      mcp.callTool('wdk_list_assets', {}),
     ])
 
     if (balancesRaw.status === 'fulfilled') {
@@ -107,12 +110,47 @@ async function refreshWalletSnapshot(mcp: McpManager): Promise<WalletSnapshot> {
             total_inbound_msat?: number
           }
         : null
+
+      // Fetch RGB asset balances in parallel
+      let assets: RgbAssetBalance[] = []
+      if (assetsRaw.status === 'fulfilled') {
+        const assetList = JSON.parse(assetsRaw.value) as Array<{
+          asset_id?: string
+          ticker?: string
+          precision?: number
+        }>
+        const balanceResults = await Promise.allSettled(
+          assetList
+            .filter((a) => a.asset_id)
+            .map(async (a) => {
+              const raw = await mcp.callTool('wdk_get_asset_balance', { asset_id: a.asset_id })
+              const bal = JSON.parse(raw) as {
+                spendable?: number
+                offchain_outbound?: number
+                offchain_inbound?: number
+              }
+              return {
+                asset_id: a.asset_id!,
+                ticker: a.ticker ?? a.asset_id!,
+                precision: a.precision ?? 0,
+                spendable: bal.spendable ?? 0,
+                offchain_outbound: bal.offchain_outbound ?? 0,
+                offchain_inbound: bal.offchain_inbound ?? 0,
+              } satisfies RgbAssetBalance
+            }),
+        )
+        assets = balanceResults
+          .filter((r): r is PromiseFulfilledResult<RgbAssetBalance> => r.status === 'fulfilled')
+          .map((r) => r.value)
+      }
+
       snapshot.rln = {
         btc_onchain_sats: onchain,
         lightning_balance_sat: b.lightning_balance_sat ?? 0,
         channel_count: channels?.channel_count ?? 0,
         total_outbound_sat: Math.round((channels?.total_outbound_msat ?? 0) / 1000),
         total_inbound_sat: Math.round((channels?.total_inbound_msat ?? 0) / 1000),
+        assets,
       }
     }
 
@@ -135,6 +173,7 @@ export function startStatusServer(
   port = 4242,
   chatRunner?: ChatRunner,
   scheduler?: Scheduler,
+  runner?: AgentRunner,
   mcp?: McpManager,
 ): http.Server {
   const server = http.createServer(async (req, res) => {
@@ -158,8 +197,12 @@ export function startStatusServer(
 
     // GET /status
     if (req.url === '/status' && req.method === 'GET') {
+      const tasks = await tasksStore.list()
       res.writeHead(200, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify(agentState.getStatus()))
+      res.end(JSON.stringify({
+        ...agentState.getStatus(),
+        tasks,
+      }))
       return
     }
 
@@ -226,10 +269,12 @@ export function startStatusServer(
         if (patch.agent_mode) configStore.agentMode = patch.agent_mode
 
         agentState.updateRuntimeConfig(configStore.provider, configStore.model, configFile.agent.mode)
+        agentState.setDryRun(configFile.portfolio.dry_run)
+        runner?.setDryRun(configFile.portfolio.dry_run)
 
         scheduler?.updatePortfolioParams({
           ...configFile.portfolio,
-          dry_run: agentState.getStatus().dry_run,
+          dry_run: configFile.portfolio.dry_run,
         })
 
         res.writeHead(200, { 'Content-Type': 'application/json' })
@@ -275,6 +320,36 @@ export function startStatusServer(
         const status = msg.startsWith('Task already running:') ? 409 : msg.includes('not found') ? 404 : 500
         res.writeHead(status, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ error: msg }))
+      }
+      return
+    }
+
+    // POST /chat/actions/swap
+    if (req.url === '/chat/actions/swap' && req.method === 'POST') {
+      if (!mcp) {
+        res.writeHead(503, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'MCP not available in skill mode' }))
+        return
+      }
+
+      try {
+        const body = await readBody(req)
+        const { action } = JSON.parse(body) as { action?: SwapActionInput }
+        if (!action || action.type !== 'swap') {
+          res.writeHead(400, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'swap action required' }))
+          return
+        }
+
+        const result = await executeConfirmedSwap(mcp, action, agentState.getStatus().dry_run)
+        const status = result.ok ? 200 : result.final_status === 'DRY_RUN' ? 409 : 202
+        res.writeHead(status, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify(result))
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        process.stderr.write(`[status-server] /chat/actions/swap error: ${msg}\n`)
+        res.writeHead(500, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ ok: false, error: msg }))
       }
       return
     }

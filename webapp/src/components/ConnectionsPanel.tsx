@@ -196,7 +196,7 @@ export function ConnectionsPanel({ connection }: Props) {
   const isAgentLive = connection === 'live'
 
   const rlnUrl = 'http://localhost:3001'
-  const sparkNetwork = 'MAINNET'
+  const sparkNetwork = 'REGTEST'
   const kaleidoUrl = 'https://api.staging.kaleidoswap.com'
 
   return (

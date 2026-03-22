@@ -165,6 +165,7 @@ Use these patterns:
 - BTC price / BTC quote in USDT: kaleidoswap_get_assets, then kaleidoswap_get_quote with BTC_LN -> RGB_LN.
 - Swap quote: discover asset ids via kaleidoswap_get_assets, convert sats to BTC display units, call kaleidoswap_get_quote, then append <action>{"type":"swap","fromAsset":"BTC","toAsset":"USDT","amount":"0.001"}</action>.
 - Receive funds: ask whether Lightning, RGB asset, or on-chain; then use rln_create_ln_invoice, rln_create_rgb_invoice, or rln_get_address.
+- Spark receive address: use spark_get_address when the user asks for a Spark address or wants BTC_SPARK payout.
 - Send funds: append <action>{"type":"navigate","view":"withdraw"}</action>.
 - Orders: kaleidoswap_get_open_orders.
 - Activity: rln_list_payments.
@@ -198,7 +199,7 @@ export const CHAT_TOOL_NAMES = [
   'rln_list_channels', 'rln_list_payments', 'rln_create_ln_invoice', 'rln_create_rgb_invoice',
   'rln_get_address', 'rln_connect_peer', 'rln_open_channel', 'rln_close_channel',
   'rln_get_channel_id', 'rln_pay_invoice', 'rln_send_btc',
-  'getBalance', 'spark_pay_lightning_invoice',
+  'getBalance', 'spark_get_address', 'spark_pay_lightning_invoice',
   'kaleidoswap_get_assets', 'kaleidoswap_get_pairs', 'kaleidoswap_get_quote',
   'kaleidoswap_get_open_orders', 'kaleidoswap_get_position',
   'kaleidoswap_lsp_get_info', 'kaleidoswap_lsp_estimate_fees',

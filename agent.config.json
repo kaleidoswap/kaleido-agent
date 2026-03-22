@@ -3,7 +3,7 @@
     "model": "claude-sonnet-4-6",
     "max_tokens": 4096,
     "max_tool_calls_per_run": 30,
-    "mode": "mcp"
+    "mode": "skills"
   },
   "mcp": {
     "kaleido": {
@@ -13,10 +13,10 @@
       ],
       "env": {
         "WDK_SEED": "",
-        "SPARK_NETWORK": "MAINNET",
+        "SPARK_NETWORK": "REGTEST",
         "SPARK_USDT_TOKEN": "",
         "RLN_NODE_URL": "http://localhost:3001",
-        "KALEIDOSWAP_API_URL": "https://api.staging.kaleidoswap.com"
+        "KALEIDOSWAP_API_URL": "http://localhost:8000"
       }
     }
   },

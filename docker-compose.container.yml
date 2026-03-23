@@ -6,6 +6,12 @@ services:
       PORT: 3013
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3013/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
     restart: unless-stopped
 
   kaleidoagent-api:
@@ -23,7 +29,7 @@ services:
       NANOBOT_KALEIDO_MCP_URL: http://kaleido-mcp:3013
     depends_on:
       kaleido-mcp:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "127.0.0.1:4242:4242"
     volumes:

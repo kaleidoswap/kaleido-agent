@@ -86,7 +86,12 @@ const CONTROL_TOOL_NAMES = [
   'agent_set_skill_enabled',
 ] as const
 
-const SKILL_TOOL_RE = /\b(?:wdk|rln|spark|kaleidoswap|mpp|l402|kaleido|agent)_[a-z0-9_]+\b|\bsearch_paid_apis\b/gi
+// Matches only exact known tool names to avoid false positives from env var names or formula variables.
+// Built lazily from KALEIDO_MCP_ENABLED_TOOLS + CONTROL_TOOL_NAMES at validation time.
+function buildSkillToolRe(tools: readonly string[]): RegExp {
+  const escaped = tools.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  return new RegExp(`\\b(${escaped.join('|')})\\b`, 'g')
+}
 
 export interface NanobotRuntimeInfo {
   installed: boolean
@@ -208,12 +213,13 @@ export class NanobotManager {
       ...CONTROL_TOOL_NAMES,
       ...KALEIDO_MCP_ENABLED_TOOLS,
     ])
+    const skillToolRe = buildSkillToolRe([...availableTools])
 
     for (const skillName of enabledSkills) {
       const skillPath = resolve(this.projectRoot, 'skills', skillName, 'SKILL.md')
       try {
         const content = await readFile(skillPath, 'utf8')
-        const required = new Set<string>((content.match(SKILL_TOOL_RE) ?? []).map((match) => match.trim()))
+        const required = new Set<string>((content.match(skillToolRe) ?? []).map((match) => match.trim()))
         const missing = [...required].filter((name) => !availableTools.has(name))
         if (missing.length > 0) {
           errors.push(`skill "${skillName}" references unavailable tools: ${missing.join(', ')}`)

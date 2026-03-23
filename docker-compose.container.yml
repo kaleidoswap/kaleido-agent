@@ -7,11 +7,11 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3013/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "const n=require('net');const s=n.connect(3013,'127.0.0.1',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1))"]
       interval: 5s
       timeout: 3s
-      retries: 10
-      start_period: 15s
+      retries: 12
+      start_period: 10s
     restart: unless-stopped
 
   kaleidoagent-api:

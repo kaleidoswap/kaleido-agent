@@ -43,6 +43,7 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/skills ./skills
 COPY --from=build /app/agent.config.json ./defaults/agent.config.json
 COPY --from=build /app/tasks.json ./defaults/tasks.json
+COPY --from=build /app/.nanobot/workspace ./defaults/workspace
 COPY --from=build /app/scripts/container-entrypoint.sh /usr/local/bin/container-entrypoint.sh
 
 RUN chmod +x /usr/local/bin/container-entrypoint.sh

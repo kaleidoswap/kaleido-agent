@@ -1,4 +1,4 @@
-# Tools — Local Environment
+# Tools
 
 ## Control API (kaleidoagent status server)
 
@@ -6,18 +6,18 @@
 - Endpoints: `/health`, `/status`, `/config`, `/run`, `/chat`, `/wallets`
 - MCP wrapper: `kaleido_control` (stdio, `dist/control-mcp.js`)
 
-## MCP Servers (HTTP, stateless)
+## MCP Servers
 
-| Server | Port | Tools |
-|---|---|---|
-| kaleidoswap-mcp | :3010 | kaleidoswap_* (quotes, orders, atomic, LSP) |
-| wdk-wallet-mcp | :3011 | rln_*, spark_* |
-| mpp-gateway-mcp | :3012 | get_price, get_market_data, mpp_* |
+| Server | Tools |
+|---|---|
+| `kaleido` (unified) | `rln_*`, `spark_*`, `kaleidoswap_*`, `mpp_*`, `l402_*`, `search_paid_apis` |
+| `kaleido_control` | `agent_*` |
 
-## MCP Servers (stdio)
-
-- `kaleido_control`: `node ./dist/control-mcp.js`
-- `kaleido` (unified): `kaleido-mcp` (installed via `npm install -g kaleido-mcp`)
+The `kaleido` server is the single unified MCP that exposes all wallet, DEX, and market tools:
+- **WDK Spark** — `spark_*` tools (fee-free BTC/token transfers, Lightning invoices, bridge)
+- **WDK RLN** — `rln_*` tools (RGB assets, Lightning channels, atomic HTLC swaps)
+- **KaleidoSwap DEX** — `kaleidoswap_*` tools (quotes, REST orders, atomic swaps, LSPS1)
+- **MPP / L402** — `mpp_*`, `l402_*`, `search_paid_apis` (market data, paid API access)
 
 ## External Services
 

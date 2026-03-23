@@ -72,13 +72,16 @@
         ]
       },
       "kaleidoswap": {
-        "url": "http://127.0.0.1:3010"
+        "url": "http://127.0.0.1:3010",
+        "_comment": "local dev only — in container mode all tools are served by kaleido-mcp (see NANOBOT_KALEIDO_MCP_URL)"
       },
       "wdk_wallet": {
-        "url": "http://127.0.0.1:3011"
+        "url": "http://127.0.0.1:3011",
+        "_comment": "local dev only"
       },
       "mpp_gateway": {
-        "url": "http://127.0.0.1:3012"
+        "url": "http://127.0.0.1:3012",
+        "_comment": "local dev only"
       }
     }
   },

@@ -598,6 +598,136 @@
   .reveal { opacity:0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
   .reveal.visible { opacity:1; transform: none; }
 
+  /* ECOSYSTEM */
+  .eco-layer { margin-top: 56px; }
+  .eco-layer-label {
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+    letter-spacing: 0.15em; text-transform: uppercase;
+    margin-bottom: 16px; display: flex; align-items: center; gap: 12px;
+  }
+  .eco-layer-label::before {
+    content: ''; width: 16px; height: 1px;
+    background: var(--muted); opacity: 0.4; flex-shrink: 0;
+  }
+  .eco-row {
+    display: grid; gap: 1px; background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .eco-row-2 { grid-template-columns: 1fr 1fr; }
+  .eco-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .eco-row-1 { grid-template-columns: 1fr; }
+  .eco-card {
+    background: var(--bg2); padding: 32px 28px;
+    transition: background 0.2s; position: relative; overflow: hidden;
+  }
+  .eco-card:hover { background: var(--bg3); }
+  .eco-card-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 14px;
+  }
+  .eco-card-version {
+    font-family: var(--mono); font-size: 10px; color: var(--dim);
+    padding: 2px 8px; border: 1px solid var(--border); letter-spacing: 0.06em;
+    flex-shrink: 0;
+  }
+  .eco-card-tag {
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .eco-card-tag.wdk  { color: var(--orange); }
+  .eco-card-tag.mcp  { color: var(--blue); }
+  .eco-card-tag.agent { color: var(--purple); }
+  .eco-card-name {
+    font-family: var(--cond); font-weight: 700; font-size: 22px;
+    text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;
+  }
+  .eco-card.featured .eco-card-name { font-size: 28px; }
+  .eco-card-pkg {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .eco-card-desc {
+    font-size: 13px; color: var(--muted); line-height: 1.75; margin-bottom: 16px;
+  }
+  .eco-card.featured .eco-card-desc { font-size: 14px; max-width: 760px; }
+  .eco-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .eco-chip {
+    font-family: var(--mono); font-size: 10px; color: var(--dim);
+    padding: 3px 8px; border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+  .eco-card:hover .eco-chip { color: var(--muted); border-color: var(--border2); }
+  .eco-card-link {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    text-decoration: none; letter-spacing: 0.06em;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: color 0.2s;
+  }
+  .eco-card-link::before { content: '↗'; }
+  .eco-card-link:hover { color: var(--orange); }
+  .eco-connector {
+    display: flex; justify-content: center; align-items: center;
+    height: 32px; gap: 0;
+    position: relative;
+  }
+  .eco-connector::before {
+    content: ''; position: absolute;
+    left: 50%; top: 0; bottom: 0; width: 1px;
+    background: linear-gradient(to bottom, var(--border2), var(--border));
+  }
+  .eco-connector-label {
+    font-family: var(--mono); font-size: 9px; color: var(--dim);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    background: var(--bg); padding: 0 8px; position: relative; z-index: 1;
+  }
+
+  @media (max-width: 1100px) {
+    .eco-row-3 { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 700px) {
+    .eco-row-2, .eco-row-3 { grid-template-columns: 1fr; }
+  }
+
+  /* SKILLS GRID */
+  .skills-grid {
+    display: grid; grid-template-columns: repeat(3,1fr);
+    gap: 1px; background: var(--border);
+    margin-top: 64px; border: 1px solid var(--border);
+  }
+  .skill-card {
+    background: var(--bg); padding: 32px 28px;
+    transition: background 0.3s; position: relative; overflow: hidden;
+  }
+  .skill-card:hover { background: var(--bg2); }
+  .skill-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--skill-color, var(--orange));
+    transform: scaleX(0); transform-origin: left; transition: transform 0.4s ease;
+  }
+  .skill-card:hover::before { transform: scaleX(1); }
+  .skill-tag {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--skill-color, var(--orange));
+    letter-spacing: 0.12em; text-transform: uppercase;
+    margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .skill-tag::before {
+    content: ''; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--skill-color, var(--orange)); flex-shrink: 0;
+  }
+  .skill-name {
+    font-family: var(--cond); font-weight: 700; font-size: 22px;
+    text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px;
+  }
+  .skill-desc { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 16px; }
+  .skill-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+  .skill-tool {
+    font-family: var(--mono); font-size: 10px; color: var(--dim);
+    padding: 3px 8px; border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+  .skill-card:hover .skill-tool { color: var(--muted); border-color: var(--border2); }
+
   /* RESPONSIVE */
   @media (max-width: 1100px) {
     .hero-terminal { display: none; }
@@ -608,11 +738,13 @@
     .swap-visual { display: none; }
     .arch-grid { grid-template-columns: 1fr; }
     .tech-grid { grid-template-columns: repeat(2,1fr); }
+    .skills-grid { grid-template-columns: repeat(2,1fr); }
     footer { flex-direction: column; gap: 24px; text-align: center; }
     .footer-links { flex-wrap: wrap; justify-content: center; }
   }
   @media (max-width: 700px) {
     .loops-grid { grid-template-columns: 1fr; }
+    .skills-grid { grid-template-columns: 1fr; }
     .stats-bar { grid-template-columns: repeat(2,1fr); }
     .tech-grid { grid-template-columns: 1fr; }
     .nav-links { display: none; }
@@ -632,7 +764,9 @@
     KaleidoAgent
   </div>
   <ul class="nav-links">
+    <li><a href="#ecosystem">Ecosystem</a></li>
     <li><a href="#how-it-works">How It Works</a></li>
+    <li><a href="#skills">Skills</a></li>
     <li><a href="#atomic-swap">Atomic Swap</a></li>
     <li><a href="#runtime">Runtime</a></li>
     <li><a href="#architecture">Architecture</a></li>
@@ -655,10 +789,10 @@
   <div class="hero-sub">Autonomous Bitcoin L2 Portfolio Rebalancer</div>
 
   <p class="hero-desc">
-    A <strong>non-custodial</strong> autonomous trading agent that holds and rebalances
-    <strong>BTC · USDT · XAUT</strong> on the Lightning Network.
+    A <strong>non-custodial</strong> autonomous trading agent for <strong>BTC · USDT · XAUT</strong>
+    on the Lightning Network — built on a purpose-made <strong>6-package WDK stack</strong>.
     Claude AI detects drift, executes <strong>atomic HTLC swaps</strong>,
-    and manages Lightning channels — without human intervention.
+    and manages Lightning channels without human intervention.
   </p>
 
   <div class="hero-actions">
@@ -666,7 +800,7 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
       View on GitHub
     </a>
-    <a href="#how-it-works" class="btn btn-ghost">How It Works →</a>
+    <a href="#ecosystem" class="btn btn-ghost">Full Stack →</a>
   </div>
 
   <!-- Terminal -->
@@ -692,9 +826,9 @@
     <div class="stat-note">5-step trustless settlement</div>
   </div>
   <div class="stat-item reveal">
-    <div class="stat-label">MCP Tools</div>
-    <div class="stat-value">60<span class="unit">+</span></div>
-    <div class="stat-note">WDK · KaleidoSwap · MPP</div>
+    <div class="stat-label">Agent Skills</div>
+    <div class="stat-value">9 <span class="unit">skills</span></div>
+    <div class="stat-note">60+ MCP tools across WDK · DEX · MPP</div>
   </div>
   <div class="stat-item reveal">
     <div class="stat-label">Custody</div>
@@ -702,6 +836,166 @@
     <div class="stat-note">WDK Spark + RLN node</div>
   </div>
 </div>
+
+<!-- ECOSYSTEM -->
+<section class="section" id="ecosystem">
+  <div class="section-label">Hackathon Submission</div>
+  <h2 class="section-title reveal">6 Open-Source<br>Packages</h2>
+  <p class="section-body reveal">
+    KaleidoAgent is the orchestrator. The full submission spans three layers:
+    <strong>WDK library extensions</strong> that bring RGB Lightning and KaleidoSwap into the WDK protocol surface,
+    <strong>focused MCP servers</strong> for wallet and Spark operations,
+    a <strong>unified MCP gateway</strong> combining 60+ tools in a single process,
+    and the <strong>autonomous agent</strong> that puts it all to work.
+  </p>
+
+  <!-- Layer 1: WDK Libraries -->
+  <div class="eco-layer reveal">
+    <div class="eco-layer-label">WDK Libraries · npm packages · peer @tetherto/wdk-wallet</div>
+    <div class="eco-row eco-row-2">
+
+      <div class="eco-card">
+        <div class="eco-card-top">
+          <span class="eco-card-tag wdk">WDK Extension</span>
+          <span class="eco-card-version">v1.0.0-beta.2</span>
+        </div>
+        <div class="eco-card-name">WDK Wallet RLN</div>
+        <div class="eco-card-pkg">@kaleidorg/wdk-wallet-rln</div>
+        <div class="eco-card-desc">WalletManager implementation for an RGB Lightning Node. Bridges BTC on-chain + RGB asset balances, Lightning invoices/payments, channel management, and atomic swap taker support into the WDK protocol surface via a single logical account.</div>
+        <div class="eco-chips">
+          <span class="eco-chip">RlnWalletManager</span>
+          <span class="eco-chip">RlnAccount</span>
+          <span class="eco-chip">atomicTaker</span>
+          <span class="eco-chip">listSwaps</span>
+          <span class="eco-chip">kaleido-sdk</span>
+        </div>
+        <a href="https://github.com/kaleidoswap/wdk-wallet-rln" class="eco-card-link">kaleidoswap/wdk-wallet-rln</a>
+      </div>
+
+      <div class="eco-card">
+        <div class="eco-card-top">
+          <span class="eco-card-tag wdk">WDK Extension</span>
+          <span class="eco-card-version">v1.0.0-beta.2</span>
+        </div>
+        <div class="eco-card-name">WDK Swap Protocol</div>
+        <div class="eco-card-pkg">@kaleidorg/wdk-protocol-swap-kaleidoswap</div>
+        <div class="eco-card-desc">SwapProtocol plugin that registers KaleidoSwap as a WDK swap backend. Handles quote, order creation, deposit address, and status polling — with 5-minute asset/pair cache and human-to-raw amount conversion.</div>
+        <div class="eco-chips">
+          <span class="eco-chip">KaleidoswapProtocol</span>
+          <span class="eco-chip">quoteSwap</span>
+          <span class="eco-chip">swap</span>
+          <span class="eco-chip">getOrderStatus</span>
+          <span class="eco-chip">kaleido-sdk</span>
+        </div>
+        <a href="https://github.com/kaleidoswap/wdk-protocol-swap-kaleidoswap" class="eco-card-link">kaleidoswap/wdk-protocol-swap-kaleidoswap</a>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="eco-connector"><span class="eco-connector-label">exposed via MCP</span></div>
+
+  <!-- Layer 2: MCP Servers -->
+  <div class="eco-layer reveal">
+    <div class="eco-layer-label">MCP Servers · stdio + Streamable HTTP · optional auth token</div>
+    <div class="eco-row eco-row-3">
+
+      <div class="eco-card">
+        <div class="eco-card-top">
+          <span class="eco-card-tag mcp">MCP Server</span>
+          <span class="eco-card-version">v1.1.0</span>
+        </div>
+        <div class="eco-card-name">RLN MCP</div>
+        <div class="eco-card-pkg">wdk-wallet-rln-mcp</div>
+        <div class="eco-card-desc">Focused MCP server for RLN wallet operations. Exposes <code style="font-family:var(--mono);font-size:11px;color:var(--blue)">wdk_*</code> tools: balances, RGB + LN invoices, payments, on-chain send, channels, atomic taker, swap history.</div>
+        <div class="eco-chips">
+          <span class="eco-chip">wdk_get_balances</span>
+          <span class="eco-chip">wdk_atomic_taker</span>
+          <span class="eco-chip">wdk_pay_invoice</span>
+          <span class="eco-chip">wdk_list_channels</span>
+        </div>
+        <a href="https://github.com/kaleidoswap/wdk-wallet-rln-mcp" class="eco-card-link">kaleidoswap/wdk-wallet-rln-mcp</a>
+      </div>
+
+      <div class="eco-card">
+        <div class="eco-card-top">
+          <span class="eco-card-tag mcp">MCP Server</span>
+          <span class="eco-card-version">v1.0.0</span>
+        </div>
+        <div class="eco-card-name">Spark MCP</div>
+        <div class="eco-card-pkg">wdk-wallet-spark-mcp</div>
+        <div class="eco-card-desc">Focused MCP server for WDK Spark wallet. Exposes <code style="font-family:var(--mono);font-size:11px;color:var(--blue)">spark_*</code> tools: L2 balance, LN receive/pay, Spark sats/token transfers, BTC bridge deposit/withdraw, and MPP pay.</div>
+        <div class="eco-chips">
+          <span class="eco-chip">spark_get_balance</span>
+          <span class="eco-chip">spark_send</span>
+          <span class="eco-chip">spark_mpp_pay</span>
+          <span class="eco-chip">spark_bridge_*</span>
+        </div>
+        <a href="https://github.com/kaleidoswap/wdk-wallet-spark-mcp" class="eco-card-link">kaleidoswap/wdk-wallet-spark-mcp</a>
+      </div>
+
+      <div class="eco-card" style="border-left: 2px solid var(--blue)">
+        <div class="eco-card-top">
+          <span class="eco-card-tag mcp">Unified MCP</span>
+          <span class="eco-card-version">v0.1.0</span>
+        </div>
+        <div class="eco-card-name">Kaleido MCP</div>
+        <div class="eco-card-pkg">kaleido-mcp</div>
+        <div class="eco-card-desc">One process, 60+ tools. Composes Spark (WDK), RLN, KaleidoSwap DEX, MPP/L402, and market data into a single MCP server via <code style="font-family:var(--mono);font-size:11px;color:var(--blue)">WdkMcpServer</code>. The primary tool backend for KaleidoAgent. Also exports a standalone <code style="font-family:var(--mono);font-size:11px;color:var(--blue)">MppClient</code>.</div>
+        <div class="eco-chips">
+          <span class="eco-chip">spark_*</span>
+          <span class="eco-chip">rln_*</span>
+          <span class="eco-chip">kaleidoswap_*</span>
+          <span class="eco-chip">mpp_*</span>
+          <span class="eco-chip">market_*</span>
+          <span class="eco-chip">MppClient export</span>
+        </div>
+        <a href="https://github.com/kaleidoswap/kaleido-mcp" class="eco-card-link">kaleidoswap/kaleido-mcp</a>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="eco-connector"><span class="eco-connector-label">orchestrated by</span></div>
+
+  <!-- Layer 3: Agent -->
+  <div class="eco-layer reveal">
+    <div class="eco-layer-label">Autonomous Agent · Nanobot + React dashboard</div>
+    <div class="eco-row eco-row-1">
+
+      <div class="eco-card featured" style="border-left: 2px solid var(--orange)">
+        <div class="eco-card-top">
+          <span class="eco-card-tag agent">Autonomous Agent</span>
+          <span class="eco-card-version">v1.0.0</span>
+        </div>
+        <div class="eco-card-name">KaleidoAgent</div>
+        <div class="eco-card-pkg">kaleidoagent</div>
+        <div class="eco-card-desc">
+          Autonomous Bitcoin L2 portfolio rebalancer. Claude AI reasons over live balances,
+          detects allocation drift across BTC / USDT (RGB) / XAUT (RGB), and executes atomic HTLC swaps
+          via <strong>kaleido-mcp</strong>. Manages Lightning channels via LSPS1, runs a price-aware DCA loop,
+          pays for premium data via MPP/L402, and delivers daily summaries via Telegram.
+          9 SKILL.md behaviors. Nanobot default runtime. React + Vite control panel.
+        </div>
+        <div class="eco-chips">
+          <span class="eco-chip">Claude Sonnet 4.6</span>
+          <span class="eco-chip">Nanobot runtime</span>
+          <span class="eco-chip">9 skills</span>
+          <span class="eco-chip">3 core loops</span>
+          <span class="eco-chip">Atomic HTLC</span>
+          <span class="eco-chip">LSPS1</span>
+          <span class="eco-chip">DCA</span>
+          <span class="eco-chip">MPP/L402</span>
+          <span class="eco-chip">Telegram</span>
+          <span class="eco-chip">React dashboard</span>
+          <span class="eco-chip">Docker</span>
+        </div>
+        <a href="https://github.com/kaleidoswap/kaleidoagent" class="eco-card-link">kaleidoswap/kaleidoagent</a>
+      </div>
+
+    </div>
+  </div>
+</section>
 
 <!-- HOW IT WORKS -->
 <section class="section" id="how-it-works">
@@ -751,6 +1045,110 @@
         <li>Compute daily P&L vs. targets</li>
         <li>Report via Telegram + log file</li>
       </ul>
+    </div>
+  </div>
+</section>
+
+<!-- SKILLS -->
+<section class="section" id="skills" style="background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+  <div class="section-label">Agent Skills</div>
+  <h2 class="section-title reveal">9 Specialized<br>Behaviors</h2>
+  <p class="section-body reveal">
+    Each skill is a Markdown behavior file — loaded at runtime by Nanobot or the MCP runner.
+    Skills define logic, tool usage, safety rules, and structured JSON output contracts.
+    They are hot-swappable and independently versioned.
+  </p>
+
+  <div class="skills-grid">
+    <div class="skill-card reveal" style="--skill-color: var(--orange)">
+      <div class="skill-tag">Autonomous</div>
+      <div class="skill-name">Portfolio Manager</div>
+      <div class="skill-desc">Drift detection and atomic swap execution. Compares live balances against BTC/USDT/XAUT targets, applies risk checks, and executes the optimal swap.</div>
+      <div class="skill-tools">
+        <span class="skill-tool">kaleidoswap_get_quote</span>
+        <span class="skill-tool">kaleidoswap_atomic_*</span>
+        <span class="skill-tool">rln_get_balances</span>
+      </div>
+    </div>
+    <div class="skill-card reveal" style="--skill-color: var(--green)">
+      <div class="skill-tag">Autonomous</div>
+      <div class="skill-name">Channel Manager</div>
+      <div class="skill-desc">Lightning node health monitor. Audits outbound/inbound liquidity, flushes stuck RGB transfers, and auto-purchases LSPS1 channels when capacity is critical.</div>
+      <div class="skill-tools">
+        <span class="skill-tool">rln_list_channels</span>
+        <span class="skill-tool">kaleidoswap_lsp_*</span>
+        <span class="skill-tool">rln_refresh_transfers</span>
+      </div>
+    </div>
+    <div class="skill-card reveal" style="--skill-color: var(--gold)">
+      <div class="skill-tag">Autonomous</div>
+      <div class="skill-name">KaleidoAgent</div>
+      <div class="skill-desc">Umbrella skill for the daily summary loop. Snapshots portfolio performance, pulls trade history, fetches market data, and delivers a full report via Telegram or log.</div>
+      <div class="skill-tools">
+        <span class="skill-tool">all kaleido-mcp tools</span>
+        <span class="skill-tool">Telegram output</span>
+      </div>
+    </div>
+    <div class="skill-card reveal" style="--skill-color: var(--blue)">
+      <div class="skill-tag">Interactive</div>
+      <div class="skill-name">Wallet Assistant</div>
+      <div class="skill-desc">Conversational Bitcoin + RGB wallet. Handles balance queries, invoice generation, Lightning payments, RGB transfers, and swap confirmations with structured UI action blocks.</div>
+      <div class="skill-tools">
+        <span class="skill-tool">rln_get_balances</span>
+        <span class="skill-tool">rln_pay_invoice</span>
+        <span class="skill-tool">rln_create_*_invoice</span>
+        <span class="skill-tool">&lt;action&gt; blocks</span>
+      </div>
+    </div>
+    <div class="skill-card reveal" style="--skill-color: var(--purple)">
+      <div class="skill-tag">Interactive</div>
+      <div class="skill-name">KaleidoSwap</div>
+      <div class="skill-desc">DEX operations skill. Discovers pairs and layers, gets live quotes with display/raw amount handling, executes the full 5-step atomic HTLC flow, and falls back to REST orders.</div>
+      <div class="skill-tools">
+        <span class="skill-tool">kaleidoswap_get_pairs</span>
+        <span class="skill-tool">kaleidoswap_get_quote</span>
+        <span class="skill-tool">kaleidoswap_atomic_*</span>
+      </div>
+    </div>
+    <div class="skill-card reveal" style="--skill-color: var(--orange)">
+      <div class="skill-tag">Scheduled</div>
+      <div class="skill-name">DCA</div>
+      <div class="skill-desc">Dollar-cost averaging loop. Buys a fixed USDT amount of BTC on schedule. Optional price-aware logic skips on pumps and doubles on dips using an EMA tracker.</div>
+      <div class="skill-tools">
+        <span class="skill-tool">kaleidoswap_get_quote</span>
+        <span class="skill-tool">rln_get_balances</span>
+        <span class="skill-tool">atomic swap flow</span>
+      </div>
+    </div>
+    <div class="skill-card reveal" style="--skill-color: var(--green)">
+      <div class="skill-tag">Protocol</div>
+      <div class="skill-name">MPP</div>
+      <div class="skill-desc">Machine Payments Protocol over HTTP 402. Pays for premium API endpoints and data feeds via Lightning micropayments — no signup, no API key, just pay-per-request.</div>
+      <div class="skill-tools">
+        <span class="skill-tool">mpp_request_challenge</span>
+        <span class="skill-tool">rln_mpp_pay</span>
+        <span class="skill-tool">mpp_submit_credential</span>
+      </div>
+    </div>
+    <div class="skill-card reveal" style="--skill-color: var(--blue)">
+      <div class="skill-tag">Guidance</div>
+      <div class="skill-name">Cross-L2</div>
+      <div class="skill-desc">Asset movement guidance across Bitcoin layers: Lightning ↔ Spark ↔ on-chain. Identifies the best path, executes KaleidoSwap-native steps, and advises on external steps.</div>
+      <div class="skill-tools">
+        <span class="skill-tool">LN ↔ RGB swaps</span>
+        <span class="skill-tool">Spark bridge guidance</span>
+        <span class="skill-tool">LSPS1 channel open</span>
+      </div>
+    </div>
+    <div class="skill-card reveal" style="--skill-color: var(--muted)">
+      <div class="skill-tag">Operations</div>
+      <div class="skill-name">Node Manager</div>
+      <div class="skill-desc">Full RLN node lifecycle via kaleido CLI + MCP. Start/stop/unlock the Docker environment, initialize the wallet, manage UTXO slots for RGB, inspect channels and payments.</div>
+      <div class="skill-tools">
+        <span class="skill-tool">kaleido node up/down</span>
+        <span class="skill-tool">rln_list_channels</span>
+        <span class="skill-tool">wallet create-utxos</span>
+      </div>
     </div>
   </div>
 </section>
@@ -884,23 +1282,23 @@
   <div class="section-label">Runtime Architecture</div>
   <h2 class="section-title reveal">Two Execution<br>Modes</h2>
   <p class="section-body reveal">
-    KaleidoAgent supports two modes set in <code style="font-family:var(--mono);font-size:14px;color:var(--orange)">agent.config.json</code>.
-    <strong>MCP mode</strong> runs the LLM loop directly in-process with full observability.
-    <strong>Nanobot mode</strong> delegates to a detached gateway process that adds Telegram control
-    and survives agent restarts.
+    KaleidoAgent supports two modes set via <code style="font-family:var(--mono);font-size:14px;color:var(--orange)">agent.config.json</code>.
+    <strong>Nanobot mode</strong> (default) delegates to a detached gateway process — adding Telegram operator control,
+    persistent cron scheduling, and resilience across restarts.
+    <strong>MCP mode</strong> runs the LLM loop directly in-process for full token and tool-call observability.
   </p>
 
   <div class="mode-toggle reveal">
-    <button class="mode-btn active" data-mode="mcp">
-      MCP Mode <span class="badge">default</span>
+    <button class="mode-btn active" data-mode="nanobot">
+      Nanobot Mode <span class="badge">default</span>
     </button>
-    <button class="mode-btn" data-mode="nanobot">
-      Nanobot Mode <span class="badge">telegram</span>
+    <button class="mode-btn" data-mode="mcp">
+      MCP Mode <span class="badge">direct</span>
     </button>
   </div>
 
   <!-- MCP MODE PANEL -->
-  <div class="mode-panel active" id="panel-mcp">
+  <div class="mode-panel" id="panel-mcp">
     <div class="process-diagram reveal">
 <div><span class="pd-comment"># Process topology — MCP mode</span></div>
 <div>&nbsp;</div>
@@ -990,7 +1388,7 @@
   </div>
 
   <!-- NANOBOT MODE PANEL -->
-  <div class="mode-panel" id="panel-nanobot">
+  <div class="mode-panel active" id="panel-nanobot">
     <div class="process-diagram reveal">
 <div><span class="pd-comment"># Process topology — Nanobot mode</span></div>
 <div>&nbsp;</div>
@@ -1123,52 +1521,51 @@
 <section class="section" id="architecture">
   <div class="section-label">Architecture</div>
   <h2 class="section-title reveal">Built on WDK +<br>MCP + Lightning</h2>
-  <p class="section-body reveal">Clean layered architecture: Claude reasons at the top, MCP tools provide the interface, WDK handles wallet execution. Each layer is independently replaceable.</p>
+  <p class="section-body reveal">Clean layered architecture: Claude reasons at the top, kaleido-mcp provides the tool interface, WDK handles wallet execution. Each layer is independently replaceable and open-source.</p>
 
   <div class="arch-grid">
     <div class="arch-layers">
       <div class="arch-layer reveal">
         <div class="arch-layer-header">
           <span class="arch-layer-num">L3</span>
-          <span class="arch-layer-name">Agent Reasoning</span>
+          <span class="arch-layer-name">Agent · kaleidoagent</span>
         </div>
         <div class="arch-layer-body">
           <span class="arch-chip hl">Claude Sonnet 4.6</span>
-          <span class="arch-chip">Anthropic SDK</span>
-          <span class="arch-chip">SKILL.md prompts</span>
-          <span class="arch-chip">Nanobot runtime</span>
-          <span class="arch-chip">AgentRunner</span>
-          <span class="arch-chip">Scheduler (3 loops)</span>
-          <span class="arch-chip">Cost tracking</span>
+          <span class="arch-chip hl">Nanobot runtime</span>
+          <span class="arch-chip">9 SKILL.md behaviors</span>
+          <span class="arch-chip">AgentRunner (MCP mode)</span>
+          <span class="arch-chip">Scheduler · 3 loops</span>
+          <span class="arch-chip">React dashboard :5173</span>
+          <span class="arch-chip">Status API :4242</span>
         </div>
       </div>
       <div class="arch-layer reveal">
         <div class="arch-layer-header">
           <span class="arch-layer-num">L2</span>
-          <span class="arch-layer-name">MCP Tool Layer</span>
+          <span class="arch-layer-name">MCP Gateway · kaleido-mcp</span>
         </div>
         <div class="arch-layer-body">
-          <span class="arch-chip hl">kaleido-mcp</span>
-          <span class="arch-chip">mpp-gateway-mcp</span>
-          <span class="arch-chip">60+ tools</span>
-          <span class="arch-chip">stdio / HTTP transport</span>
-          <span class="arch-chip">Tool allowlists</span>
-          <span class="arch-chip">MCP Manager</span>
+          <span class="arch-chip hl">kaleido-mcp (unified)</span>
+          <span class="arch-chip">wdk-wallet-rln-mcp</span>
+          <span class="arch-chip">wdk-wallet-spark-mcp</span>
+          <span class="eco-chip" style="font-family:var(--mono);font-size:11px;padding:5px 12px;border:1px solid var(--border);color:var(--muted)">60+ tools · stdio / HTTP</span>
+          <span class="arch-chip">WdkMcpServer + MppClient</span>
+          <span class="arch-chip">MCP Auth token</span>
         </div>
       </div>
       <div class="arch-layer reveal">
         <div class="arch-layer-header">
           <span class="arch-layer-num">L1</span>
-          <span class="arch-layer-name">WDK Wallet Layer</span>
+          <span class="arch-layer-name">WDK Libraries · npm</span>
         </div>
         <div class="arch-layer-body">
-          <span class="arch-chip hl">WDK Spark L2</span>
-          <span class="arch-chip hl">WDK RLN Node</span>
-          <span class="arch-chip">Lightning channels</span>
-          <span class="arch-chip">RGB assets (USDT · XAUT)</span>
-          <span class="arch-chip">LSPS1 liquidity</span>
-          <span class="arch-chip">Atomic taker</span>
-          <span class="arch-chip">Non-custodial</span>
+          <span class="arch-chip hl">@kaleidorg/wdk-wallet-rln</span>
+          <span class="arch-chip hl">@kaleidorg/wdk-protocol-swap-kaleidoswap</span>
+          <span class="arch-chip">@tetherto/wdk-wallet-spark</span>
+          <span class="arch-chip">kaleido-sdk</span>
+          <span class="arch-chip">RlnWalletManager</span>
+          <span class="arch-chip">KaleidoswapProtocol</span>
         </div>
       </div>
       <div class="arch-layer reveal">
@@ -1180,6 +1577,7 @@
           <span class="arch-chip">Bitcoin Lightning</span>
           <span class="arch-chip">RGB Protocol</span>
           <span class="arch-chip">KaleidoSwap DEX</span>
+          <span class="arch-chip">WDK Spark L2</span>
           <span class="arch-chip">HTLC Atomic Swaps</span>
           <span class="arch-chip">LSPS1</span>
           <span class="arch-chip">MPP / L402</span>
@@ -1225,6 +1623,9 @@
           <div class="risk-item"><span class="risk-key" style="font-family:var(--mono);font-size:10px">GET /status</span><span class="risk-val" style="font-size:11px">full agent state</span></div>
           <div class="risk-item"><span class="risk-key" style="font-family:var(--mono);font-size:10px">POST /run</span><span class="risk-val" style="font-size:11px">trigger task</span></div>
           <div class="risk-item"><span class="risk-key" style="font-family:var(--mono);font-size:10px">POST /chat</span><span class="risk-val" style="font-size:11px">wallet assistant</span></div>
+          <div class="risk-item"><span class="risk-key" style="font-family:var(--mono);font-size:10px">GET/POST /config</span><span class="risk-val" style="font-size:11px">read / update config</span></div>
+          <div class="risk-item"><span class="risk-key" style="font-family:var(--mono);font-size:10px">GET /tasks</span><span class="risk-val" style="font-size:11px">all tasks + last run</span></div>
+          <div class="risk-item"><span class="risk-key" style="font-family:var(--mono);font-size:10px">GET /skills</span><span class="risk-val" style="font-size:11px">enabled skills</span></div>
         </div>
       </div>
     </div>
@@ -1360,39 +1761,44 @@ docker compose --env-file .env.container \
       <div class="tech-desc">Anthropic Sonnet 4.6 via MCP tool calls. OpenAI GPT-4 supported as drop-in alternative.</div>
     </div>
     <div class="tech-card reveal">
-      <div class="tech-layer">Wallet</div>
+      <div class="tech-layer">Wallet SDK</div>
       <div class="tech-name">WDK</div>
-      <div class="tech-desc">Tether's Wallet Development Kit — Spark L2 + RLN Lightning node. 100% non-custodial.</div>
+      <div class="tech-desc">Tether's Wallet Development Kit — Spark L2 + RLN Lightning. Extended with our own WalletManager and SwapProtocol npm packages.</div>
     </div>
     <div class="tech-card reveal">
       <div class="tech-layer">DEX</div>
       <div class="tech-name">KaleidoSwap</div>
-      <div class="tech-desc">Lightning DEX for RGB assets. Atomic HTLC + REST orders + LSPS1 channel liquidity.</div>
+      <div class="tech-desc">Lightning DEX for RGB assets. Atomic HTLC + REST orders + LSPS1. Integrated via kaleido-sdk in both WDK library and MCP layers.</div>
     </div>
     <div class="tech-card reveal">
-      <div class="tech-layer">Protocol</div>
+      <div class="tech-layer">Tool Protocol</div>
       <div class="tech-name">MCP</div>
-      <div class="tech-desc">Model Context Protocol — 60+ tools exposed to the LLM across 2 MCP server processes.</div>
+      <div class="tech-desc">Model Context Protocol. kaleido-mcp unifies 60+ tools (Spark, RLN, DEX, MPP) in one server. Standalone RLN + Spark MCP servers available separately.</div>
     </div>
     <div class="tech-card reveal">
-      <div class="tech-layer">Runtime</div>
+      <div class="tech-layer">Agent Runtime</div>
       <div class="tech-name">Nanobot</div>
-      <div class="tech-desc">Long-running agent gateway with Telegram operator surface and persistent task scheduling.</div>
+      <div class="tech-desc">Detached gateway process with Telegram operator surface, persistent cron scheduling, and SKILL.md system-prompt injection.</div>
     </div>
     <div class="tech-card reveal">
       <div class="tech-layer">Assets</div>
       <div class="tech-name">RGB</div>
-      <div class="tech-desc">USDT and XAUT issued as RGB assets on Bitcoin Lightning. Native, sovereign, on-chain settlement.</div>
+      <div class="tech-desc">USDT and XAUT as RGB assets on Bitcoin Lightning. Native, sovereign, on-chain settlement without bridging to other chains.</div>
+    </div>
+    <div class="tech-card reveal">
+      <div class="tech-layer">Payments</div>
+      <div class="tech-name">MPP / L402</div>
+      <div class="tech-desc">Machine Payments Protocol over HTTP 402. Agent pays for premium market data via Lightning micropayments — no API keys, no signup, pay-per-request.</div>
     </div>
     <div class="tech-card reveal">
       <div class="tech-layer">Backend</div>
       <div class="tech-name">TypeScript</div>
-      <div class="tech-desc">Node.js 20. Vitest test suite. Docker + Nginx container for production deployment.</div>
+      <div class="tech-desc">Node.js 20 across all packages. Vitest unit + integration tests. Docker + Nginx for production. pnpm + npm workspaces.</div>
     </div>
     <div class="tech-card reveal">
       <div class="tech-layer">Dashboard</div>
       <div class="tech-name">React 18</div>
-      <div class="tech-desc">Vite + Tailwind CSS. Real-time portfolio view, task scheduler, wallet assistant with voice.</div>
+      <div class="tech-desc">Vite + Tailwind CSS. Real-time portfolio view, task scheduler, chat panel, and skills manager. Polls :4242/status every 5s.</div>
     </div>
   </div>
 </section>
@@ -1401,12 +1807,16 @@ docker compose --env-file .env.container \
 <footer>
   <div class="footer-logo">Kaleido<span>Agent</span></div>
   <ul class="footer-links">
-    <li><a href="https://github.com/kaleidoswap/kaleidoagent">GitHub</a></li>
+    <li><a href="https://github.com/kaleidoswap/kaleidoagent">kaleidoagent</a></li>
+    <li><a href="https://github.com/kaleidoswap/kaleido-mcp">kaleido-mcp</a></li>
+    <li><a href="https://github.com/kaleidoswap/wdk-wallet-rln-mcp">wdk-wallet-rln-mcp</a></li>
+    <li><a href="https://github.com/kaleidoswap/wdk-wallet-spark-mcp">wdk-wallet-spark-mcp</a></li>
+    <li><a href="https://github.com/kaleidoswap/wdk-wallet-rln">wdk-wallet-rln</a></li>
     <li><a href="https://kaleidoswap.com">KaleidoSwap</a></li>
     <li><a href="https://docs.wdk.tether.io">WDK Docs</a></li>
     <li><a href="https://dorahacks.io">DoraHacks</a></li>
   </ul>
-  <div class="footer-copy">Apache 2.0 · WDK Hackathon Galáctica 2026</div>
+  <div class="footer-copy">Apache 2.0 · Hackathon Galáctica: WDK Edition 1 · 2026</div>
 </footer>
 
 <script>
@@ -1432,6 +1842,9 @@ const lines = [
   [{c:'t-info',t:'→'},{c:'',t:' wdk_atomic_taker'}],
   [{c:'t-info',t:'→'},{c:'',t:' kaleidoswap_atomic_execute'}],
   [{c:'t-ok',t:'✓'},{c:'',t:' Swap Succeeded — BTC 70%  USDT 20%  XAUT 10%'}],
+  [{c:'t-comment',t:'# dca loop fired ───────────────────'}],
+  [{c:'t-info',t:'→'},{c:'',t:' kaleidoswap_get_quote USDT→BTC (rate check)'}],
+  [{c:'t-ok',t:'✓'},{c:'',t:' DCA buy $10 USDT → 10,526 sats  [price_aware: off]'}],
   [{c:'t-prompt',t:'$'},{c:'',t:' '},{c:'cursor',t:''}],
 ];
 
@@ -1481,7 +1894,7 @@ function startAuto() {
 }
 startAuto();
 
-// ── Mode toggle (MCP / Nanobot) ─────────────────────────
+// ── Mode toggle (Nanobot / MCP) ─────────────────────────
 document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const mode = btn.dataset.mode;

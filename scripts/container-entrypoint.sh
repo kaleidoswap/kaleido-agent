@@ -7,7 +7,7 @@ TASKS_PATH="${TASKS_PATH:-$STATE_DIR/tasks.json}"
 ENV_PATH="${STATE_DIR}/.env"
 WORKSPACE_DIR="${STATE_DIR}/.nanobot/workspace"
 
-mkdir -p "$STATE_DIR" "$STATE_DIR/logs" "$WORKSPACE_DIR"
+mkdir -p "$STATE_DIR" "$STATE_DIR/logs" "$WORKSPACE_DIR" "$STATE_DIR/.nanobot/cron"
 
 if [ ! -f "$CONFIG_PATH" ]; then
   cp /app/kaleidoagent/defaults/agent.config.json "$CONFIG_PATH"

@@ -222,10 +222,37 @@ export function Sidebar({ status, connection, runningLoop, runError, onRunLoop }
 
         <div className="border-t border-white/5" />
 
+        {status.runtime && (
+          <>
+            <section>
+              <h2 className="mb-3 text-[10px] font-mono uppercase tracking-widest text-gray-600">Nanobot</h2>
+              <div className="space-y-2 rounded-lg border border-white/5 bg-white/[0.02] p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono text-gray-500">Gateway</span>
+                  <span className={`text-[11px] font-mono ${status.runtime.gateway_running ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {status.runtime.gateway_running ? 'running' : 'stopped'}
+                    {status.runtime.gateway_port ? ` :${status.runtime.gateway_port}` : ''}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono text-gray-500">Mode</span>
+                  <span className="text-[11px] font-mono text-gray-400">{status.agent_mode}</span>
+                </div>
+                {status.runtime.health_error && (
+                  <p className="text-[10px] font-mono text-red-400/80">{status.runtime.health_error}</p>
+                )}
+              </div>
+            </section>
+            <div className="border-t border-white/5" />
+          </>
+        )}
+
         <section>
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="text-[10px] font-mono uppercase tracking-widest text-gray-600">Agent Tasks</h2>
-            <span className="text-[10px] font-mono uppercase tracking-widest text-orange-400/80">manual only</span>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-orange-400/80">
+              {status.agent_mode === 'skill' ? 'nanobot cron' : 'manual only'}
+            </span>
           </div>
           {runError && <p className="mb-2 text-[10px] font-mono text-red-400/80">{runError}</p>}
           <div className="space-y-2">

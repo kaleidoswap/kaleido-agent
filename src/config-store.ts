@@ -38,7 +38,7 @@ class ConfigStore {
   private _anthropicApiKey = ''
   private _openaiApiKey = ''
   private _envPath = ''
-  agentMode: AgentMode = 'mcp'
+  agentMode: AgentMode = 'skill'
 
   init(envPath: string, initialModel: string) {
     this._envPath = envPath

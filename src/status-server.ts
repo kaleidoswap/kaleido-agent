@@ -1,27 +1,40 @@
 /**
- * StatusServer — lightweight HTTP server exposing agent state and chat.
+ * StatusServer — thin bridge API between the webapp and Nanobot core.
  * Listens on 127.0.0.1:4242 (localhost only).
+ *
+ * Reads Nanobot workspace state, proxies commands to NanobotTaskRunner,
+ * and serves wallet data via WalletBridge (cli/agent/mcp).
  *
  * Endpoints:
  *   GET  /health  → { ok: true }
  *   GET  /status  → AgentStatusPayload (JSON)
- *   POST /run     → { loop: LoopType } → { ok: true }
- *   POST /chat    → { messages: ChatMessage[] } → ChatResponse
+ *   GET  /wallets → WalletSnapshot (via WalletBridge)
+ *   GET  /config  → agent + portfolio config
+ *   POST /config  → update config + sync nanobot
+ *   POST /run     → { task_id } → trigger task manually
+ *   POST /chat    → { messages } → ChatResponse
+ *   POST /chat/actions/swap → execute confirmed swap
+ *   GET  /skills  → list skills
+ *   PATCH /skills → enable/disable skill
+ *   GET  /tasks   → list tasks
+ *   POST /tasks   → create task
+ *   PATCH /tasks/:id → update task
+ *   DELETE /tasks/:id → delete task
  */
 
 import http from 'node:http'
 import { readdir } from 'node:fs/promises'
-import { join } from 'node:path'
-import { agentState, type WalletSnapshot, type RgbAssetBalance } from './agent-state.js'
+import { z } from 'zod'
+import { agentState } from './agent-state.js'
 import { configStore } from './config-store.js'
 import { agentConfigStore } from './agent-config-store.js'
 import { executeConfirmedSwap, type SwapActionInput } from './chat-actions.js'
 import { tasksStore, type AgentTask } from './tasks-store.js'
 import type { ChatMessage, ChatRunner } from './chat-runner.js'
-import type { AgentRunner } from './agent-runner.js'
 import type { Scheduler } from './scheduler.js'
 import type { McpManager } from './mcp-manager.js'
 import type { NanobotManager } from './nanobot-manager.js'
+import type { WalletBridge } from './wallet-bridge.js'
 import { getSkillsDir } from './runtime-paths.js'
 
 // ─── Skills helpers ──────────────────────────────────────────────────────────
@@ -82,114 +95,107 @@ function readBody(req: http.IncomingMessage): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
+// Config patch validation
+// ---------------------------------------------------------------------------
+
+const configPatchSchema = z.object({
+  provider: z.enum(['anthropic', 'openai']).optional(),
+  model: z.string().max(100).optional(),
+  agent_mode: z.enum(['mcp', 'skill']).optional(),
+  anthropic_api_key: z.string().max(500).optional(),
+  openai_api_key: z.string().max(500).optional(),
+  portfolio: z.object({
+    targets: z.record(z.string(), z.number().min(0).max(100)).optional(),
+    rebalance_threshold_pct: z.number().min(0).max(100).optional(),
+    max_swap_usd: z.number().min(0).optional(),
+    min_btc_reserve_sats: z.number().int().min(0).optional(),
+    max_concurrent_orders: z.number().int().min(1).max(10).optional(),
+    stop_loss_btc_sats: z.number().int().min(0).optional(),
+    dry_run: z.boolean().optional(),
+    trading_mode: z.enum(['atomic', 'rest', 'both']).optional(),
+    lsp: z.object({
+      lsp_balance_sat: z.number().int().min(0).optional(),
+      client_balance_sat: z.number().int().min(0).optional(),
+      channel_expiry_blocks: z.number().int().min(0).optional(),
+      min_outbound_liquidity_sat: z.number().int().min(0).optional(),
+      auto_buy_channel: z.boolean().optional(),
+    }).optional(),
+  }).optional(),
+  schedule: z.object({
+    rebalance_interval_sec: z.number().int().min(0).optional(),
+    heartbeat_interval_sec: z.number().int().min(0).optional(),
+    daily_summary_cron: z.string().max(20).optional(),
+  }).optional(),
+})
+
+// ---------------------------------------------------------------------------
 // Server factory
 // ---------------------------------------------------------------------------
 
-// ---------------------------------------------------------------------------
-// Wallet snapshot refresh — calls MCP tools directly, no agent turn needed
-// ---------------------------------------------------------------------------
-
-async function refreshWalletSnapshot(mcp: McpManager): Promise<WalletSnapshot> {
-  const snapshot: WalletSnapshot = { fetched_at: new Date().toISOString(), rln: null, spark: null }
-  try {
-    const [balancesRaw, channelsRaw, sparkRaw, assetsRaw] = await Promise.allSettled([
-      mcp.callTool('wdk_get_balances', { skip_sync: true }),
-      mcp.callTool('wdk_list_channels', {}),
-      mcp.callTool('spark_get_balance', {}),
-      mcp.callTool('wdk_list_assets', {}),
-    ])
-
-    if (balancesRaw.status === 'fulfilled') {
-      const b = JSON.parse(balancesRaw.value) as {
-        btc_onchain?: { vanilla_spendable_sats?: number; colored_spendable_sats?: number }
-        lightning_balance_sat?: number
-      }
-      const onchain = (b.btc_onchain?.vanilla_spendable_sats ?? 0) + (b.btc_onchain?.colored_spendable_sats ?? 0)
-      const channels = channelsRaw.status === 'fulfilled'
-        ? JSON.parse(channelsRaw.value) as {
-            channel_count?: number
-            total_outbound_msat?: number
-            total_inbound_msat?: number
-          }
-        : null
-
-      // Fetch RGB asset balances in parallel
-      let assets: RgbAssetBalance[] = []
-      if (assetsRaw.status === 'fulfilled') {
-        const assetList = JSON.parse(assetsRaw.value) as Array<{
-          asset_id?: string
-          ticker?: string
-          precision?: number
-        }>
-        const balanceResults = await Promise.allSettled(
-          assetList
-            .filter((a) => a.asset_id)
-            .map(async (a) => {
-              const raw = await mcp.callTool('wdk_get_asset_balance', { asset_id: a.asset_id })
-              const bal = JSON.parse(raw) as {
-                spendable?: number
-                offchain_outbound?: number
-                offchain_inbound?: number
-              }
-              return {
-                asset_id: a.asset_id!,
-                ticker: a.ticker ?? a.asset_id!,
-                precision: a.precision ?? 0,
-                spendable: bal.spendable ?? 0,
-                offchain_outbound: bal.offchain_outbound ?? 0,
-                offchain_inbound: bal.offchain_inbound ?? 0,
-              } satisfies RgbAssetBalance
-            }),
-        )
-        assets = balanceResults
-          .filter((r): r is PromiseFulfilledResult<RgbAssetBalance> => r.status === 'fulfilled')
-          .map((r) => r.value)
-      }
-
-      snapshot.rln = {
-        btc_onchain_sats: onchain,
-        lightning_balance_sat: b.lightning_balance_sat ?? 0,
-        channel_count: channels?.channel_count ?? 0,
-        total_outbound_sat: Math.round((channels?.total_outbound_msat ?? 0) / 1000),
-        total_inbound_sat: Math.round((channels?.total_inbound_msat ?? 0) / 1000),
-        assets,
-      }
-    }
-
-    if (sparkRaw.status === 'fulfilled') {
-      const s = JSON.parse(sparkRaw.value) as { balance_sats?: number }
-      snapshot.spark = { balance_sats: s.balance_sats ?? 0 }
-    }
-  } catch (err) {
-    snapshot.error = String(err)
-  }
-  agentState.setWalletSnapshot(snapshot)
-  return snapshot
+interface StatusServerOptions {
+  port?: number
+  chatRunner?: Pick<ChatRunner, 'chat'> & { setDryRun?: (dryRun: boolean) => void }
+  scheduler?: Scheduler
+  mcp?: McpManager
+  nanobot?: NanobotManager
+  walletBridge?: WalletBridge
+  portfolioParams?: Record<string, unknown>
 }
 
-// ---------------------------------------------------------------------------
-// Server factory
-// ---------------------------------------------------------------------------
-
+export function startStatusServer(opts: StatusServerOptions): http.Server
+/** @deprecated — use options object form */
 export function startStatusServer(
-  port = 4242,
+  port: number,
   chatRunner?: Pick<ChatRunner, 'chat'> & { setDryRun?: (dryRun: boolean) => void },
   scheduler?: Scheduler,
-  runner?: Pick<AgentRunner, 'setDryRun'>,
+  runner?: unknown,
   mcp?: McpManager,
   nanobot?: NanobotManager,
+  walletBridge?: WalletBridge,
+  portfolioParams?: Record<string, unknown>,
+): http.Server
+export function startStatusServer(
+  portOrOpts: number | StatusServerOptions,
+  chatRunnerArg?: Pick<ChatRunner, 'chat'> & { setDryRun?: (dryRun: boolean) => void },
+  schedulerArg?: Scheduler,
+  _runnerArg?: unknown,
+  mcpArg?: McpManager,
+  nanobotArg?: NanobotManager,
+  walletBridgeArg?: WalletBridge,
+  portfolioParamsArg?: Record<string, unknown>,
 ): http.Server {
+  // Normalize both call signatures
+  const o: StatusServerOptions = typeof portOrOpts === 'object'
+    ? portOrOpts
+    : {
+        port: portOrOpts,
+        chatRunner: chatRunnerArg,
+        scheduler: schedulerArg,
+        mcp: mcpArg,
+        nanobot: nanobotArg,
+        walletBridge: walletBridgeArg,
+        portfolioParams: portfolioParamsArg,
+      }
+
+  const port = o.port ?? 4242
+  const chatRunner = o.chatRunner
+  const scheduler = o.scheduler
+  const mcp = o.mcp
+  const nanobot = o.nanobot
+  const walletBridge = o.walletBridge
+  let portfolioParams = o.portfolioParams
+
   const syncNanobot = async () => {
     if (!nanobot) return
     const tasks = await tasksStore.list()
-    await nanobot.sync(tasks)
-    await scheduler?.reload()
+    await nanobot.sync(tasks, portfolioParams)
   }
 
   const server = http.createServer(async (req, res) => {
-    // CORS — allow the Chrome extension origin
-    res.setHeader('Access-Control-Allow-Origin', '*')
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    // CORS — restrict to webapp origin (configurable via WEBAPP_ORIGIN env var)
+    const allowedOrigin = process.env.WEBAPP_ORIGIN || 'http://localhost:5173'
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin)
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS')
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
     if (req.method === 'OPTIONS') {
@@ -216,15 +222,15 @@ export function startStatusServer(
       return
     }
 
-    // GET /wallets — live wallet balances (MCP mode only)
+    // GET /wallets — live wallet balances via WalletBridge
     if (req.url === '/wallets' && req.method === 'GET') {
-      if (!mcp) {
+      if (!walletBridge) {
         res.writeHead(503, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ error: 'MCP not available in skill mode' }))
+        res.end(JSON.stringify({ error: 'Wallet bridge not configured' }))
         return
       }
       try {
-        const snapshot = await refreshWalletSnapshot(mcp)
+        const snapshot = await walletBridge.refresh()
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify(snapshot))
       } catch (err) {
@@ -248,19 +254,14 @@ export function startStatusServer(
     if (req.url === '/config' && req.method === 'POST') {
       try {
         const body = await readBody(req)
-        const patch = JSON.parse(body) as {
-          provider?: 'anthropic' | 'openai'
-          model?: string
-          agent_mode?: 'mcp' | 'skill'
-          anthropic_api_key?: string
-          openai_api_key?: string
-          portfolio?: Parameters<typeof agentConfigStore.update>[0]['portfolio']
-          schedule?: {
-            rebalance_interval_sec?: number
-            heartbeat_interval_sec?: number
-            daily_summary_cron?: string
-          }
+        const raw = JSON.parse(body)
+        const parsed = configPatchSchema.safeParse(raw)
+        if (!parsed.success) {
+          res.writeHead(400, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'Validation failed', issues: parsed.error.issues }))
+          return
         }
+        const patch = parsed.data
 
         configStore.update({
           provider: patch.provider,
@@ -277,7 +278,7 @@ export function startStatusServer(
 
         const configFile = agentConfigStore.update({
           agent: patch.agent_mode ? { mode: patch.agent_mode } : undefined,
-          portfolio: patch.portfolio,
+          portfolio: patch.portfolio as Parameters<typeof agentConfigStore.update>[0]['portfolio'],
           schedule: patch.schedule,
         })
 
@@ -286,15 +287,15 @@ export function startStatusServer(
 
         agentState.updateRuntimeConfig(configStore.provider, configStore.model, configFile.agent.mode)
         agentState.setDryRun(configFile.portfolio.dry_run)
-        runner?.setDryRun(configFile.portfolio.dry_run)
         if (typeof chatRunner?.setDryRun === 'function') {
           chatRunner.setDryRun(configFile.portfolio.dry_run)
         }
 
-        scheduler?.updatePortfolioParams({
+        portfolioParams = {
           ...configFile.portfolio,
           dry_run: configFile.portfolio.dry_run,
-        })
+        }
+        scheduler?.updatePortfolioParams(portfolioParams)
         await syncNanobot()
 
         res.writeHead(200, { 'Content-Type': 'application/json' })
@@ -348,7 +349,7 @@ export function startStatusServer(
     if (req.url === '/chat/actions/swap' && req.method === 'POST') {
       if (!mcp) {
         res.writeHead(503, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ error: 'MCP not available in skill mode' }))
+        res.end(JSON.stringify({ error: 'Swap execution requires MCP mode. Use the chat assistant to request swaps in skill mode.' }))
         return
       }
 
@@ -362,8 +363,8 @@ export function startStatusServer(
         }
 
         const result = await executeConfirmedSwap(mcp, action, agentState.getStatus().dry_run)
-        const status = result.ok ? 200 : result.final_status === 'DRY_RUN' ? 409 : 202
-        res.writeHead(status, { 'Content-Type': 'application/json' })
+        const statusCode = result.ok ? 200 : result.final_status === 'DRY_RUN' ? 409 : 202
+        res.writeHead(statusCode, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify(result))
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
@@ -528,10 +529,10 @@ export function startStatusServer(
 
   server.listen(port, host, () => {
     process.stderr.write(`[status-server] Listening on http://${host}:${port}\n`)
-    // Kick off an initial wallet fetch shortly after boot, then refresh every 30s
-    if (mcp) {
-      setTimeout(() => refreshWalletSnapshot(mcp).catch(() => {}), 5_000)
-      setInterval(() => refreshWalletSnapshot(mcp).catch(() => {}), 30_000)
+    // Kick off initial wallet fetch shortly after boot, then refresh every 30s
+    if (walletBridge) {
+      setTimeout(() => walletBridge.refresh().catch(() => {}), 5_000)
+      setInterval(() => walletBridge.refresh().catch(() => {}), 30_000)
     }
   })
 

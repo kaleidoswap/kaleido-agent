@@ -109,9 +109,11 @@ export class ChatRunner {
     let finalText = ''
     const toolTrace: ToolCallTrace[] = []
     const trace: TraceStep[] = []
+    const deadline = Date.now() + 2 * 60 * 1000 // 2-minute wall-clock limit for chat
 
     // Agentic loop
     while (toolCallCount < MAX_TOOL_CALLS) {
+      if (Date.now() > deadline) break
       const turn = await provider.runTurn(
         model,
         512,

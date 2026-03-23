@@ -1,11 +1,11 @@
 /**
- * Scheduler — task-driven autonomous loop runner for KaleidoAgent.
+ * Scheduler — manual task trigger for KaleidoAgent.
  *
- * Loads all enabled tasks from tasks.json and creates one interval timer per task.
- * Tasks with run_on_startup=true also fire once 5 seconds after start().
- *
- * Tasks can be triggered manually via trigger(taskId) from the HTTP API.
- * Concurrent runs of the same task are silently skipped.
+ * Scheduling is now handled by Nanobot's built-in cron system (see nanobot-cron-sync.ts).
+ * This class only handles:
+ *   - Manual triggers via trigger(taskId) from the HTTP API
+ *   - Tracking active/running tasks
+ *   - Startup tasks (run_on_startup=true) via fireStartupTasks()
  */
 
 import type { AgentRunner } from './agent-runner.js'
@@ -17,10 +17,8 @@ export class Scheduler {
   private runner: Pick<AgentRunner, 'run' | 'setDryRun'>
   private logger: Logger
   private portfolioParams: Record<string, unknown>
-  private timers: Map<string, ReturnType<typeof setInterval>> = new Map()
-  private startupTimeouts: ReturnType<typeof setTimeout>[] = []
-  private running = false
   private activeTasks = new Set<string>()
+  private startupTimeouts: ReturnType<typeof setTimeout>[] = []
 
   constructor(
     runner: Pick<AgentRunner, 'run' | 'setDryRun'>,
@@ -32,54 +30,26 @@ export class Scheduler {
     this.portfolioParams = portfolioParams
   }
 
-  async start(): Promise<void> {
-    if (this.running) return
-    this.running = true
-    await this.loadTimers()
-  }
-
-  async reload(): Promise<void> {
-    if (!this.running) return
-    for (const t of this.timers.values()) clearInterval(t)
-    this.timers.clear()
-    for (const t of this.startupTimeouts) clearTimeout(t)
-    this.startupTimeouts = []
-    await this.loadTimers()
-  }
-
-  private async loadTimers(): Promise<void> {
-
+  /** Fire run_on_startup tasks after a short delay. */
+  async fireStartupTasks(): Promise<void> {
     const tasks = await tasksStore.list()
-    const enabled = tasks.filter((t) => t.enabled && t.schedule_sec > 0)
+    const startup = tasks.filter((t) => t.enabled && t.run_on_startup)
 
-    for (const task of enabled) {
-      const intervalMs = task.schedule_sec * 1000
-      process.stderr.write(`[scheduler] "${task.name}" (${task.id}): every ${task.schedule_sec}s\n`)
-
-      const timer = setInterval(() => {
-        if (this.running) void this.runTask(task.id, task.skill)
-      }, intervalMs)
-      this.timers.set(task.id, timer)
-
-      if (task.run_on_startup) {
-        process.stderr.write(`[scheduler] "${task.name}": running at startup (5s delay)\n`)
-        this.startupTimeouts.push(
-          setTimeout(() => {
-            if (this.running) void this.runTask(task.id, task.skill)
-          }, 5_000),
-        )
-      }
+    for (const task of startup) {
+      process.stderr.write(`[scheduler] "${task.name}": running at startup (5s delay)\n`)
+      this.startupTimeouts.push(
+        setTimeout(() => {
+          void this.runTask(task.id, task.skill)
+        }, 5_000),
+      )
     }
 
-    if (enabled.length === 0) {
-      process.stderr.write('[scheduler] No enabled tasks — run tasks manually via HTTP API.\n')
+    if (startup.length === 0) {
+      process.stderr.write('[scheduler] No startup tasks.\n')
     }
   }
 
   stop(): void {
-    this.running = false
-    for (const t of this.timers.values()) clearInterval(t)
-    this.timers.clear()
     for (const t of this.startupTimeouts) clearTimeout(t)
     this.startupTimeouts = []
   }
@@ -94,7 +64,6 @@ export class Scheduler {
 
   /** Manual trigger from HTTP API — throws if any task is already running */
   async trigger(taskId: string): Promise<void> {
-    if (!this.running) throw new Error('Scheduler is not running')
     if (this.activeTasks.size > 0) {
       const active = Array.from(this.activeTasks).join(', ')
       throw new Error(`Task already running: ${active}`)
@@ -107,13 +76,13 @@ export class Scheduler {
 
   private async runTask(taskId: string, skillName: string): Promise<void> {
     if (this.activeTasks.has(taskId)) {
-      process.stderr.write(`[scheduler] ⏭ Skipping "${taskId}" — already running\n`)
+      process.stderr.write(`[scheduler] Skipping "${taskId}" — already running\n`)
       return
     }
 
     this.activeTasks.add(taskId)
     agentState.setLoopActive(taskId, true)
-    process.stderr.write(`[scheduler] → starting "${taskId}" (skill: ${skillName})\n`)
+    process.stderr.write(`[scheduler] Starting "${taskId}" (skill: ${skillName})\n`)
 
     try {
       const result = await this.runner.run(taskId, skillName, this.portfolioParams)
@@ -121,11 +90,11 @@ export class Scheduler {
       agentState.recordRunResult(result)
       await tasksStore.update(taskId, { last_run_at: result.timestamp })
       process.stderr.write(
-        `[scheduler] ✓ "${taskId}" done in ${result.duration_ms}ms (${result.tool_calls} tool calls)\n`,
+        `[scheduler] "${taskId}" done in ${result.duration_ms}ms (${result.tool_calls} tool calls)\n`,
       )
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      process.stderr.write(`[scheduler] ✗ "${taskId}" failed: ${msg}\n`)
+      process.stderr.write(`[scheduler] "${taskId}" failed: ${msg}\n`)
       this.logger.error(taskId, msg)
       agentState.recordLoopError(taskId, msg)
     } finally {

@@ -14,6 +14,19 @@ vi.mock('@anthropic-ai/sdk', () => ({
 }))
 
 // ---------------------------------------------------------------------------
+// Force MCP mode for agent-runner tests (these test the MCP execution path)
+// ---------------------------------------------------------------------------
+
+vi.mock('../../src/config-store.js', () => ({
+  configStore: {
+    provider: 'anthropic',
+    model: 'claude-sonnet-4-6',
+    anthropicApiKey: 'sk-test',
+    openaiApiKey: '',
+    agentMode: 'mcp',
+    getPublicConfig: vi.fn().mockReturnValue({}),
+  },
+}))
 
 import { AgentRunner } from '../../src/agent-runner.js'
 

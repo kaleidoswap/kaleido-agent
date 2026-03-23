@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path'
 import type { AgentConfigFile } from './agent-config-store.js'
 import type { AIProviderName } from './providers/index.js'
 import type { AgentTask } from './tasks-store.js'
+import { writeCronJobs } from './nanobot-cron-sync.js'
 
 const execFileAsync = promisify(execFile)
 
@@ -155,6 +156,7 @@ export class NanobotManager {
   readonly configPath: string
   readonly heartbeatPath: string
   readonly tasksSnapshotPath: string
+  readonly cronDir: string
   readonly gatewayLogPath: string
   readonly gatewayPidPath: string
 
@@ -174,6 +176,7 @@ export class NanobotManager {
     this.configPath = resolve(this.instanceDir, 'config.json')
     this.heartbeatPath = resolve(this.workspaceDir, 'HEARTBEAT.md')
     this.tasksSnapshotPath = resolve(this.workspaceDir, 'tasks.snapshot.json')
+    this.cronDir = resolve(this.instanceDir, 'cron')
     this.gatewayLogPath = resolve(this.instanceDir, 'gateway.log')
     this.gatewayPidPath = resolve(this.instanceDir, 'gateway.pid')
   }
@@ -193,13 +196,22 @@ export class NanobotManager {
     return process.env.NANOBOT_BIN || 'nanobot'
   }
 
-  async sync(tasks: AgentTask[]): Promise<void> {
+  async sync(tasks: AgentTask[], portfolioParams?: Record<string, unknown>): Promise<void> {
     await mkdir(this.instanceDir, { recursive: true })
     await mkdir(this.workspaceDir, { recursive: true })
     await this.writeConfig()
     await this.syncSkills()
     await this.writeHeartbeat(tasks)
     await this.writeTasksSnapshot(tasks)
+    if (portfolioParams) {
+      await this.syncCronJobs(tasks, portfolioParams)
+    }
+  }
+
+  async syncCronJobs(tasks: AgentTask[], portfolioParams: Record<string, unknown>): Promise<void> {
+    const agentConfig = this.getAgentConfig()
+    const dryRun = agentConfig.portfolio.dry_run
+    await writeCronJobs(this.cronDir, tasks, portfolioParams, dryRun)
   }
 
   async validate(tasks: AgentTask[]): Promise<{ ok: boolean; errors: string[] }> {
@@ -251,10 +263,11 @@ export class NanobotManager {
   async getRuntimeInfo(): Promise<NanobotRuntimeInfo> {
     const installed = await this.isInstalled()
     const pid = await this.readPid()
-    const health = await this.checkHealth()
+    const processAlive = pid !== null && (await this.isProcessAlive(pid))
+    const health = processAlive ? await this.checkHealth() : { ok: false }
     return {
       installed,
-      running: health.ok || (pid !== null && (await this.isProcessAlive(pid))),
+      running: processAlive,
       binary: this.binary,
       config_path: this.configPath,
       workspace_path: this.workspaceDir,
@@ -264,28 +277,59 @@ export class NanobotManager {
     }
   }
 
-  async startGateway(tasks: AgentTask[]): Promise<void> {
-    await this.sync(tasks)
+  async startGateway(tasks: AgentTask[], portfolioParams?: Record<string, unknown>): Promise<void> {
+    await this.sync(tasks, portfolioParams)
     const existingPid = await this.readPid()
-    if (existingPid !== null && (await this.isProcessAlive(existingPid))) {
-      return
+    if (existingPid !== null) {
+      if (await this.isProcessAlive(existingPid)) {
+        // Verify it's actually the gateway by checking health
+        const health = await this.checkHealth()
+        if (health.ok) return
+      }
+      // Stale PID — clean up
+      await rm(this.gatewayPidPath, { force: true })
     }
 
-    const logFd = openSync(this.gatewayLogPath, 'a')
-    const child = spawn(
-      this.binary,
-      ['gateway', '--config', this.configPath, '--workspace', this.workspaceDir],
-      {
-        cwd: this.projectRoot,
-        detached: true,
-        stdio: ['ignore', logFd, logFd],
-        env: process.env,
-      },
-    )
-    closeSync(logFd)
-    child.unref()
-    await writeFile(this.gatewayPidPath, `${child.pid}\n`, 'utf8')
-    await this.waitForHealth()
+    // In container mode, pipe gateway logs to both file and stderr (visible in docker logs).
+    // Locally, write to file only (detached, no tty).
+    const isContainer = !!process.env.KALEIDOAGENT_STATE_DIR
+    if (isContainer) {
+      const child = spawn(
+        'sh',
+        ['-c', `${this.binary} gateway --config ${this.configPath} --workspace ${this.workspaceDir} 2>&1 | tee -a ${this.gatewayLogPath}`],
+        {
+          cwd: this.projectRoot,
+          detached: true,
+          stdio: ['ignore', process.stderr, process.stderr],
+          env: process.env,
+        },
+      )
+      child.unref()
+      await writeFile(this.gatewayPidPath, `${child.pid}\n`, 'utf8')
+    } else {
+      const logFd = openSync(this.gatewayLogPath, 'a')
+      const child = spawn(
+        this.binary,
+        ['gateway', '--config', this.configPath, '--workspace', this.workspaceDir],
+        {
+          cwd: this.projectRoot,
+          detached: true,
+          stdio: ['ignore', logFd, logFd],
+          env: process.env,
+        },
+      )
+      closeSync(logFd)
+      child.unref()
+      await writeFile(this.gatewayPidPath, `${child.pid}\n`, 'utf8')
+    }
+
+    // Give the gateway a moment to start, then verify process is alive.
+    // Not all nanobot versions expose an HTTP health endpoint.
+    await new Promise((resolve) => setTimeout(resolve, 3_000))
+    const launchedPid = await this.readPid()
+    if (launchedPid !== null && !(await this.isProcessAlive(launchedPid))) {
+      throw new Error('Nanobot gateway process exited immediately — check gateway.log')
+    }
   }
 
   async stopGateway(): Promise<void> {
@@ -438,7 +482,7 @@ export class NanobotManager {
   }
 
   private async waitForHealth(): Promise<void> {
-    const deadline = Date.now() + 20_000
+    const deadline = Date.now() + 45_000
     while (Date.now() < deadline) {
       const health = await this.checkHealth()
       if (health.ok) return

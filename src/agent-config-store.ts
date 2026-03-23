@@ -30,8 +30,12 @@ export interface NanobotTelegramConfig {
   allow_from?: string[]
 }
 
+export type WalletFetchMethod = 'cli' | 'agent' | 'mcp'
+
 export interface NanobotConfigFile {
   gateway_port?: number
+  heartbeat_interval_sec?: number
+  wallet_fetch_method?: WalletFetchMethod
   telegram?: NanobotTelegramConfig
 }
 
@@ -82,15 +86,19 @@ class AgentConfigStore {
   }
 
   getMode(): AgentMode {
-    return this.config?.agent.mode ?? 'mcp'
+    return this.config?.agent.mode ?? 'skill'
   }
 
   getPublicConfig() {
     const cfg = this.getConfig()
     return {
-      agent_mode: cfg.agent.mode ?? 'mcp',
+      agent_mode: cfg.agent.mode ?? 'skill',
       portfolio: cfg.portfolio,
       schedule: cfg.schedule,
+      nanobot: {
+        heartbeat_interval_sec: cfg.nanobot?.heartbeat_interval_sec ?? cfg.schedule?.heartbeat_interval_sec ?? 300,
+        wallet_fetch_method: cfg.nanobot?.wallet_fetch_method ?? 'cli',
+      },
     }
   }
 

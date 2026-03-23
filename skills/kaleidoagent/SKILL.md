@@ -23,7 +23,7 @@ metadata:
 !`kaleido --json channel list`
 
 **Recent swap history (last 20):**
-!`kaleido --json swap history --limit 20`
+!`kaleido --json --agent swap order history --limit 20`
 
 **Market assets & pairs:**
 !`kaleido --json market assets`
@@ -38,8 +38,7 @@ metadata:
 - `"wallet balance"` — BTC on-chain + Lightning balance
 - `"asset list"` — RGB assets held (USDT, XAUT, etc.)
 - `"channel list"` — Lightning channels with liquidity
-- `"node status"` — node sync, peers, uptime
-- `"node info"` — node pubkey and details
+- `"node info"` — node pubkey, peers, sync status
 
 **Market data:**
 - `"market quote BTC/USDT --from-amount 100000 --from-layer BTC_LN"` — BTC price
@@ -50,31 +49,31 @@ metadata:
 - `"market info"` — maker node info (pubkey, version)
 
 **Trade history:**
-- `"swap history --limit 50"` — recent swaps
-- `"swap history --status PENDING"` — open orders
-- `"swap node-swaps"` — list node-level atomic swaps
-- `"asset transfers [--limit 50]"` — asset transfer history
+- `"swap order history --limit 50"` — recent swaps
+- `"swap order history --status PENDING"` — open orders
+- `"swap node list"` — list node-level atomic swaps
+- `"asset transfers <ASSET_ID>"` — asset transfer history
 - `"payment list"` — Lightning payment history
 
-**Swap execution:**
-- `"swap execute BTC/USDT --from-amount <sats> --from-layer BTC_LN --to-layer RGB_LN --yes"` — full market swap
-- `"swap atomic-status --payment-hash <hash>"` — atomic swap status
-- `"swap run --qty-from <n> --qty-to <n> [--from-asset <rgb:...>] [--to-asset <rgb:...>] --yes"` — node-level atomic swap
+**Atomic swap via Kaleidoswap maker:**
+- `"swap atomic init BTC/USDT --from-amount <sats> --from-layer BTC_LN --to-layer RGB_LN"` — init atomic swap
+- `"swap atomic execute --swapstring <s> --taker-pubkey <pk> --payment-hash <hash> --auto-whitelist"` — execute
+- `"swap atomic status <PAYMENT_HASH>"` — check status
 
-**Atomic swap primitives:**
-- `"maker init --qty-from <n> --qty-to <n> [--from-asset] [--to-asset] [--timeout 100]"` — init maker side
-- `"taker whitelist <swapstring>"` — accept swap on taker side
-- `"taker pubkey"` — get taker pubkey
-- `"maker execute --swapstring <s> --payment-secret <s> --taker-pubkey <pk>"` — finalise maker
+**Local node swap primitives:**
+- `"swap node init --qty-from <n> --qty-to <n> [--from-asset] [--to-asset]"` — init maker side
+- `"swap node whitelist --swapstring <s>"` — accept swap on taker side
+- `"node taker pubkey"` — get taker pubkey
+- `"swap node execute --swapstring <s> --payment-secret <s> --taker-pubkey <pk>"` — finalize
 
 **Asset management:**
 - `"asset sync"` — sync RGB wallet (run after swaps)
 - `"asset fail-transfers"` — mark stuck transfers as failed
-- `"asset refresh [--asset-id <id>]"` — refresh asset state (per-asset alternative to asset sync)
+- `"asset refresh"` — refresh pending transfers
 
 **LSP / channels:**
-- `"lsp info"` — LSP capabilities and channel options
-- `"lsp network-info"` — LSP node pubkey/connection
+- `"channel lsp info"` — LSP capabilities and channel options
+- `"channel lsp network-info"` — LSP node pubkey/connection
 - `"lsp estimate-fees --capacity-sat <n>"` — channel fee estimate
 - `"lsp order-create --capacity-sat <n>"` — buy a channel
 - `"lsp order-get <order-id>"` — poll order status

@@ -31,6 +31,8 @@ interface Props {
   onAction: (action: ChatAction) => void
 }
 
+const MAX_MESSAGES = 200
+
 const SUGGESTIONS = [
   'What is my BTC balance?',
   'Quote 50000 sats to USDT',
@@ -422,7 +424,10 @@ export function ChatPanel({
     const userMsg: Message = { role: 'user', content: text.trim() }
     const loadingMsg: Message = { role: 'assistant', content: '', loading: true }
 
-    setMessages((prev) => [...prev, userMsg, loadingMsg])
+    setMessages((prev) => {
+      const next = [...prev, userMsg, loadingMsg]
+      return next.length > MAX_MESSAGES ? next.slice(next.length - MAX_MESSAGES) : next
+    })
     setInput('')
     setSending(true)
 
@@ -565,11 +570,21 @@ export function ChatPanel({
           </button>
         </form>
 
-        <p className="text-[10px] text-gray-700 mt-1.5 font-mono text-center">
-          {connection === 'live'
-            ? 'MCP · Live data · WDK RLN + Spark + KaleidoSwap + L402'
-            : 'Connect agent to enable live data'}
-        </p>
+        <div className="flex items-center justify-center gap-2 mt-1.5">
+          <p className="text-[10px] text-gray-700 font-mono">
+            {connection === 'live'
+              ? 'MCP · Live data · WDK RLN + Spark + KaleidoSwap + L402'
+              : 'Connect agent to enable live data'}
+          </p>
+          {messages.length > 0 && (
+            <button
+              onClick={() => setMessages([])}
+              className="text-[10px] font-mono text-gray-700 hover:text-gray-400 transition-colors"
+            >
+              · clear
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )

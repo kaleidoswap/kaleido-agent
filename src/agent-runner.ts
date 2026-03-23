@@ -6,9 +6,8 @@
  *   skill — uses SkillLoader (SKILL.md with !`kaleido` injections) + a single
  *            run_kaleido_command tool that shells out to the kaleido CLI
  */
-import { exec } from 'node:child_process'
-import { promisify } from 'node:util'
 import { McpManager } from './mcp-manager.js'
+import { execFileAsync } from './utils/exec-file.js'
 import { configStore } from './config-store.js'
 import { createProvider } from './providers/index.js'
 import type { ToolCallResult, McpToolDef } from './providers/index.js'
@@ -20,8 +19,6 @@ import {
 } from './prompts.js'
 import { skillLoader } from './skill-loader.js'
 import type { AgentMode } from './agent-config-store.js'
-
-const execAsync = promisify(exec)
 
 export type LoopType = string   // kept for backwards compat — now equals task ID
 
@@ -144,12 +141,18 @@ export class AgentRunner {
 
     let finalResponse = ''
     let apiCallIndex = 0
+    const deadline = Date.now() + 5 * 60 * 1000 // 5-minute wall-clock limit
 
     this.log(`\n${'─'.repeat(60)}`)
     this.log(`[${taskId.toUpperCase()}] mcp-mode | skill: ${skillName} | model: ${model} | dry_run: ${this.config.dryRun}`)
     this.log(`${'─'.repeat(60)}`)
 
     while (toolCallCount < this.config.maxToolCallsPerRun) {
+      if (Date.now() > deadline) {
+        this.log(`  [TIMEOUT] Turn exceeded 5-minute wall-clock limit`)
+        break
+      }
+
       apiCallIndex++
       const turn = await provider.runTurn(model, this.config.maxTokens, AGENT_SYSTEM_PROMPT, tools, messages)
 
@@ -235,12 +238,18 @@ export class AgentRunner {
 
     let finalResponse = ''
     let apiCallIndex = 0
+    const deadline = Date.now() + 5 * 60 * 1000 // 5-minute wall-clock limit
 
     this.log(`\n${'─'.repeat(60)}`)
     this.log(`[${taskId.toUpperCase()}] skill-mode | skill: ${skillName} | model: ${model} | dry_run: ${this.config.dryRun}`)
     this.log(`${'─'.repeat(60)}`)
 
     while (toolCallCount < this.config.maxToolCallsPerRun) {
+      if (Date.now() > deadline) {
+        this.log(`  [TIMEOUT] Turn exceeded 5-minute wall-clock limit`)
+        break
+      }
+
       apiCallIndex++
       const turn = await provider.runTurn(model, this.config.maxTokens, systemPrompt, tools, messages)
 
@@ -309,8 +318,10 @@ export class AgentRunner {
     const bin = process.env.KALEIDO_BIN || 'kaleido'
     const nodeUrl = process.env.RLN_NODE_URL || 'http://localhost:3001'
     const apiUrl = process.env.KALEIDOSWAP_API_URL || 'https://api.staging.kaleidoswap.com'
+    // Split command string into args array — execFileAsync avoids shell injection
+    const args = ['--json', ...command.split(/\s+/).filter(Boolean)]
     try {
-      const { stdout } = await execAsync(`${bin} --json ${command}`, {
+      const { stdout } = await execFileAsync(bin, args, {
         timeout: 30_000,
         env: { ...process.env, KALEIDO_NODE_URL: nodeUrl, KALEIDO_API_URL: apiUrl },
       })

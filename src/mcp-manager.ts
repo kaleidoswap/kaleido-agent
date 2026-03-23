@@ -60,7 +60,8 @@ export class McpManager {
         // Convert MCP tool definitions → Anthropic SDK tool format
         for (const t of tools) {
           if (this.rawToolDefsByName.has(t.name)) {
-            process.stderr.write(`[mcp-manager] WARNING: tool name collision "${t.name}" from "${name}", overwriting previous definition\n`)
+            const prev = this.servers.find((s) => s.toolNames.has(t.name))
+            process.stderr.write(`[mcp-manager] WARNING: tool "${t.name}" from "${name}" overwrites definition from "${prev?.name ?? 'unknown'}"\n`)
           }
           this.allTools.push({
             name: t.name,
@@ -110,11 +111,18 @@ export class McpManager {
 
   async callTool(
     name: string,
-    input: Record<string, unknown>
+    input: Record<string, unknown>,
+    timeoutMs = 60_000,
   ): Promise<string> {
     for (const server of this.servers) {
       if (!server.toolNames.has(name)) continue
-      const result = await server.client.callTool({ name, arguments: input })
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`Tool "${name}" timed out after ${timeoutMs}ms`)), timeoutMs),
+      )
+      const result = await Promise.race([
+        server.client.callTool({ name, arguments: input }),
+        timeout,
+      ])
       const content = result.content as Array<{ type: string; text?: string }>
       return content.map((c) => c.text ?? '').join('\n')
     }

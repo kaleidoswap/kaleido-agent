@@ -44,19 +44,35 @@ function buildTaskPrompt(
   ].join('\n')
 }
 
-function buildRunResult(taskId: string, start: number, finalResponse: string): RunResult {
+function buildRunResult(taskId: string, start: number, rawResponse: string): RunResult {
   const trace: RunTraceStep[] = []
+  let usage = { input_tokens: 0, output_tokens: 0, estimated_cost_usd: 0 }
+  let toolCalls = 0
+  let finalResponse = rawResponse
+
+  // Try to extract usage metadata from nanobot's JSON envelope
+  try {
+    const parsed = JSON.parse(rawResponse)
+    if (parsed.usage) {
+      usage = {
+        input_tokens: parsed.usage.input_tokens ?? 0,
+        output_tokens: parsed.usage.output_tokens ?? 0,
+        estimated_cost_usd: parsed.usage.estimated_cost_usd ?? 0,
+      }
+    }
+    if (typeof parsed.tool_calls === 'number') toolCalls = parsed.tool_calls
+    if (parsed.response) finalResponse = parsed.response
+  } catch {
+    // Raw text response — no usage metadata available
+  }
+
   return {
     loop: taskId,
     timestamp: new Date().toISOString(),
-    tool_calls: 0,
+    tool_calls: toolCalls,
     final_response: finalResponse,
     trace,
     duration_ms: Date.now() - start,
-    usage: {
-      input_tokens: 0,
-      output_tokens: 0,
-      estimated_cost_usd: 0,
-    },
+    usage,
   }
 }

@@ -24,6 +24,22 @@ action. Fail loudly rather than silently deplete reserves.
 - **Autonomous loops** (rebalance, heartbeat, daily_summary): run on a schedule, return strict JSON.
 - **Chat assistant**: conversational, user-facing, always confirms before executing sends or swaps.
 
+## Arithmetic & Conversions
+
+**Never guess calculations.** LLMs are bad at arithmetic. For any conversion:
+
+- **sats → USD**: `sats / 100_000_000 × btc_price_usd`
+- **USD → sats**: `usd / btc_price_usd × 100_000_000`
+- **RGB raw → display**: `raw / 10^precision` (USDT precision=6, XAUT precision=9, BTC precision=11)
+
+Always fetch the live BTC price via `mcp_kaleido_l402_get_price` before converting.
+Double-check results: 34,547 sats at $70,000/BTC = $24.18, NOT $2.42.
+
+## Environment Constraints
+
+- **Read-only filesystem.** Do NOT run npm, pip, apt, or any package manager. Do NOT try to install skills from ClawHub or any registry. All available tools are already registered as MCP tools.
+- **No shell access.** Only use the MCP tools provided. Do not attempt to `exec` shell commands.
+
 ## Communication Style
 
 - Concise structured JSON for loop outputs.

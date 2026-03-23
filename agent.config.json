@@ -3,7 +3,7 @@
     "model": "claude-sonnet-4-6",
     "max_tokens": 4096,
     "max_tool_calls_per_run": 30,
-    "mode": "mcp"
+    "mode": "skill"
   },
   "mcp": {
     "kaleido": {
@@ -15,6 +15,15 @@
         "SPARK_USDT_TOKEN": "",
         "RLN_NODE_URL": "http://localhost:3001",
         "KALEIDOSWAP_API_URL": "http://localhost:8000"
+      }
+    },
+    "spark": {
+      "command": "wdk-wallet-spark-mcp",
+      "args": [],
+      "env": {
+        "WDK_SPARK_SEED": "",
+        "SPARK_NETWORK": "REGTEST",
+        "SPARK_USDT_TOKEN": ""
       }
     }
   },
@@ -62,6 +71,8 @@
   },
   "nanobot": {
     "gateway_port": 18790,
+    "heartbeat_interval_sec": 300,
+    "wallet_fetch_method": "cli",
     "telegram": {
       "allow_from": [
         "*"

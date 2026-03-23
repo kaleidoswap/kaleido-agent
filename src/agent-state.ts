@@ -91,7 +91,7 @@ class AgentStateStore {
   private dryRun = true
   private model = ''
   private provider = 'anthropic'
-  private agentMode = 'mcp'
+  private agentMode = 'skill'
   private portfolioTargets: Record<string, number> = {}
   private portfolioSnapshot: AgentStatusPayload['portfolio_snapshot'] = null
   private walletSnapshot: WalletSnapshot | null = null
@@ -104,7 +104,7 @@ class AgentStateStore {
   private loopStats: Record<string, LoopStats> = {}
   private recentRuns: RecentRun[] = []
 
-  init(dryRun: boolean, model: string, portfolioTargets: Record<string, number>, provider = 'anthropic', agentMode = 'mcp'): void {
+  init(dryRun: boolean, model: string, portfolioTargets: Record<string, number>, provider = 'anthropic', agentMode = 'skill'): void {
     this.dryRun = dryRun
     this.model = model
     this.provider = provider

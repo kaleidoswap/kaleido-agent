@@ -49,6 +49,14 @@ export interface WalletSnapshot {
   error?: string
 }
 
+export interface NanobotRuntime {
+  backend: 'nanobot'
+  installed: boolean
+  gateway_running: boolean
+  gateway_port: number | null
+  health_error?: string
+}
+
 export interface AgentStatus {
   running: boolean
   uptime_sec: number
@@ -72,6 +80,7 @@ export interface AgentStatus {
   cumulative_cost_usd: number
   cumulative_input_tokens: number
   cumulative_output_tokens: number
+  runtime: NanobotRuntime | null
   loops: Record<string, LoopStats>
   recent_runs: RecentRun[]
   tasks: AgentTask[]

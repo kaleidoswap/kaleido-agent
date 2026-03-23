@@ -15,6 +15,7 @@ COPY skills ./skills
 COPY scripts ./scripts
 COPY agent.config.json ./agent.config.json
 COPY tasks.json ./tasks.json
+COPY .nanobot/workspace ./.nanobot/workspace
 
 RUN pnpm run build:agent
 

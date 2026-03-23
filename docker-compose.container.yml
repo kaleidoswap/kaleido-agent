@@ -52,9 +52,7 @@ services:
     restart: unless-stopped
 
   kaleidoagent-api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/kaleidoswap/kaleidoagent:latest
     environment:
       AGENT_HOST: 0.0.0.0
       CONFIG_PATH: /var/lib/kaleidoagent/agent.config.json
@@ -107,9 +105,7 @@ services:
     restart: unless-stopped
 
   kaleidoagent-web:
-    build:
-      context: ./webapp
-      dockerfile: Dockerfile
+    image: ghcr.io/kaleidoswap/kaleidoagent-web:latest
     depends_on:
       kaleidoagent-api:
         condition: service_started

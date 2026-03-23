@@ -1,6 +1,7 @@
 services:
   kaleido-mcp:
     image: ghcr.io/kaleidoswap/kaleido-mcp:latest
+    platform: linux/amd64
     env_file: .env.container
     environment:
       PORT: 3013

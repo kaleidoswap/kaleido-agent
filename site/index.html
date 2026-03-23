@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KaleidoAgent — Autonomous Bitcoin L2 Portfolio Rebalancer</title>
+<title>KaleidoAgent — Autonomous Bitcoin L2 Agent</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Barlow:wght@300;400;500;600;700;800;900&family=Barlow+Condensed:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -786,13 +786,14 @@
   </div>
 
   <h1>Kaleido<br><span class="accent">Agent</span></h1>
-  <div class="hero-sub">Autonomous Bitcoin L2 Portfolio Rebalancer</div>
+  <div class="hero-sub">Autonomous Bitcoin L2 Agent</div>
 
   <p class="hero-desc">
-    A <strong>non-custodial</strong> autonomous trading agent for <strong>BTC · USDT · XAUT</strong>
+    A <strong>non-custodial</strong> autonomous agent for <strong>BTC · USDT · XAUT</strong>
     on the Lightning Network — built on a purpose-made <strong>6-package WDK stack</strong>.
-    Claude AI detects drift, executes <strong>atomic HTLC swaps</strong>,
-    and manages Lightning channels without human intervention.
+    Claude AI manages your portfolio, runs DCA strategies, executes <strong>atomic HTLC swaps</strong>,
+    manages Lightning channels, pays for data via <strong>MPP/L402</strong>,
+    and assists with wallet operations — without human intervention.
   </p>
 
   <div class="hero-actions">
@@ -816,9 +817,9 @@
 <!-- STATS BAR -->
 <div class="stats-bar">
   <div class="stat-item reveal">
-    <div class="stat-label">Loops Running</div>
+    <div class="stat-label">Core Loops</div>
     <div class="stat-value">3 <span class="unit">autonomous</span></div>
-    <div class="stat-note">rebalance · heartbeat · daily</div>
+    <div class="stat-note">rebalance · heartbeat · daily summary</div>
   </div>
   <div class="stat-item reveal">
     <div class="stat-label">Swap Protocol</div>
@@ -971,10 +972,10 @@
         <div class="eco-card-name">KaleidoAgent</div>
         <div class="eco-card-pkg">kaleidoagent</div>
         <div class="eco-card-desc">
-          Autonomous Bitcoin L2 portfolio rebalancer. Claude AI reasons over live balances,
-          detects allocation drift across BTC / USDT (RGB) / XAUT (RGB), and executes atomic HTLC swaps
-          via <strong>kaleido-mcp</strong>. Manages Lightning channels via LSPS1, runs a price-aware DCA loop,
-          pays for premium data via MPP/L402, and delivers daily summaries via Telegram.
+          Autonomous Bitcoin L2 agent. Claude AI manages portfolio allocations across BTC / USDT (RGB) / XAUT (RGB),
+          executes atomic HTLC swaps via <strong>kaleido-mcp</strong>, runs DCA strategies with price-aware logic,
+          manages Lightning channels via LSPS1, pays for premium data via MPP/L402,
+          handles cross-L2 asset moves, and provides an interactive wallet assistant.
           9 SKILL.md behaviors. Nanobot default runtime. React + Vite control panel.
         </div>
         <div class="eco-chips">
@@ -1002,9 +1003,10 @@
   <div class="section-label">How it works</div>
   <h2 class="section-title reveal">Three Autonomous<br>Loops</h2>
   <p class="section-body reveal">
-    You define target allocations. The agent runs continuously —
-    detecting drift, executing swaps, managing channels — using Claude AI
-    to reason about each decision before acting.
+    The agent runs three continuous background loops — rebalancing your portfolio,
+    keeping your Lightning node healthy, and generating daily reports.
+    Beyond the loops, 9 skills cover DCA, cross-L2 moves, MPP payments,
+    and an interactive wallet assistant. Claude AI reasons about every decision before acting.
   </p>
 
   <div class="loops-grid">
@@ -1052,11 +1054,12 @@
 <!-- SKILLS -->
 <section class="section" id="skills" style="background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
   <div class="section-label">Agent Skills</div>
-  <h2 class="section-title reveal">9 Specialized<br>Behaviors</h2>
+  <h2 class="section-title reveal">9 Specialized<br>Skills</h2>
   <p class="section-body reveal">
-    Each skill is a Markdown behavior file — loaded at runtime by Nanobot or the MCP runner.
+    Each skill is a Markdown behavior file — loaded at runtime and injected with live on-chain state
+    via <code style="font-family:var(--mono);font-size:13px;color:var(--orange)">!`kaleido cmd`</code> shell expansions.
     Skills define logic, tool usage, safety rules, and structured JSON output contracts.
-    They are hot-swappable and independently versioned.
+    Hot-swappable, independently versioned, and toggleable from the dashboard.
   </p>
 
   <div class="skills-grid">
@@ -1521,7 +1524,7 @@
 <section class="section" id="architecture">
   <div class="section-label">Architecture</div>
   <h2 class="section-title reveal">Built on WDK +<br>MCP + Lightning</h2>
-  <p class="section-body reveal">Clean layered architecture: Claude reasons at the top, kaleido-mcp provides the tool interface, WDK handles wallet execution. Each layer is independently replaceable and open-source.</p>
+  <p class="section-body reveal">Clean layered architecture: Claude reasons at the top, kaleido-mcp provides 60+ tools across wallet, DEX, and payments, WDK handles execution. Each layer is independently replaceable and open-source.</p>
 
   <div class="arch-grid">
     <div class="arch-layers">

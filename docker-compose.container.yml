@@ -1,16 +1,9 @@
 services:
   kaleido-mcp:
     image: ghcr.io/kaleidoswap/kaleido-mcp:latest
+    env_file: .env.container
     environment:
       PORT: 3013
-      WDK_SEED: ${WDK_SEED:-}
-      SPARK_NETWORK: ${SPARK_NETWORK:-REGTEST}
-      SPARK_SCAN_API_KEY: ${SPARK_SCAN_API_KEY:-}
-      SPARK_USDT_TOKEN: ${SPARK_USDT_TOKEN:-}
-      RLN_NODE_URL: ${RLN_NODE_URL:-http://host.docker.internal:3001}
-      KALEIDOSWAP_API_URL: ${KALEIDOSWAP_API_URL:-https://api.staging.kaleidoswap.com}
-      MPP_GATEWAY_URL: ${MPP_GATEWAY_URL:-}
-      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
@@ -19,6 +12,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    env_file: .env.container
     environment:
       AGENT_HOST: 0.0.0.0
       CONFIG_PATH: /var/lib/kaleidoagent/agent.config.json
@@ -27,20 +21,6 @@ services:
       KALEIDOAGENT_SKILLS_DIR: /app/kaleidoagent/skills
       KALEIDO_MCP_URL: http://kaleido-mcp:3013
       NANOBOT_KALEIDO_MCP_URL: http://kaleido-mcp:3013
-      RLN_NODE_URL: ${RLN_NODE_URL:-http://host.docker.internal:3001}
-      KALEIDOSWAP_API_URL: ${KALEIDOSWAP_API_URL:-https://api.staging.kaleidoswap.com}
-      MPP_GATEWAY_URL: ${MPP_GATEWAY_URL:-}
-      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
-      TELEGRAM_ALLOW_FROM: ${TELEGRAM_ALLOW_FROM:-}
-      AGENT_PROVIDER: ${AGENT_PROVIDER:-anthropic}
-      AGENT_MODEL: ${AGENT_MODEL:-claude-haiku-4-5-20251001}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      WDK_SEED: ${WDK_SEED:-}
-      SPARK_NETWORK: ${SPARK_NETWORK:-REGTEST}
-      SPARK_SCAN_API_KEY: ${SPARK_SCAN_API_KEY:-}
-      SPARK_USDT_TOKEN: ${SPARK_USDT_TOKEN:-}
     depends_on:
       kaleido-mcp:
         condition: service_started

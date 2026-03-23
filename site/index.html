@@ -102,6 +102,8 @@
   }
   .nav-links a:hover { color: var(--orange); }
 
+  /* NAV link for runtime section */
+
   .nav-badge {
     font-family: var(--mono); font-size: 10px; color: var(--orange);
     border: 1px solid var(--orange); padding: 3px 10px; letter-spacing: 0.1em;
@@ -417,6 +419,149 @@
   .t  { color: var(--gold); }
   .f  { color: var(--orange2); }
 
+  /* RUNTIME SECTION */
+  .runtime-section {
+    background: var(--bg);
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+
+  /* Mode toggle */
+  .mode-toggle {
+    display: flex; gap: 0; margin-top: 48px; margin-bottom: 48px;
+    border: 1px solid var(--border); width: fit-content;
+  }
+  .mode-btn {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 12px 28px; cursor: pointer; transition: all 0.2s; color: var(--muted);
+    border: none; background: none; display: flex; align-items: center; gap: 8px;
+  }
+  .mode-btn:hover { color: var(--text); background: var(--bg2); }
+  .mode-btn.active { background: var(--bg3); color: var(--orange); }
+  .mode-btn .badge {
+    font-size: 9px; padding: 2px 7px; border: 1px solid currentColor; opacity: 0.7;
+  }
+  .mode-panel { display: none; }
+  .mode-panel.active { display: block; }
+
+  /* Process diagram */
+  .process-diagram {
+    font-family: var(--mono); font-size: 12px; line-height: 1.9;
+    background: var(--bg2); border: 1px solid var(--border);
+    padding: 32px 36px; overflow-x: auto; color: var(--text);
+    margin-bottom: 48px;
+  }
+  .pd-process {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--border2); padding: 2px 10px;
+    background: var(--bg3);
+  }
+  .pd-process.main   { border-color: var(--orange); color: var(--orange); }
+  .pd-process.nano   { border-color: var(--purple); color: var(--purple); }
+  .pd-process.mcp    { border-color: var(--blue);   color: var(--blue); }
+  .pd-process.ext    { border-color: var(--dim);    color: var(--muted); }
+  .pd-process.wdk    { border-color: var(--green);  color: var(--green); }
+  .pd-comment { color: var(--dim); font-style: italic; }
+  .pd-arrow   { color: var(--muted); }
+  .pd-port    { color: var(--gold); }
+  .pd-indent  { padding-left: 24px; }
+  .pd-indent2 { padding-left: 48px; }
+  .pd-indent3 { padding-left: 72px; }
+
+  /* Flow steps */
+  .flow-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 0;
+  }
+  .flow-col-title {
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+    letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 20px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  .flow-step {
+    display: flex; gap: 14px; align-items: flex-start; padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .flow-step:last-child { border-bottom: none; }
+  .flow-step-num {
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+    width: 20px; flex-shrink: 0; padding-top: 2px;
+  }
+  .flow-step-body { flex: 1; }
+  .flow-step-name {
+    font-family: var(--mono); font-size: 12px; color: var(--orange);
+    margin-bottom: 3px;
+  }
+  .flow-step-name.blue { color: var(--blue); }
+  .flow-step-name.purple { color: var(--purple); }
+  .flow-step-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* Skill sync */
+  .sync-diagram {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    gap: 24px; align-items: center; margin-top: 48px;
+  }
+  .sync-box {
+    border: 1px solid var(--border); padding: 20px 24px; background: var(--bg2);
+  }
+  .sync-box-title {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; margin-bottom: 14px;
+  }
+  .sync-box-title.orange { color: var(--orange); }
+  .sync-box-title.purple { color: var(--purple); }
+  .sync-file-list { display: flex; flex-direction: column; gap: 6px; }
+  .sync-file {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    display: flex; gap: 8px; align-items: center;
+  }
+  .sync-file::before { content: '·'; color: var(--dim); }
+  .sync-file.hl { color: var(--text); }
+  .sync-file.hl::before { content: '→'; color: var(--orange); }
+  .sync-arrow-col {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .sync-arrow-line {
+    width: 1px; height: 60px; background: linear-gradient(to bottom, var(--orange), var(--purple));
+    opacity: 0.4;
+  }
+  .sync-arrow-head {
+    font-family: var(--mono); font-size: 18px; color: var(--muted); line-height: 1;
+  }
+  .sync-triggers {
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+    text-align: center; line-height: 1.9;
+  }
+  .sync-triggers span { display: block; }
+
+  /* Comparison table */
+  .mode-compare {
+    display: grid; grid-template-columns: 180px 1fr 1fr;
+    border: 1px solid var(--border); margin-top: 48px; overflow: hidden;
+  }
+  .mc-cell {
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    font-size: 13px; border-right: 1px solid var(--border);
+  }
+  .mc-cell:last-child { border-right: none; }
+  .mc-cell.header {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; background: var(--bg2); color: var(--muted);
+  }
+  .mc-cell.header.mcp  { color: var(--blue); }
+  .mc-cell.header.nano { color: var(--purple); }
+  .mc-cell.label { color: var(--muted); font-family: var(--mono); font-size: 11px; background: var(--bg2); }
+  .mc-cell.yes  { color: var(--green); }
+  .mc-cell.no   { color: var(--dim); }
+  .mc-cell.warn { color: var(--gold); }
+  .mc-cell:last-of-type { border-bottom: none; }
+
+  @media (max-width: 900px) {
+    .flow-grid { grid-template-columns: 1fr; }
+    .sync-diagram { grid-template-columns: 1fr; }
+    .sync-arrow-col { display: none; }
+    .mode-compare { grid-template-columns: 1fr 1fr; }
+    .mode-compare .mc-cell.label { display: none; }
+  }
+
   /* TECH GRID */
   .tech-grid {
     display: grid; grid-template-columns: repeat(4,1fr);
@@ -489,6 +634,7 @@
   <ul class="nav-links">
     <li><a href="#how-it-works">How It Works</a></li>
     <li><a href="#atomic-swap">Atomic Swap</a></li>
+    <li><a href="#runtime">Runtime</a></li>
     <li><a href="#architecture">Architecture</a></li>
     <li><a href="#code">Code</a></li>
   </ul>
@@ -730,6 +876,246 @@
         <text x="180" y="244" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#f7931a" opacity="0.65">HTLC</text>
       </svg>
     </div>
+  </div>
+</section>
+
+<!-- RUNTIME / NANOBOT -->
+<section class="section runtime-section" id="runtime">
+  <div class="section-label">Runtime Architecture</div>
+  <h2 class="section-title reveal">Two Execution<br>Modes</h2>
+  <p class="section-body reveal">
+    KaleidoAgent supports two modes set in <code style="font-family:var(--mono);font-size:14px;color:var(--orange)">agent.config.json</code>.
+    <strong>MCP mode</strong> runs the LLM loop directly in-process with full observability.
+    <strong>Nanobot mode</strong> delegates to a detached gateway process that adds Telegram control
+    and survives agent restarts.
+  </p>
+
+  <div class="mode-toggle reveal">
+    <button class="mode-btn active" data-mode="mcp">
+      MCP Mode <span class="badge">default</span>
+    </button>
+    <button class="mode-btn" data-mode="nanobot">
+      Nanobot Mode <span class="badge">telegram</span>
+    </button>
+  </div>
+
+  <!-- MCP MODE PANEL -->
+  <div class="mode-panel active" id="panel-mcp">
+    <div class="process-diagram reveal">
+<div><span class="pd-comment"># Process topology — MCP mode</span></div>
+<div>&nbsp;</div>
+<div><span class="pd-process main">kaleidoagent</span> &nbsp;<span class="pd-comment">node dist/index.js</span></div>
+<div class="pd-indent"><span class="pd-arrow">├──</span> <span class="pd-process mcp">kaleido-mcp</span> &nbsp;<span class="pd-comment">stdio child · WDK Spark + RLN + DEX + MPP (60+ tools)</span></div>
+<div class="pd-indent"><span class="pd-arrow">├──</span> StatusServer &nbsp;<span class="pd-port">:4242</span> &nbsp;<span class="pd-comment">/health /status /run /chat /config /tasks</span></div>
+<div class="pd-indent"><span class="pd-arrow">├──</span> Scheduler &nbsp;<span class="pd-comment">fires tasks on interval or POST /run</span></div>
+<div class="pd-indent"><span class="pd-arrow">└──</span> AgentRunner &nbsp;<span class="pd-comment">Anthropic SDK · full token + cost visibility</span></div>
+<div>&nbsp;</div>
+<div><span class="pd-comment"># External MCP servers (already running)</span></div>
+<div><span class="pd-process ext">kaleidoswap-mcp</span> &nbsp;<span class="pd-port">:3010 HTTP</span></div>
+<div><span class="pd-process ext">wdk-wallet-rln-mcp</span> &nbsp;<span class="pd-port">:3011 HTTP</span></div>
+<div><span class="pd-process ext">mpp-gateway-mcp</span> &nbsp;<span class="pd-port">:3012 HTTP</span></div>
+    </div>
+
+    <div class="flow-grid reveal">
+      <div>
+        <div class="flow-col-title">Data flow — task execution</div>
+        <div class="flow-step">
+          <div class="flow-step-num">1</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name">Scheduler fires</div>
+            <div class="flow-step-desc">Interval elapses or POST /run received. Loads SKILL.md for the task's skill, injects live state via <code>!`cmd`</code> shell expansions.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">2</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name">AgentRunner → Anthropic SDK</div>
+            <div class="flow-step-desc">Builds system prompt from skill file. Calls Claude with the full allowed tool list. Tracks token usage and cumulative cost.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">3</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name">McpManager routes tool calls</div>
+            <div class="flow-step-desc">Each <code>tool_use</code> block is dispatched to the correct MCP server (stdio or HTTP). Results appended to message history.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">4</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name">Loop until end_turn</div>
+            <div class="flow-step-desc">LLM reasons, calls tools, observes results. Continues up to <code>max_tool_calls_per_run</code> (default 30).</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">5</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name">RunResult → AgentState</div>
+            <div class="flow-step-desc">Full trace (tool calls, final response, token cost) saved. Webapp sees it on next <code>GET /status</code> poll.</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="flow-col-title">What you see in /status</div>
+        <div class="flow-step">
+          <div class="flow-step-num">·</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name">tool_calls[]</div>
+            <div class="flow-step-desc">Every tool name + input + result for the last run. Full reasoning trace.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">·</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name">usage.input_tokens / output_tokens</div>
+            <div class="flow-step-desc">Per-run and cumulative token counts. Cost breakdown per model.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">·</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name">final_response</div>
+            <div class="flow-step-desc">JSON output from the skill (action taken, amounts, drift %, result).</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">·</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name">wallet_snapshot</div>
+            <div class="flow-step-desc">BTC/USDT/XAUT balances captured after each run.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NANOBOT MODE PANEL -->
+  <div class="mode-panel" id="panel-nanobot">
+    <div class="process-diagram reveal">
+<div><span class="pd-comment"># Process topology — Nanobot mode</span></div>
+<div>&nbsp;</div>
+<div><span class="pd-process main">kaleidoagent</span> &nbsp;<span class="pd-comment">node dist/index.js</span></div>
+<div class="pd-indent"><span class="pd-arrow">├──</span> <span class="pd-process mcp">kaleido-mcp</span> &nbsp;<span class="pd-comment">stdio child</span></div>
+<div class="pd-indent"><span class="pd-arrow">├──</span> StatusServer &nbsp;<span class="pd-port">:4242</span></div>
+<div class="pd-indent"><span class="pd-arrow">├──</span> Scheduler → NanobotTaskRunner</div>
+<div class="pd-indent"><span class="pd-arrow">│ &nbsp;&nbsp;&nbsp;</span><span class="pd-comment">spawn("nanobot agent -m &lt;prompt&gt;") → parse stdout JSON</span></div>
+<div class="pd-indent"><span class="pd-arrow">└──</span> NanobotManager.startGateway()</div>
+<div>&nbsp;</div>
+<div><span class="pd-process nano">nanobot gateway</span> &nbsp;<span class="pd-port">:18790</span> &nbsp;<span class="pd-comment">detached — survives kaleidoagent restart</span></div>
+<div class="pd-indent"><span class="pd-arrow">├──</span> reads <span class="pd-comment">.nanobot/config.json</span> &nbsp;<span class="pd-comment">(auto-generated)</span></div>
+<div class="pd-indent"><span class="pd-arrow">├──</span> reads <span class="pd-comment">.nanobot/workspace/skills/</span> &nbsp;<span class="pd-comment">(synced from skills/)</span></div>
+<div class="pd-indent"><span class="pd-arrow">├──</span> <span class="pd-process mcp">kaleido-mcp</span> &nbsp;<span class="pd-comment">own stdio child</span></div>
+<div class="pd-indent"><span class="pd-arrow">├──</span> <span class="pd-process ext">control-mcp</span> &nbsp;<span class="pd-comment">stdio → back-channel into StatusServer:4242</span></div>
+<div class="pd-indent"><span class="pd-arrow">├──</span> <span class="pd-process ext">kaleidoswap-mcp</span> &nbsp;<span class="pd-port">:3010</span> &nbsp;<span class="pd-process ext">wdk-wallet-rln-mcp</span> &nbsp;<span class="pd-port">:3011</span> &nbsp;<span class="pd-process ext">mpp-gateway-mcp</span> &nbsp;<span class="pd-port">:3012</span></div>
+<div class="pd-indent"><span class="pd-arrow">└──</span> <span class="pd-process wdk">Telegram bot</span> &nbsp;<span class="pd-comment">users talk directly to Nanobot — bypasses kaleidoagent</span></div>
+    </div>
+
+    <div class="flow-grid reveal">
+      <div>
+        <div class="flow-col-title">Task execution — Nanobot mode</div>
+        <div class="flow-step">
+          <div class="flow-step-num">1</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name blue">Scheduler fires</div>
+            <div class="flow-step-desc">NanobotTaskRunner builds prompt with taskId, skillName, dry_run, portfolio params.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">2</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name blue">spawn("nanobot agent …")</div>
+            <div class="flow-step-desc">Nanobot binary loads workspace/skills/&lt;skill&gt;/SKILL.md as system prompt. Uses its own MCP connections.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">3</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name blue">Nanobot reasons + acts</div>
+            <div class="flow-step-desc">Black box to kaleidoagent. Nanobot calls tools, reasons, and produces a final response via stdout.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">4</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name blue">stdout parsed → RunResult</div>
+            <div class="flow-step-desc">kaleidoagent parses JSON stdout. No tool call trace or token data — only the final output is visible.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">5</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name blue">Telegram users → direct</div>
+            <div class="flow-step-desc">Telegram messages go straight to Nanobot gateway (:18790). kaleidoagent is not involved.</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="flow-col-title">Skill sync pipeline</div>
+        <div class="flow-step">
+          <div class="flow-step-num">1</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name purple">skills/ → .nanobot/workspace/skills/</div>
+            <div class="flow-step-desc">NanobotManager copies all skill folders on gateway startup, skill toggle (PATCH /skills), and task edit.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">2</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name purple">!`cmd` → live state injection</div>
+            <div class="flow-step-desc">Nanobot executes shell commands embedded in SKILL.md at load time — injects live balances, node info, etc. into the system prompt.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">3</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name purple">HEARTBEAT.md written</div>
+            <div class="flow-step-desc">Task list snapshot written to workspace — Nanobot is aware of all scheduled tasks and their last run times.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">4</div>
+          <div class="flow-step-body">
+            <div class="flow-step-name purple">npm run sync-skills</div>
+            <div class="flow-step-desc">Manual sync command. Also: <code>npm run validate</code> checks all tool names resolve against the connected MCP servers.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARISON TABLE -->
+  <div class="mode-compare reveal">
+    <div class="mc-cell header label">Capability</div>
+    <div class="mc-cell header mcp">MCP Mode</div>
+    <div class="mc-cell header nano">Nanobot Mode</div>
+
+    <div class="mc-cell label">Loop execution</div>
+    <div class="mc-cell yes">✓ native AgentRunner</div>
+    <div class="mc-cell yes">✓ nanobot agent CLI</div>
+
+    <div class="mc-cell label">Token / cost tracking</div>
+    <div class="mc-cell yes">✓ full visibility</div>
+    <div class="mc-cell no">✗ black box</div>
+
+    <div class="mc-cell label">Tool call trace</div>
+    <div class="mc-cell yes">✓ in /status</div>
+    <div class="mc-cell no">✗ not available</div>
+
+    <div class="mc-cell label">Telegram operator</div>
+    <div class="mc-cell no">✗</div>
+    <div class="mc-cell yes">✓ native bot</div>
+
+    <div class="mc-cell label">Survives agent restart</div>
+    <div class="mc-cell no">✗ same process</div>
+    <div class="mc-cell yes">✓ detached process</div>
+
+    <div class="mc-cell label">PID / log</div>
+    <div class="mc-cell no">n/a</div>
+    <div class="mc-cell yes">.nanobot/gateway.pid/log</div>
+
+    <div class="mc-cell label">Requires binary</div>
+    <div class="mc-cell yes">✓ Node.js only</div>
+    <div class="mc-cell warn">nanobot CLI installed</div>
   </div>
 </section>
 
@@ -1094,6 +1480,19 @@ function startAuto() {
   autoTimer = setInterval(() => activateStep((activeIdx + 1) % steps.length), 1800);
 }
 startAuto();
+
+// ── Mode toggle (MCP / Nanobot) ─────────────────────────
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mode = btn.dataset.mode;
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.mode-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + mode));
+    // re-trigger reveals inside newly shown panel
+    document.querySelectorAll('#panel-' + mode + ' .reveal').forEach((el, i) => {
+      setTimeout(() => el.classList.add('visible'), i * 60);
+    });
+  });
+});
 
 // ── Code tabs ───────────────────────────────────────────
 document.querySelectorAll('.code-tab').forEach(tab => {

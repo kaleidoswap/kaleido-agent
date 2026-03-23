@@ -6,7 +6,7 @@ description: >
   (generate invoice or address), wants to send a payment, asks for swap quotes,
   or wants to check channel status. Responds in plain language and returns
   structured action blocks the UI can parse.
-  Requires wdk-wallet-rln-mcp and kaleidoswap-mcp.
+  Requires kaleido-mcp.
 license: Apache-2.0
 metadata:
   author: kaleidoswap
@@ -22,29 +22,29 @@ For RLN tool details → [references/rln.md](references/rln.md)
 
 ## Available Tools
 
-### Wallet / Node (wdk-wallet-rln-mcp)
-- `wdk_get_node_info` — node ID, pubkey, alias, status, peer count
-- `wdk_get_balances` — BTC on-chain + Lightning outbound + RGB assets
-- `wdk_list_assets` — all RGB assets held by the node
-- `wdk_get_asset_balance({ asset_id })` — balance for a specific asset
-- `wdk_get_address` — on-chain BTC deposit address
-- `wdk_list_channels` — channels: capacity, usable outbound/inbound, RGB assets
-- `wdk_create_ln_invoice({ amount_msat, description })` — BOLT11 invoice to receive BTC
-- `wdk_create_rgb_invoice({ asset_id, amount })` — RGB invoice to receive an asset
-- `wdk_pay_invoice({ invoice })` — pay a BOLT11 Lightning invoice
-- `wdk_send_btc({ address, amount_sat })` — send BTC on-chain
-- `wdk_send_asset({ invoice, asset_id, amount })` — send RGB assets
-- `wdk_list_payments` — recent Lightning payment history
-- `wdk_refresh_transfers` — flush pending RGB transfers
-- `wdk_connect_peer({ address })` — connect to an LN peer (pubkey@host:port)
-- `wdk_atomic_taker({ swapstring })` — whitelist HTLC for atomic swap
+### Wallet / Node (kaleido-mcp)
+- `rln_get_node_info` — node ID, pubkey, alias, status, peer count
+- `rln_get_balances` — BTC on-chain + Lightning outbound + RGB assets
+- `rln_list_assets` — all RGB assets held by the node
+- `rln_get_asset_balance({ asset_id })` — balance for a specific asset
+- `rln_get_address` — on-chain BTC deposit address
+- `rln_list_channels` — channels: capacity, usable outbound/inbound, RGB assets
+- `rln_create_ln_invoice({ amount_msat, description })` — BOLT11 invoice to receive BTC
+- `rln_create_rgb_invoice({ asset_id, amount })` — RGB invoice to receive an asset
+- `rln_pay_invoice({ invoice })` — pay a BOLT11 Lightning invoice
+- `rln_send_btc({ address, amount_sat })` — send BTC on-chain
+- `rln_send_asset({ invoice, asset_id, amount })` — send RGB assets
+- `rln_list_payments` — recent Lightning payment history
+- `rln_refresh_transfers` — flush pending RGB transfers
+- `rln_connect_peer({ address })` — connect to an LN peer (pubkey@host:port)
+- `rln_atomic_taker({ swapstring })` — whitelist HTLC for atomic swap
 
-### Swaps & Rates (kaleidoswap-mcp)
+### Swaps & Rates (kaleido-mcp)
 - `kaleidoswap_get_assets` — all tradeable assets with IDs and precisions
 - `kaleidoswap_get_pairs` — available trading pairs with routes and min amounts
 - `kaleidoswap_get_quote({ from_asset_id, from_layer, from_amount, to_asset_id, to_layer })` — live quote + rfq_id + rate
 - `kaleidoswap_get_spreads` — bid/ask spreads for all pairs
-- `kaleidoswap_atomic_init`, `wdk_atomic_taker`, `kaleidoswap_atomic_execute` — execute atomic swap
+- `kaleidoswap_atomic_init`, `rln_atomic_taker`, `kaleidoswap_atomic_execute` — execute atomic swap
 - `kaleidoswap_atomic_status({ payment_hash })` — poll atomic swap status
 
 ## Getting Prices
@@ -73,7 +73,7 @@ No external price API needed — KaleidoSwap is the source of truth for rates.
 ## Handling Common Requests
 
 ### "What's my balance?" / "Show my funds"
-1. `wdk_get_balances()` — BTC Lightning outbound + on-chain + RGB assets
+1. `rln_get_balances()` — BTC Lightning outbound + on-chain + RGB assets
 2. `kaleidoswap_get_quote` for BTC→USDT (0.001 BTC) → derive BTC/USDT rate
 3. Compute USDT equivalent for each asset
 4. Present as a clean summary:
@@ -89,7 +89,7 @@ Total: ≈ 161 USDT
 
 ### "Receive BTC" / "Generate invoice"
 1. Ask for amount (sats) and description if not provided
-2. `wdk_create_ln_invoice({ amount_msat: amount_sat × 1000, description })`
+2. `rln_create_ln_invoice({ amount_msat: amount_sat × 1000, description })`
 3. Return invoice + expiry
 4. Emit action block for QR display:
 ```
@@ -98,14 +98,14 @@ Total: ≈ 161 USDT
 
 ### "Receive USDT" / "Receive RGB asset"
 1. `kaleidoswap_get_assets()` — resolve USDT asset_id
-2. `wdk_create_rgb_invoice({ asset_id: "<USDT_ID>", amount: <display_amount> })`
+2. `rln_create_rgb_invoice({ asset_id: "<USDT_ID>", amount: <display_amount> })`
 3. Emit action block:
 ```
 <action>{"type":"receive","invoice":"<rgb_invoice>","asset":"USDT","amount":<n>}</action>
 ```
 
 ### "Deposit BTC on-chain"
-1. `wdk_get_address()` — get on-chain BTC address
+1. `rln_get_address()` — get on-chain BTC address
 2. Warn: on-chain confirmations take ~10–60 min
 3. Emit action block:
 ```
@@ -116,14 +116,14 @@ Total: ≈ 161 USDT
 1. Decode BOLT11 from the user's message
 2. Show: amount, description
 3. Confirm: "Pay X sats? (small routing fee applies)"
-4. On confirmation: `wdk_pay_invoice({ invoice })`
+4. On confirmation: `rln_pay_invoice({ invoice })`
 5. Report: "✅ Paid."
 
 ### "Send USDT" / "Transfer RGB asset"
-1. `wdk_list_assets()` — resolve asset_id
+1. `rln_list_assets()` — resolve asset_id
 2. Parse RGB invoice, verify asset match
 3. Show: recipient, amount, asset name — ask confirmation
-4. `wdk_send_asset({ invoice, asset_id, amount })`
+4. `rln_send_asset({ invoice, asset_id, amount })`
 
 ### "Swap BTC to USDT" / "Quote swap"
 1. Parse from/to/amount from the message
@@ -135,8 +135,8 @@ Total: ≈ 161 USDT
 6. On confirmation → 5-step atomic swap:
    a. `kaleidoswap_atomic_init({ rfq_id, from_asset_id, from_amount_raw, to_asset_id, to_amount_raw })`
       → `{ swapstring, payment_hash }`
-   b. `wdk_atomic_taker({ swapstring })`
-   c. `wdk_get_node_info()` → `pubkey`
+   b. `rln_atomic_taker({ swapstring })`
+   c. `rln_get_node_info()` → `pubkey`
    d. `kaleidoswap_atomic_execute({ swapstring, taker_pubkey: pubkey, payment_hash })`
    e. Poll `kaleidoswap_atomic_status({ payment_hash })` every 2s until `"Succeeded"` / `"Failed"`
 7. Emit action block:
@@ -145,13 +145,13 @@ Total: ≈ 161 USDT
 ```
 
 ### "Show my channels"
-1. `wdk_list_channels()`
+1. `rln_list_channels()`
 2. Show each: peer, capacity, usable outbound, usable inbound, RGB asset if any
 3. Flag channels with outbound < 20% of capacity
 4. Suggest buying a channel via LSP if critically low
 
 ### "Payment history"
-1. `wdk_list_payments()` — show direction, amount, description, timestamp
+1. `rln_list_payments()` — show direction, amount, description, timestamp
 
 ## Action Block Format
 

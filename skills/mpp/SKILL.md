@@ -4,7 +4,7 @@ description: >
   Pay for MPP (Machine Payments Protocol) protected resources using Lightning.
   Use when accessing any HTTP 402-gated API, premium data endpoints, or
   pay-per-call services that issue a WWW-Authenticate: Payment challenge.
-  Requires mpp-gateway-mcp and wdk-wallet-rln-mcp.
+  Requires kaleido-mcp.
 license: Apache-2.0
 metadata:
   author: kaleidoswap
@@ -18,10 +18,9 @@ MPP is the open standard for machine-to-machine payments built on HTTP 402.
 Servers gate resources behind a payment challenge; you pay via Lightning and
 submit proof to access the resource. No signup or API keys required.
 
-## Required MCP Servers
+## Required MCP Server
 
-- **mpp-gateway-mcp** — challenge probing, credential submission
-- **wdk-wallet-rln-mcp** — pays the Lightning invoice, returns credential
+- **kaleido-mcp** — challenge probing, credential submission, and Lightning payment
 
 ## Core Flow (3 steps)
 
@@ -29,7 +28,7 @@ submit proof to access the resource. No signup or API keys required.
 1. mpp_request_challenge(url)
    → challenge { invoice, challenge_id, macaroon?, amount_sats, expires_at }
 
-2. wdk_mpp_pay(invoice, challenge_id, macaroon?)
+2. rln_mpp_pay(invoice, challenge_id, macaroon?)
    → { paid: true, credential: "<JSON string>" }
 
 3. mpp_submit_credential(url, credential)
@@ -55,10 +54,10 @@ mpp_request_challenge(url="https://api.example.com/premium/price")
 - `intent: "session"` = pay-as-you-go via off-chain vouchers (see Sessions below).
 - Challenge expires — complete all 3 steps before `expires_at`.
 
-## Step 2 — Pay via wdk_mpp_pay
+## Step 2 — Pay via rln_mpp_pay
 
 ```
-wdk_mpp_pay(
+rln_mpp_pay(
   invoice    = challenge.invoice,
   challenge_id = challenge.challenge_id,   // optional but recommended
   macaroon   = challenge.macaroon          // pass if present (L402 servers)
@@ -80,7 +79,7 @@ wdk_mpp_pay(
 ```
 mpp_submit_credential(
   url        = "https://api.example.com/premium/price",
-  credential = <credential string from wdk_mpp_pay>
+  credential = <credential string from rln_mpp_pay>
 )
 → {
     ok: true,
@@ -123,8 +122,8 @@ sessions over per-request charges:
 |-------|-------|-----|
 | `Expected HTTP 402` | URL is not MPP-protected | Confirm the endpoint requires payment |
 | `No WWW-Authenticate header` | Server misconfigured | Try the legacy `l402_request_challenge` tool |
-| `payment failed` | Insufficient balance | Check `wdk_get_balances`, fund Lightning channel |
-| `401 after credential submit` | Preimage missing or wrong | Ensure `wdk_mpp_pay` returned a non-null `preimage` |
+| `payment failed` | Insufficient balance | Check `rln_get_balances`, fund Lightning channel |
+| `401 after credential submit` | Preimage missing or wrong | Ensure `rln_mpp_pay` returned a non-null `preimage` |
 | Challenge expired | Too slow between steps | Re-call `mpp_request_challenge` for a fresh challenge |
 
 ## Relation to L402
@@ -141,7 +140,7 @@ they handle both L402 and full MPP servers transparently.
 mpp_request_challenge(url="https://api.kaleidoswap.com/premium/orderbook/BTC-USDT")
 → invoice, challenge_id
 
-wdk_mpp_pay(invoice=..., challenge_id=...)
+rln_mpp_pay(invoice=..., challenge_id=...)
 → credential
 
 mpp_submit_credential(url=..., credential=...)

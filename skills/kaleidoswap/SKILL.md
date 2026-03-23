@@ -4,7 +4,7 @@ description: >
   Trade RGB assets on Bitcoin Lightning using the KaleidoSwap protocol.
   Use when quoting a swap, executing an atomic swap, placing a REST order,
   checking order status, or managing open orders.
-  Requires kaleidoswap-mcp and wdk-wallet-rln-mcp.
+  Requires kaleido-mcp.
 license: Apache-2.0
 metadata:
   author: kaleidoswap
@@ -17,10 +17,9 @@ metadata:
 KaleidoSwap is a non-custodial DEX for RGB assets on Bitcoin Lightning Network.
 Trades are settled via atomic HTLC swaps or REST deposit-based orders.
 
-## Required MCP Servers
+## Required MCP Server
 
-- **kaleidoswap-mcp** — quotes, orders, atomic execution
-- **wdk-wallet-rln-mcp** — RLN node: balances, invoices, HTLC signing
+- **kaleido-mcp** — quotes, orders, atomic execution, RLN node: balances, invoices, HTLC signing
 
 ## Core Concepts
 
@@ -83,10 +82,10 @@ Show the user: **amount in → amount out → effective rate**. Ask confirmation
    })
    → { swapstring, payment_hash }
 
-2. wdk_atomic_taker({ swapstring })
+2. rln_atomic_taker({ swapstring })
    → {}   (whitelist HTLC on RLN node — MUST happen before execute)
 
-3. wdk_get_node_info()
+3. rln_get_node_info()
    → { pubkey }   (needed as taker_pubkey)
 
 4. kaleidoswap_atomic_execute({
@@ -105,21 +104,21 @@ If `Succeeded` → done. If `Expired`/`Failed` → fall back to REST.
 
 **BTC → RGB (e.g. BTC → USDT):**
 ```
-1. wdk_create_rgb_invoice({ asset_id: <USDT_ID> }) → rgb_invoice
+1. rln_create_rgb_invoice({ asset_id: <USDT_ID> }) → rgb_invoice
 2. kaleidoswap_place_order({
      from_asset_id, to_asset_id, from_layer, to_layer, from_amount,
      receiver_address: rgb_invoice, receiver_address_format: "RGB_INVOICE"
    }) → { order_id, deposit_address: { address: bolt11 } }
-3. wdk_pay_invoice({ invoice: bolt11 })
+3. rln_pay_invoice({ invoice: bolt11 })
 4. Poll kaleidoswap_get_order_status({ order_id }) until "FILLED"
 ```
 
 **RGB → BTC (e.g. USDT → BTC):**
 ```
-1. wdk_create_ln_invoice({ amount_msat }) → bolt11
+1. rln_create_ln_invoice({ amount_msat }) → bolt11
 2. kaleidoswap_place_order({ ..., receiver_address: bolt11, receiver_address_format: "BOLT11" })
    → { order_id, deposit_address: { address: rgb_invoice } }
-3. wdk_send_asset({ asset_id, recipient_id: rgb_invoice, amount: display_amount })
+3. rln_send_asset({ asset_id, recipient_id: rgb_invoice, amount: display_amount })
 4. Poll kaleidoswap_get_order_status({ order_id }) until "FILLED"
 ```
 

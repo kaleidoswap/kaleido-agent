@@ -4,7 +4,7 @@ description: >
   Dollar Cost Averaging (DCA) strategy for periodic Bitcoin or RGB asset purchases.
   Use when running a scheduled DCA loop: get the current rate, optionally apply
   price-aware logic (skip on pumps, buy on dips), then execute a fixed-size swap.
-  Requires kaleidoswap-mcp and wdk-wallet-rln-mcp.
+  Requires kaleido-mcp.
 license: Apache-2.0
 metadata:
   author: kaleidoswap
@@ -77,7 +77,7 @@ If `price_aware.enabled: false` → always use configured `amount_usdt`.
 ## Step 4: Check Available Funds
 
 ```
-wdk_get_balances()
+rln_get_balances()
 ```
 
 Compute USDT balance. If usdt_balance < `amount_usdt`:

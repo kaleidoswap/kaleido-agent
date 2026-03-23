@@ -8,7 +8,7 @@ operational liquidity and guard against runaway losses.
 | Condition | Action |
 |-----------|--------|
 | BTC balance ≤ `stop_loss_btc_sats` | Halt all trading. Log reason. Do NOT resume until manually re-enabled. |
-| Node offline / `wdk_node_info()` fails | Skip cycle. Log warning. Do not attempt trades. |
+| Node offline / `rln_get_node_info()` fails | Skip cycle. Log warning. Do not attempt trades. |
 
 ## Soft Guards (skip this cycle)
 

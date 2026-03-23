@@ -41,14 +41,14 @@ if either party fails to complete, both get their funds back.
    payment_hash:  identifier for this swap — keep it for execute and status calls
 
 3. WHITELIST HTLC on RLN node  ← MUST happen before execute
-   wdk_atomic_taker({ swapstring })
+   rln_atomic_taker({ swapstring })
    → {}
 
    This tells the RLN node to accept the incoming HTLC from the maker.
    Without this step, the maker's payment will be rejected.
 
 4. EXECUTE SWAP
-   wdk_get_node_info()
+   rln_get_node_info()
    → { pubkey }        ← needed as taker_pubkey
 
    kaleidoswap_atomic_execute({
@@ -84,7 +84,7 @@ if either party fails to complete, both get their funds back.
 | Error | Recovery |
 |-------|----------|
 | `rfq_id expired` | Call `kaleidoswap_get_quote` again for a fresh quote |
-| `wdk_atomic_taker` fails | Do NOT call execute — get new quote and restart |
+| `rln_atomic_taker` fails | Do NOT call execute — get new quote and restart |
 | Status → `Expired` | Fall back to REST order flow |
 | Status → `Failed` | Fall back to REST order flow |
 | Timeout (>120s polling) | Treat as Failed, fall back to REST |
@@ -103,6 +103,6 @@ if either party fails to complete, both get their funds back.
 
 - **`from_amount_raw` / `to_amount_raw`**: Pass `amount_raw` fields directly from the quote
   response. These are already in millisatoshis (BTC) or atomic units (RGB). Never re-convert.
-- **`taker_pubkey`**: Get from `wdk_get_node_info().pubkey` — call this between steps 3 and 4.
+- **`taker_pubkey`**: Get from `rln_get_node_info().pubkey` — call this between steps 3 and 4.
 - **`payment_hash`**: Returned by `atomic_init`, used by `atomic_execute` and `atomic_status`.
   It is NOT an `order_id`.

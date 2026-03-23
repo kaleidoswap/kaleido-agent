@@ -4,7 +4,7 @@ description: >
   Autonomous portfolio rebalancing for Bitcoin L2 assets.
   Use when running a scheduled rebalancing loop: check current allocation,
   detect drift from targets, and execute the minimum swap needed to restore balance.
-  Requires kaleidoswap-mcp and wdk-wallet-rln-mcp.
+  Requires kaleido-mcp.
 license: Apache-2.0
 metadata:
   author: kaleidoswap
@@ -107,8 +107,8 @@ For risk rules → [references/risk.md](references/risk.md)
 ## Step 1: Assess Current State
 
 ```
-wdk_get_node_info()             → verify node is online
-wdk_get_balances()              → BTC offchain (outbound sats) + RGB asset balances
+rln_get_node_info()             → verify node is online
+rln_get_balances()              → BTC offchain (outbound sats) + RGB asset balances
 kaleidoswap_get_pairs()         → discover trading pairs + layers
 kaleidoswap_get_assets()        → resolve asset IDs + precisions by ticker
 ```
@@ -127,7 +127,7 @@ btc_price_usdt = quote.to_asset.amount_display / 0.001
 
 For each asset, compute USDT value:
 ```
-btc_sats      = offchain_outbound_sat   (from wdk_get_balances)
+btc_sats      = offchain_outbound_sat   (from rln_get_balances)
 btc_usdt      = (btc_sats / 1e8) × btc_price_usdt
 usdt_val      = usdt_raw / 10^usdt_precision
 xaut_usdt     = xaut_raw / 10^xaut_precision × xaut_price_usdt
@@ -230,7 +230,7 @@ swap atomic-status --payment-hash <hash>
 See [references/risk.md](references/risk.md) for full details.
 
 **Quick reference:**
-1. Verify node is online before doing anything: `wdk_get_node_info()`
+1. Verify node is online before doing anything: `rln_get_node_info()`
 2. Halt all trading if BTC < `stop_loss_btc_sats`
 3. Skip if result puts BTC < `min_btc_reserve_sats`
 4. Cap each swap at `max_swap_usd`

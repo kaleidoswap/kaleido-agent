@@ -9,46 +9,10 @@ services:
       SPARK_USDT_TOKEN: ${SPARK_USDT_TOKEN:-}
       RLN_NODE_URL: ${RLN_NODE_URL:-http://host.docker.internal:3001}
       KALEIDOSWAP_API_URL: ${KALEIDOSWAP_API_URL:-https://api.staging.kaleidoswap.com}
-      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    restart: unless-stopped
-
-  kaleidoswap-mcp:
-    image: ghcr.io/kaleidoswap/kaleidoswap-mcp:latest
-    environment:
-      PORT: 3010
-      KALEIDOSWAP_API_URL: ${KALEIDOSWAP_API_URL:-https://api.staging.kaleidoswap.com}
-      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
-    restart: unless-stopped
-
-  wdk-wallet-rln-mcp:
-    image: ghcr.io/kaleidoswap/wdk-wallet-rln-mcp:latest
-    environment:
-      PORT: 3011
-      RLN_NODE_URL: ${RLN_NODE_URL:-http://host.docker.internal:3001}
-      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    restart: unless-stopped
-
-  wdk-wallet-spark-mcp:
-    image: ghcr.io/kaleidoswap/wdk-wallet-spark-mcp:latest
-    environment:
-      PORT: 3014
-      WDK_SPARK_SEED: ${WDK_SPARK_SEED:-}
-      SPARK_NETWORK: ${SPARK_NETWORK:-REGTEST}
-      SPARK_SCAN_API_KEY: ${SPARK_SCAN_API_KEY:-}
-      SPARK_USDT_TOKEN: ${SPARK_USDT_TOKEN:-}
-      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
-    restart: unless-stopped
-
-  mpp-gateway-mcp:
-    image: ghcr.io/kaleidoswap/mpp-gateway-mcp:latest
-    environment:
-      PORT: 3012
       MPP_GATEWAY_URL: ${MPP_GATEWAY_URL:-}
       MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
   kaleidoagent-api:
@@ -63,12 +27,9 @@ services:
       KALEIDOAGENT_SKILLS_DIR: /app/kaleidoagent/skills
       KALEIDO_MCP_URL: http://kaleido-mcp:3013
       NANOBOT_KALEIDO_MCP_URL: http://kaleido-mcp:3013
-      NANOBOT_KALEIDOSWAP_MCP_URL: http://kaleidoswap-mcp:3010
-      NANOBOT_WDK_RLN_MCP_URL: http://wdk-wallet-rln-mcp:3011
-      NANOBOT_WDK_SPARK_MCP_URL: http://wdk-wallet-spark-mcp:3014
-      NANOBOT_MPP_MCP_URL: http://mpp-gateway-mcp:3012
       RLN_NODE_URL: ${RLN_NODE_URL:-http://host.docker.internal:3001}
       KALEIDOSWAP_API_URL: ${KALEIDOSWAP_API_URL:-https://api.staging.kaleidoswap.com}
+      MPP_GATEWAY_URL: ${MPP_GATEWAY_URL:-}
       MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_ALLOW_FROM: ${TELEGRAM_ALLOW_FROM:-}
@@ -77,21 +38,11 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       WDK_SEED: ${WDK_SEED:-}
-      WDK_SPARK_SEED: ${WDK_SPARK_SEED:-}
       SPARK_NETWORK: ${SPARK_NETWORK:-REGTEST}
       SPARK_SCAN_API_KEY: ${SPARK_SCAN_API_KEY:-}
       SPARK_USDT_TOKEN: ${SPARK_USDT_TOKEN:-}
-      MPP_GATEWAY_URL: ${MPP_GATEWAY_URL:-}
     depends_on:
       kaleido-mcp:
-        condition: service_started
-      kaleidoswap-mcp:
-        condition: service_started
-      wdk-wallet-rln-mcp:
-        condition: service_started
-      wdk-wallet-spark-mcp:
-        condition: service_started
-      mpp-gateway-mcp:
         condition: service_started
     ports:
       - "127.0.0.1:4242:4242"

@@ -10,13 +10,9 @@ import type { AgentTask } from './tasks-store.js'
 const execFileAsync = promisify(execFile)
 
 const DEFAULT_GATEWAY_PORT = 18790
-const DEFAULT_SPLIT_MCP_URLS = {
-  kaleidoswap: 'http://127.0.0.1:3010',
-  wdk_wallet: 'http://127.0.0.1:3011',
-  mpp_gateway: 'http://127.0.0.1:3012',
-} as const
 
 const KALEIDO_MCP_ENABLED_TOOLS = [
+  // RLN tools
   'rln_get_node_info',
   'rln_get_balances',
   'rln_get_asset_balance',
@@ -36,9 +32,7 @@ const KALEIDO_MCP_ENABLED_TOOLS = [
   'rln_list_swaps',
   'rln_get_swap',
   'rln_mpp_pay',
-] as const
-
-const SPARK_MCP_TOOL_NAMES = [
+  // Spark tools
   'spark_get_balance',
   'spark_get_address',
   'spark_get_token_balance',
@@ -52,6 +46,34 @@ const SPARK_MCP_TOOL_NAMES = [
   'spark_withdraw',
   'spark_get_transfers',
   'spark_mpp_pay',
+  // KaleidoSwap DEX tools
+  'kaleidoswap_get_assets',
+  'kaleidoswap_get_pairs',
+  'kaleidoswap_get_quote',
+  'kaleidoswap_get_spreads',
+  'kaleidoswap_place_order',
+  'kaleidoswap_get_order_status',
+  'kaleidoswap_get_open_orders',
+  'kaleidoswap_cancel_order',
+  'kaleidoswap_get_position',
+  'kaleidoswap_atomic_init',
+  'kaleidoswap_atomic_execute',
+  'kaleidoswap_atomic_status',
+  'kaleidoswap_lsp_get_info',
+  'kaleidoswap_lsp_estimate_fees',
+  'kaleidoswap_lsp_create_order',
+  'kaleidoswap_lsp_get_order',
+  // MPP / L402 tools
+  'mpp_request_challenge',
+  'mpp_submit_credential',
+  'mpp_parse_challenge_header',
+  'l402_request_challenge',
+  'l402_fetch_resource',
+  'l402_get_price',
+  'l402_get_market_data',
+  'l402_get_ohlcv',
+  'l402_get_sentiment',
+  'search_paid_apis',
 ] as const
 
 const CONTROL_TOOL_NAMES = [
@@ -185,53 +207,6 @@ export class NanobotManager {
     const availableTools = new Set<string>([
       ...CONTROL_TOOL_NAMES,
       ...KALEIDO_MCP_ENABLED_TOOLS,
-      ...SPARK_MCP_TOOL_NAMES,
-      // split MCP servers
-      'wdk_get_node_info',
-      'wdk_get_balances',
-      'wdk_get_asset_balance',
-      'wdk_list_assets',
-      'wdk_get_address',
-      'wdk_create_rgb_invoice',
-      'wdk_create_ln_invoice',
-      'wdk_pay_invoice',
-      'wdk_send_btc',
-      'wdk_send_asset',
-      'wdk_list_channels',
-      'wdk_connect_peer',
-      'wdk_open_channel',
-      'wdk_list_payments',
-      'wdk_refresh_transfers',
-      'wdk_atomic_taker',
-      'wdk_list_swaps',
-      'wdk_get_swap',
-      'wdk_mpp_pay',
-      'kaleidoswap_get_assets',
-      'kaleidoswap_get_pairs',
-      'kaleidoswap_get_quote',
-      'kaleidoswap_get_spreads',
-      'kaleidoswap_place_order',
-      'kaleidoswap_get_order_status',
-      'kaleidoswap_get_open_orders',
-      'kaleidoswap_cancel_order',
-      'kaleidoswap_get_position',
-      'kaleidoswap_atomic_init',
-      'kaleidoswap_atomic_execute',
-      'kaleidoswap_atomic_status',
-      'kaleidoswap_lsp_get_info',
-      'kaleidoswap_lsp_estimate_fees',
-      'kaleidoswap_lsp_create_order',
-      'kaleidoswap_lsp_get_order',
-      'mpp_request_challenge',
-      'mpp_submit_credential',
-      'mpp_parse_challenge_header',
-      'l402_request_challenge',
-      'l402_fetch_resource',
-      'l402_get_price',
-      'l402_get_market_data',
-      'l402_get_ohlcv',
-      'l402_get_sentiment',
-      'search_paid_apis',
     ])
 
     for (const skillName of enabledSkills) {
@@ -387,10 +362,6 @@ export class NanobotManager {
     const authToken = process.env.MCP_AUTH_TOKEN
     const providerModel = prefixNanobotModel(this.provider, this.model)
     const controlMcpPath = resolve(this.distDir, 'control-mcp.js')
-    const sparkWalletUrl = process.env.NANOBOT_WDK_SPARK_MCP_URL
-    const kaleidoEnabledTools = sparkWalletUrl
-      ? [...KALEIDO_MCP_ENABLED_TOOLS]
-      : [...KALEIDO_MCP_ENABLED_TOOLS, ...SPARK_MCP_TOOL_NAMES]
 
     const mcpServers: Record<string, Record<string, unknown>> = {
       kaleido_control: {
@@ -405,7 +376,7 @@ export class NanobotManager {
       kaleido: process.env.NANOBOT_KALEIDO_MCP_URL
         ? {
             ...buildRemoteMcpConfig(process.env.NANOBOT_KALEIDO_MCP_URL, authToken),
-            enabledTools: kaleidoEnabledTools,
+            enabledTools: [...KALEIDO_MCP_ENABLED_TOOLS],
           }
         : {
             command: 'node',
@@ -418,16 +389,10 @@ export class NanobotManager {
               ...(process.env.SPARK_NETWORK ? { SPARK_NETWORK: process.env.SPARK_NETWORK } : {}),
               ...(process.env.RLN_NODE_URL ? { RLN_NODE_URL: process.env.RLN_NODE_URL } : {}),
               ...(process.env.KALEIDOSWAP_API_URL ? { KALEIDOSWAP_API_URL: process.env.KALEIDOSWAP_API_URL } : {}),
+              ...(process.env.MPP_GATEWAY_URL ? { MPP_GATEWAY_URL: process.env.MPP_GATEWAY_URL } : {}),
             }),
-            enabledTools: kaleidoEnabledTools,
+            enabledTools: [...KALEIDO_MCP_ENABLED_TOOLS],
           },
-      kaleidoswap: buildRemoteMcpConfig(process.env.NANOBOT_KALEIDOSWAP_MCP_URL || DEFAULT_SPLIT_MCP_URLS.kaleidoswap, authToken),
-      wdk_wallet: buildRemoteMcpConfig(process.env.NANOBOT_WDK_RLN_MCP_URL || DEFAULT_SPLIT_MCP_URLS.wdk_wallet, authToken),
-      mpp_gateway: buildRemoteMcpConfig(process.env.NANOBOT_MPP_MCP_URL || DEFAULT_SPLIT_MCP_URLS.mpp_gateway, authToken),
-    }
-
-    if (sparkWalletUrl) {
-      mcpServers.spark_wallet = buildRemoteMcpConfig(sparkWalletUrl, authToken)
     }
 
     const providers: Record<string, Record<string, unknown>> = {}

@@ -4,7 +4,7 @@ description: >
   Lightning channel health monitoring and management for RGB Lightning nodes.
   Use when checking channel liquidity, detecting low outbound capacity,
   or purchasing new channels via the KaleidoSwap LSP (LSPS1 protocol).
-  Requires wdk-wallet-rln-mcp and kaleidoswap-mcp.
+  Requires kaleido-mcp.
 license: Apache-2.0
 metadata:
   author: kaleidoswap
@@ -81,7 +81,7 @@ For LSPS1 channel purchase flow → [references/lsp.md](references/lsp.md)
 ## Step 1: Audit Current Channels
 
 ```
-wdk_list_channels()
+rln_list_channels()
 ```
 
 For each channel, compute:

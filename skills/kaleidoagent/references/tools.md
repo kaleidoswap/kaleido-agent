@@ -90,11 +90,8 @@ REST + atomic HTLC swap engine for RGB assets on Lightning.
 | `kaleidoswap_get_pairs` | — | `[{base, quote, routes:[{from_layer,to_layer}]}]` |
 | `kaleidoswap_get_quote` | `from_asset_id, to_asset_id, from_layer, to_layer, from_amount` | `{rfq_id, price, from_asset:{amount_raw,...}, to_asset:{amount_raw,...}, fee, expires_at}` |
 | `kaleidoswap_get_spreads` | `from_asset_id, to_asset_id, from_amount` | `{quotes:[{route,price,to_amount_display}], best_route, spread_pct}` |
-| `kaleidoswap_place_order` | `from_asset_id, to_asset_id, from_layer, to_layer, from_amount, receiver_address, receiver_address_format` | `{order_id, deposit_address:{address,format}, from_amount_display, to_amount_display}` |
-| `kaleidoswap_get_order_status` | `order_id` | `{id, status, from_asset, to_asset, ...}` — status: `PENDING\|PROCESSING\|FILLED\|FAILED\|EXPIRED` |
-| `kaleidoswap_get_open_orders` | `status_filter?` | `[TrackedOrder]` — session memory |
-| `kaleidoswap_cancel_order` | `order_id` | `{order_id, cancelled, status}` |
-| `kaleidoswap_get_position` | — | `{session_summary:{total,filled,pending,failed,fill_rate}, volume_by_asset}` |
+| `kaleidoswap_lsp_quote_asset_channel` | `asset_id, capacity` | `{quote}` — price an RGB asset channel |
+| `kaleidoswap_lsp_create_asset_channel` | `quote_id` | `{order}` — buy the quoted asset channel |
 | `kaleidoswap_atomic_init` | `rfq_id, from_asset_id, from_amount_raw, to_asset_id, to_amount_raw` | `{swapstring, payment_hash}` — step 1 of atomic swap |
 | `kaleidoswap_atomic_execute` | `swapstring, taker_pubkey, payment_hash` | `{status, message}` — step 3: triggers HTLC settlement |
 | `kaleidoswap_atomic_status` | `payment_hash` | `{swap:{payment_hash, status}}` — status: `Waiting\|Pending\|Succeeded\|Expired\|Failed` |

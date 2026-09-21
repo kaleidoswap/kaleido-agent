@@ -2,8 +2,8 @@
 name: kaleidoswap
 description: >
   Trade RGB assets on Bitcoin Lightning using the KaleidoSwap protocol.
-  Use when quoting a swap, executing an atomic swap, placing a REST order,
-  checking order status, or managing open orders.
+  Use when quoting a swap, executing an atomic HTLC swap, or buying an
+  asset channel from the LSP.
   Requires kaleido-mcp.
 license: Apache-2.0
 metadata:
@@ -15,7 +15,7 @@ metadata:
 # KaleidoSwap Trading Skill
 
 KaleidoSwap is a non-custodial DEX for RGB assets on Bitcoin Lightning Network.
-Trades are settled via atomic HTLC swaps or REST deposit-based orders.
+Trades are settled via atomic HTLC swaps quoted over RFQ.
 
 ## Required MCP Server
 
@@ -98,31 +98,7 @@ Show the user: **amount in → amount out → effective rate**. Ask confirmation
    Poll every 2s until terminal state.
 ```
 
-If `Succeeded` → done. If `Expired`/`Failed` → fall back to REST.
-
-## Step 3b: Execute — REST Order (fallback)
-
-**BTC → RGB (e.g. BTC → USDT):**
-```
-1. rln_create_rgb_invoice({ asset_id: <USDT_ID> }) → rgb_invoice
-2. kaleidoswap_place_order({
-     from_asset_id, to_asset_id, from_layer, to_layer, from_amount,
-     receiver_address: rgb_invoice, receiver_address_format: "RGB_INVOICE"
-   }) → { order_id, deposit_address: { address: bolt11 } }
-3. rln_pay_invoice({ invoice: bolt11 })
-4. Poll kaleidoswap_get_order_status({ order_id }) until "FILLED"
-```
-
-**RGB → BTC (e.g. USDT → BTC):**
-```
-1. rln_create_ln_invoice({ amount_msat }) → bolt11
-2. kaleidoswap_place_order({ ..., receiver_address: bolt11, receiver_address_format: "BOLT11" })
-   → { order_id, deposit_address: { address: rgb_invoice } }
-3. rln_send_asset({ asset_id, recipient_id: rgb_invoice, amount: display_amount })
-4. Poll kaleidoswap_get_order_status({ order_id }) until "FILLED"
-```
-
-Order states: `OPEN → PENDING_PAYMENT → PAID → EXECUTING → FILLED | EXPIRED | FAILED`
+If `Succeeded` → done. If `Expired`/`Failed` → re-quote and retry; there is no REST order fallback.
 
 ## Safety Rules
 

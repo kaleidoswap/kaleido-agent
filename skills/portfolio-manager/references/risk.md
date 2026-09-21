@@ -37,7 +37,7 @@ When `dry_run: true`:
 - Run all analysis steps (balances, prices, drift calculation)
 - Compute what trade would be made
 - Log the full report with `"action": "swap"` but `"dry_run": true`
-- **Do NOT call** `kaleidoswap_atomic_execute` or `kaleidoswap_place_order`
+- **Do NOT call** `kaleidoswap_atomic_init` or `kaleidoswap_atomic_execute`
 - Return as if the swap succeeded for reporting purposes
 
 ## Default Safe Values

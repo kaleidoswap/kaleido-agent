@@ -80,7 +80,7 @@ For LSPS1 channel purchase flow → [references/lsp.md](references/lsp.md)
 ## Step 1: Audit Current Channels
 
 ```
-rln_list_channels()
+wdk_list_channels()
 ```
 
 For each channel, compute:

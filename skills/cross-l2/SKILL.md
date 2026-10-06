@@ -60,7 +60,7 @@ This is the core KaleidoSwap flow. Both assets stay on Lightning Network.
 
 KaleidoSwap does not currently offer loop-out (LN → on-chain). Options:
 
-1. **Close a channel**: Use `rln_list_channels()` to find a channel, then ask the peer to cooperatively close. BTC returns on-chain. This is destructive — avoid unless necessary.
+1. **Close a channel**: Use `wdk_list_channels()` to find a channel, then ask the peer to cooperatively close. BTC returns on-chain. This is destructive — avoid unless necessary.
 
 2. **External loop-out service**: Use a separate loop-out service (Lightning Loop, Boltz, etc.) if available. KaleidoSwap does not provide this natively.
 

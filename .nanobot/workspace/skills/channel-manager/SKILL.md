@@ -4,7 +4,7 @@ description: >
   Lightning channel health monitoring and management for RGB Lightning nodes.
   Use when checking channel liquidity, detecting low outbound capacity,
   or purchasing new channels via the KaleidoSwap LSP (LSPS1 protocol).
-  Requires wdk-wallet-rln-mcp and kaleidoswap-mcp.
+  Requires kaleido-mcp.
 license: Apache-2.0
 metadata:
   author: kaleidoswap
@@ -17,7 +17,7 @@ metadata:
 ## Live State (injected at runtime)
 
 **Node status:**
-!`kaleido --json node status`
+!`kaleido --json --agent node info`
 
 **Lightning channels:**
 !`kaleido --json channel list`
@@ -33,13 +33,12 @@ metadata:
 
 **Channel inspection:**
 - `"channel list"` — list channels with outbound/inbound capacity
-- `"node status"` — node pubkey, peers, sync status
-- `"node info"` — detailed node info
+- `"node info"` — node pubkey, peers, sync status
 - `"peer connect <pubkey@host:port>"` — connect to a Lightning peer
-- `"channel estimate-fees [--capacity-sat <n>] [--lsp-balance <sat>]"` — estimate fees (alternative to `lsp estimate-fees`)
-- `"channel order-create <pubkey> [--lsp-balance <sat>] [--client-balance <sat>]"` — create channel order with explicit pubkey
-- `"channel order-get <order-id>"` — get channel order status
-- `"channel order-decide <order-id> [--accept|--reject]"` — accept/reject order (maker-side)
+- `"channel order estimate-fees <PUBKEY> [--lsp-balance <sat>]"` — estimate fees for channel order
+- `"channel order create <PUBKEY> [--lsp-balance <sat>] [--client-balance <sat>]"` — create channel order
+- `"channel order inspect <ORDER_ID>"` — inspect channel order status
+- `"channel order decide <ORDER_ID> [--accept|--reject]"` — accept/reject requoted order
 
 **LSP (Lightning Service Provider) — channel purchase:**
 - `"lsp info"` — show LSP capabilities and supported channel sizes

@@ -23,10 +23,10 @@ KaleidoSwap LSP ──opens channel──→ Your RLN Node
    kaleidoswap_lsp_get_info()
    → { lsp_connection_url: "pubkey@host:port", options: {...} }
 
-   rln_connect_peer({ address: lsp_connection_url })
+   wdk_connect_peer({ address: lsp_connection_url })
    → {}
 
-   rln_get_node_info()
+   wdk_get_node_info()
    → { pubkey }    ← your node's pubkey, required for all LSP calls
 
 1. ESTIMATE FEES
@@ -51,7 +51,7 @@ KaleidoSwap LSP ──opens channel──→ Your RLN Node
    → { order_id: "uuid", bolt11_invoice: "lnbc...", order_total_sat: 25320 }
 
 3. PAY THE INVOICE
-   rln_pay_invoice({ invoice: bolt11_invoice })
+   wdk_pay_invoice({ invoice: bolt11_invoice })
    → { preimage: "...", fee_msat: 500 }
 
 4. POLL ORDER STATUS
@@ -66,7 +66,7 @@ KaleidoSwap LSP ──opens channel──→ Your RLN Node
 
 | Parameter | Description | Typical Value |
 |-----------|-------------|---------------|
-| `client_pubkey` | Your RLN node's public key (from `rln_get_node_info`) | hex string |
+| `client_pubkey` | Your RLN node's public key (from `wdk_get_node_info`) | hex string |
 | `lsp_balance_sat` | Inbound capacity from LSP (sats) | 2,000,000 |
 | `client_balance_sat` | Your initial outbound (sats) | 0 (pure inbound) |
 | `channel_expiry_blocks` | Channel lifetime in blocks (~10min/block) | 4,320 (~30 days) |
@@ -90,4 +90,4 @@ Actual fees come from `kaleidoswap_lsp_estimate_fees()` — always check before 
 | Order status `FAILED` after payment | Log with `order_id`, escalate — do not retry |
 | Channel does not appear after 10 min | Poll once more, then report issue |
 | Fee changed between estimate and create | Re-estimate before paying |
-| `rln_connect_peer` fails | Verify LSP is reachable; retry connection |
+| `wdk_connect_peer` fails | Verify LSP is reachable; retry connection |

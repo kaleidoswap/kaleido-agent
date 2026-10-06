@@ -6,9 +6,9 @@ Manage a KaleidoSwap RGB Lightning Node (RLN) via the `kaleido` CLI and the unif
 
 - Start, stop, and monitor the RLN node Docker environment (CLI)
 - Initialize and unlock the node wallet (CLI)
-- Check BTC and RGB asset balances (MCP: `rln_get_balances`, `rln_get_asset_balance`)
-- Inspect Lightning channels and peers (MCP: `rln_list_channels`)
-- Create invoices and send Lightning payments (MCP: `rln_create_ln_invoice`, `rln_pay_invoice`)
+- Check BTC and RGB asset balances (MCP: `wdk_get_balances`, `wdk_get_asset_balance`)
+- Inspect Lightning channels and peers (MCP: `wdk_list_channels`)
+- Create invoices and send Lightning payments (MCP: `wdk_create_ln_invoice`, `wdk_pay_invoice`)
 - Query market data (MCP: `kaleidoswap_get_assets`, `kaleidoswap_get_pairs`)
 
 ---
@@ -54,8 +54,8 @@ kaleido --agent node down <NAME>   # removes containers + networks, preserves vo
 ## Wallet Operations
 
 **Via MCP tools:**
-- `rln_get_balances` — BTC balance (vanilla + colored UTXOs, Lightning)
-- `rln_get_address` — new on-chain deposit address
+- `wdk_get_balances` — BTC balance (vanilla + colored UTXOs, Lightning)
+- `wdk_get_address` — new on-chain deposit address
 
 **Via CLI (for operations not in MCP):**
 ```bash
@@ -76,8 +76,8 @@ kaleido --agent wallet create-utxos
 ## RGB Assets
 
 **Via MCP tools:**
-- `rln_list_assets` — all RGB assets held by this node
-- `rln_get_asset_balance { asset_id }` — balance for a specific RGB asset
+- `wdk_list_assets` — all RGB assets held by this node
+- `wdk_get_asset_balance { asset_id }` — balance for a specific RGB asset
 
 **Via CLI:**
 ```bash
@@ -92,8 +92,8 @@ RGB asset IDs look like `rgb:2JEUOrsc-JsWuPGF-...`. Use `kaleidoswap_get_assets`
 ## Channels & Peers
 
 **Via MCP tools:**
-- `rln_list_channels` — all Lightning channels
-- `rln_connect_peer { peer_addr }` — connect to peer
+- `wdk_list_channels` — all Lightning channels
+- `wdk_connect_peer { peer_addr }` — connect to peer
 
 **Via CLI:**
 ```bash
@@ -107,10 +107,10 @@ kaleido --agent peer connect <PUBKEY@HOST:PORT>
 ## Lightning Payments
 
 **Via MCP tools:**
-- `rln_create_ln_invoice { amount_msat?, expiry? }` — BTC Lightning invoice
-- `rln_create_rgb_invoice { asset_id, amount }` — RGB asset invoice
-- `rln_pay_invoice { invoice }` — pay a Lightning invoice
-- `rln_list_payments` — list payments
+- `wdk_create_ln_invoice { amount_msat?, expiry? }` — BTC Lightning invoice
+- `wdk_create_rgb_invoice { asset_id, amount }` — RGB asset invoice
+- `wdk_pay_invoice { invoice }` — pay a Lightning invoice
+- `wdk_list_payments` — list payments
 
 **Via CLI:**
 ```bash
@@ -154,8 +154,8 @@ When starting a node for the first time or after a reboot:
 3. `kaleido --agent node ps <NAME>` — confirm containers are healthy
 4. `kaleido --json --agent node info` — confirm RLN daemon is reachable
 5. `kaleido --agent node unlock <PASSWORD>` OR `kaleido --agent node init` (first time)
-6. `rln_get_balances` or `kaleido --json --agent wallet balance` — check funds
-7. `rln_get_node_info` — confirm pubkey and network
+6. `wdk_get_balances` or `kaleido --json --agent wallet balance` — check funds
+7. `wdk_get_node_info` — confirm pubkey and network
 
 ---
 

@@ -66,7 +66,7 @@ if either party fails to complete, both get their funds back.
 
    Poll every 2s. Terminal states: "Succeeded", "Expired", "Failed"
    On "Succeeded" → done ✅
-   On "Expired" / "Failed" → fall back to REST order flow
+   On "Expired" / "Failed" → re-quote and retry the atomic flow
 ```
 
 ## Timing
@@ -85,8 +85,8 @@ if either party fails to complete, both get their funds back.
 |-------|----------|
 | `rfq_id expired` | Call `kaleidoswap_get_quote` again for a fresh quote |
 | `wdk_atomic_taker` fails | Do NOT call execute — get new quote and restart |
-| Status → `Expired` | Fall back to REST order flow |
-| Status → `Failed` | Fall back to REST order flow |
+| Status → `Expired` | Quote expired before settlement; re-quote and retry |
+| Status → `Failed` | Inspect the maker error, then re-quote and retry |
 | Timeout (>120s polling) | Treat as Failed, fall back to REST |
 
 ## Atomic vs REST: When to Use Which

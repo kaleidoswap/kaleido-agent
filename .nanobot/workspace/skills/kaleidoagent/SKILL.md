@@ -23,7 +23,7 @@ metadata:
 !`kaleido --json channel list`
 
 **Recent swap history (last 20):**
-!`kaleido --json swap history --limit 20`
+!`kaleido --json --agent swap order history --limit 20`
 
 **Market assets & pairs:**
 !`kaleido --json market assets`
@@ -38,8 +38,7 @@ metadata:
 - `"wallet balance"` — BTC on-chain + Lightning balance
 - `"asset list"` — RGB assets held (USDT, XAUT, etc.)
 - `"channel list"` — Lightning channels with liquidity
-- `"node status"` — node sync, peers, uptime
-- `"node info"` — node pubkey and details
+- `"node info"` — node pubkey, peers, sync status
 
 **Market data:**
 - `"market quote BTC/USDT --from-amount 100000 --from-layer BTC_LN"` — BTC price
@@ -50,31 +49,31 @@ metadata:
 - `"market info"` — maker node info (pubkey, version)
 
 **Trade history:**
-- `"swap history --limit 50"` — recent swaps
-- `"swap history --status PENDING"` — open orders
-- `"swap node-swaps"` — list node-level atomic swaps
-- `"asset transfers [--limit 50]"` — asset transfer history
+- `"swap order history --limit 50"` — recent swaps
+- `"swap order history --status PENDING"` — open orders
+- `"swap node list"` — list node-level atomic swaps
+- `"asset transfers <ASSET_ID>"` — asset transfer history
 - `"payment list"` — Lightning payment history
 
-**Swap execution:**
-- `"swap execute BTC/USDT --from-amount <sats> --from-layer BTC_LN --to-layer RGB_LN --yes"` — full market swap
-- `"swap atomic-status --payment-hash <hash>"` — atomic swap status
-- `"swap run --qty-from <n> --qty-to <n> [--from-asset <rgb:...>] [--to-asset <rgb:...>] --yes"` — node-level atomic swap
+**Atomic swap via Kaleidoswap maker:**
+- `"swap atomic init BTC/USDT --from-amount <sats> --from-layer BTC_LN --to-layer RGB_LN"` — init atomic swap
+- `"swap atomic execute --swapstring <s> --taker-pubkey <pk> --payment-hash <hash> --auto-whitelist"` — execute
+- `"swap atomic status <PAYMENT_HASH>"` — check status
 
-**Atomic swap primitives:**
-- `"maker init --qty-from <n> --qty-to <n> [--from-asset] [--to-asset] [--timeout 100]"` — init maker side
-- `"taker whitelist <swapstring>"` — accept swap on taker side
-- `"taker pubkey"` — get taker pubkey
-- `"maker execute --swapstring <s> --payment-secret <s> --taker-pubkey <pk>"` — finalise maker
+**Local node swap primitives:**
+- `"swap node init --qty-from <n> --qty-to <n> [--from-asset] [--to-asset]"` — init maker side
+- `"swap node whitelist --swapstring <s>"` — accept swap on taker side
+- `"node taker pubkey"` — get taker pubkey
+- `"swap node execute --swapstring <s> --payment-secret <s> --taker-pubkey <pk>"` — finalize
 
 **Asset management:**
 - `"asset sync"` — sync RGB wallet (run after swaps)
 - `"asset fail-transfers"` — mark stuck transfers as failed
-- `"asset refresh [--asset-id <id>]"` — refresh asset state (per-asset alternative to asset sync)
+- `"asset refresh"` — refresh pending transfers
 
 **LSP / channels:**
-- `"lsp info"` — LSP capabilities and channel options
-- `"lsp network-info"` — LSP node pubkey/connection
+- `"channel lsp info"` — LSP capabilities and channel options
+- `"channel lsp network-info"` — LSP node pubkey/connection
 - `"lsp estimate-fees --capacity-sat <n>"` — channel fee estimate
 - `"lsp order-create --capacity-sat <n>"` — buy a channel
 - `"lsp order-get <order-id>"` — poll order status
@@ -99,8 +98,8 @@ All tools come from one connection. No separate server processes needed.
 | `getBalance`, `getAddress`, `sendTransaction`, `transfer`, `sign`, `verify` | WDK built-in | Spark wallet standard ops |
 | `getCurrentPrice`, `getHistoricalPrice` | WDK Bitfinex | Live price data |
 | `spark_*` | Custom Spark | Lightning invoices, BTC bridge, fee-free transfers |
-| `rln_*` | Custom RLN | RGB assets, Lightning channels, atomic taker |
-| `kaleidoswap_*` | KaleidoSwap DEX | Quotes, REST orders, atomic HTLC, LSPS1 channels |
+| `wdk_*` | Custom RLN | RGB assets, Lightning channels, atomic taker |
+| `kaleidoswap_*` | KaleidoSwap DEX | RFQ quotes, atomic HTLC swaps, LSPS1 channels |
 | `mpp_*` / `l402_*` / `search_paid_apis` | MPP/L402 | Payment-gated API access + 402index.io discovery |
 | `get_price`, `get_market_data`, `get_ohlcv`, `get_sentiment` | CoinGecko | Market data + Fear & Greed |
 
@@ -113,7 +112,7 @@ Two WDK wallets, one process:
 | Wallet | Tools | Holds | Best For |
 |--------|-------|-------|----------|
 | **Spark L2** | `getBalance(spark)`, `spark_*` | BTC sats (fee-free L2) | Lightning payments, BTC bridge, zero-fee transfers |
-| **RLN** | `rln_*` | BTC (Lightning) + RGB assets (USDT, XAUT) | Atomic swaps, RGB token operations, channel mgmt |
+| **RLN** | `wdk_*` | BTC (Lightning) + RGB assets (USDT, XAUT) | Atomic swaps, RGB token operations, channel mgmt |
 
 ## Three Operating Loops
 
@@ -175,10 +174,10 @@ Full portfolio snapshot across both wallets.
 
 ## Risk Rules (ALWAYS enforce)
 
-- **dry_run=true** → describe what you *would* do — do NOT call `kaleidoswap_place_order`, `rln_pay_invoice`, `rln_send_asset`, `spark_pay_lightning_invoice`, or `transfer`
+- **dry_run=true** → describe what you *would* do — do NOT call `kaleidoswap_atomic_execute`, `wdk_pay_invoice`, `wdk_send_asset`, `spark_pay_lightning_invoice`, or `transfer`
 - **max_swap_usd** → never exceed per-trade limit
 - **min_btc_reserve_sats** → never let **combined** (RLN + Spark) BTC fall below this
-- **max_concurrent_orders** → check `kaleidoswap_get_open_orders` first
+- **max_concurrent_orders** → do not start a new swap while that many are still in flight
 - **stop_loss_btc_sats** → halt all trading if total BTC falls below this
 
 ## Swap Flows
@@ -204,26 +203,6 @@ market quote BTC/USDT --from-amount <sats> --from-layer BTC_LN --to-layer RGB_LN
      taker pubkey → pubkey
      maker execute --swapstring <s> --payment-secret <s> --taker-pubkey <pk>
      swap atomic-status --payment-hash <hash>   ← poll until Succeeded
-asset sync
-```
-
-### REST Order — BTC → USDT (RLN-funded)
-
-```
-asset invoice <USDT_asset_id> --amount <raw>   → rgb_invoice
-market quote BTC/USDT --from-amount <sats>     → rfq_id, deposit_address (BOLT11)
-payment send <deposit_address>
-swap history --status PENDING                   ← poll until FILLED
-asset sync
-```
-
-### REST Order — USDT → BTC
-
-```
-payment invoice --amount-msat <msat>            → ln_invoice (receive BTC to RLN)
-market quote USDT/BTC --from-amount <raw>       → rfq_id, deposit_address (RGB_INVOICE)
-asset send <USDT_asset_id> <raw_amount> <deposit_address>
-swap history --status PENDING                   ← poll until FILLED
 asset sync
 ```
 
@@ -254,7 +233,7 @@ search_paid_apis(query: "bitcoin sentiment", protocol: "L402", health: "healthy"
 
 ```
 mpp_request_challenge(url) → {invoice, challenge_id, amount_sats}
-rln_mpp_pay(invoice, challenge_id) → {credential}
+wdk_mpp_pay(invoice, challenge_id) → {credential}
 mpp_submit_credential(url, credential) → {data}
 ```
 
@@ -293,10 +272,10 @@ mpp_submit_credential(url, credential) → {data}
 
 ## Safety Rules
 
-1. Never trade if `rln_get_node_info` fails
-2. Always check `kaleidoswap_get_open_orders` before a new order
+1. Never trade if `wdk_get_node_info` fails
+2. Never start a new swap while a previous `kaleidoswap_atomic_status` is non-terminal
 3. On any tool error: log and skip — never retry in a tight loop
-4. RGB asset IDs vary by network — resolve from `rln_list_assets`, never hardcode except `BTC`
-5. For BTC→USDT deposit: `format=BTC_LN` → pass `deposit_address` to `rln_pay_invoice` or `spark_pay_lightning_invoice`
-6. For USDT→BTC deposit: `format=RGB_LN` → pass `deposit_address` to `rln_send_asset` as `recipient_id`
+4. RGB asset IDs vary by network — resolve from `wdk_list_assets`, never hardcode except `BTC`
+5. Whitelist the HTLC with `wdk_atomic_taker({ swapstring })` BEFORE `kaleidoswap_atomic_execute`
+6. Poll `kaleidoswap_atomic_status({ payment_hash })` to a terminal state; never assume success
 7. If `WDK_SEED` is not set, Spark tools (getBalance, spark_*) will fail — fall back gracefully to RLN-only

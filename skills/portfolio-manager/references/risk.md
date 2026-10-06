@@ -8,14 +8,14 @@ operational liquidity and guard against runaway losses.
 | Condition | Action |
 |-----------|--------|
 | BTC balance ≤ `stop_loss_btc_sats` | Halt all trading. Log reason. Do NOT resume until manually re-enabled. |
-| Node offline / `rln_get_node_info()` fails | Skip cycle. Log warning. Do not attempt trades. |
+| Node offline / `wdk_get_node_info()` fails | Skip cycle. Log warning. Do not attempt trades. |
 
 ## Soft Guards (skip this cycle)
 
 | Condition | Action |
 |-----------|--------|
 | BTC after swap < `min_btc_reserve_sats` | Reduce swap size or skip. Preserve operational liquidity. |
-| Open orders ≥ `max_concurrent_orders` | Skip cycle. Poll existing orders, update state. |
+| In-flight swaps ≥ `max_concurrent_orders` | Skip cycle. Poll in-flight swaps (`kaleidoswap_atomic_status`), update state. |
 | Swap amount > `max_swap_usd` | Cap at `max_swap_usd`. Still execute, just smaller. |
 | Quote fails or returns error | Skip cycle. Log error. |
 | `rfq_id` expires before execute | Get new quote. Retry once. |

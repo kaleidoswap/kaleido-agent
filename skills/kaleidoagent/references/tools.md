@@ -52,31 +52,31 @@ Extended Spark wallet operations. Account accessed via WDK internals (`wdk.getAc
 
 ---
 
-## Layer 3 — RLN Tools (`rln_*`)
+## Layer 3 — RLN Tools (`wdk_*`)
 
 RGB-Lightning-Node. Holds BTC on Lightning + RGB assets (USDT, XAUT). Required for atomic swaps and RGB token operations.
 
 | Tool | Args | Returns |
 |------|------|---------|
-| `rln_get_node_info` | — | `{pubkey, num_channels, num_usable_channels, local_balance_sat, num_peers}` |
-| `rln_get_balances` | `skip_sync?` | `{btc_onchain:{vanilla_spendable_sats,colored_spendable_sats}, lightning_balance_sat}` |
-| `rln_get_asset_balance` | `asset_id` | `{asset_id, settled, future, spendable, offchain_outbound, offchain_inbound}` |
-| `rln_list_assets` | `schemas?` | `[{asset_id, name, ticker, precision, schema}]` |
-| `rln_get_address` | — | `{address}` — on-chain BTC address for RLN wallet |
-| `rln_create_rgb_invoice` | `asset_id?, amount?, duration_seconds?` | `{invoice, recipient_id, expires_at}` — use `invoice` as receiver_address |
-| `rln_create_ln_invoice` | `amount_msat?, description?, expiry_sec?` | `{invoice, payment_hash, expiry_sec}` |
-| `rln_pay_invoice` | `invoice` | `{payment_hash, status}` |
-| `rln_send_btc` | `address, amount_sat, fee_rate?` | `{sent, address, amount_sat, fee_rate}` |
-| `rln_send_asset` | `asset_id, recipient_id, amount, transport_endpoints?, fee_rate?` | `{sent, asset_id, recipient_id, amount_raw, txid}` |
-| `rln_list_channels` | `usable_only?` | `{channel_count, total_outbound_msat, total_inbound_msat, channels:[...]}` |
-| `rln_connect_peer` | `peer_pubkey_and_addr` | `{success}` — required before LSPS1 channel open |
-| `rln_open_channel` | `peer_pubkey_and_addr, capacity_sat, push_msat?, asset_id?, asset_amount?, is_public?` | `{temporary_channel_id, status}` |
-| `rln_list_payments` | `limit?, inbound_only?, outbound_only?` | `[{payment_hash, amount_msat, inbound, status}]` |
-| `rln_refresh_transfers` | `skip_sync?` | `{refreshed}` — flush pending RGB transfers |
-| `rln_atomic_taker` | `swapstring` | `{success}` — whitelist HTLC on RLN before atomic_execute |
-| `rln_list_swaps` | — | `{maker:[...], taker:[...], total}` |
-| `rln_get_swap` | `payment_hash, taker?` | `{swap:{payment_hash, status, ...}}` |
-| `rln_mpp_pay` | `invoice, challenge_id?` | `{paid, payment_hash, preimage, credential}` — pay MPP challenge from RLN |
+| `wdk_get_node_info` | — | `{pubkey, num_channels, num_usable_channels, local_balance_sat, num_peers}` |
+| `wdk_get_balances` | `skip_sync?` | `{btc_onchain:{vanilla_spendable_sats,colored_spendable_sats}, lightning_balance_sat}` |
+| `wdk_get_asset_balance` | `asset_id` | `{asset_id, settled, future, spendable, offchain_outbound, offchain_inbound}` |
+| `wdk_list_assets` | `schemas?` | `[{asset_id, name, ticker, precision, schema}]` |
+| `wdk_get_address` | — | `{address}` — on-chain BTC address for RLN wallet |
+| `wdk_create_rgb_invoice` | `asset_id?, amount?, duration_seconds?` | `{invoice, recipient_id, expires_at}` — use `invoice` as receiver_address |
+| `wdk_create_ln_invoice` | `amount_msat?, description?, expiry_sec?` | `{invoice, payment_hash, expiry_sec}` |
+| `wdk_pay_invoice` | `invoice` | `{payment_hash, status}` |
+| `wdk_send_btc` | `address, amount_sat, fee_rate?` | `{sent, address, amount_sat, fee_rate}` |
+| `wdk_send_asset` | `asset_id, recipient_id, amount, transport_endpoints?, fee_rate?` | `{sent, asset_id, recipient_id, amount_raw, txid}` |
+| `wdk_list_channels` | `usable_only?` | `{channel_count, total_outbound_msat, total_inbound_msat, channels:[...]}` |
+| `wdk_connect_peer` | `peer_pubkey_and_addr` | `{success}` — required before LSPS1 channel open |
+| `wdk_open_channel` | `peer_pubkey_and_addr, capacity_sat, push_msat?, asset_id?, asset_amount?, is_public?` | `{temporary_channel_id, status}` |
+| `wdk_list_payments` | `limit?, inbound_only?, outbound_only?` | `[{payment_hash, amount_msat, inbound, status}]` |
+| `wdk_refresh_transfers` | `skip_sync?` | `{refreshed}` — flush pending RGB transfers |
+| `wdk_atomic_taker` | `swapstring` | `{success}` — whitelist HTLC on RLN before atomic_execute |
+| `wdk_list_swaps` | — | `{maker:[...], taker:[...], total}` |
+| `wdk_get_swap` | `payment_hash, taker?` | `{swap:{payment_hash, status, ...}}` |
+| `wdk_mpp_pay` | `invoice, challenge_id?` | `{paid, payment_hash, preimage, credential}` — pay MPP challenge from RLN |
 
 ---
 
@@ -124,7 +124,7 @@ REST + atomic HTLC swap engine for RGB assets on Lightning.
 | `mpp_submit_credential` | `url, credential` | `{ok, status, data, receipt}` — step 3 |
 | `mpp_parse_challenge_header` | `url, www_authenticate` | parsed challenge object |
 
-**Pay step (step 2):** Use `rln_mpp_pay(invoice, challenge_id)` → credential, or `spark_mpp_pay(invoice, challenge_id)` → credential when RLN outbound is low.
+**Pay step (step 2):** Use `wdk_mpp_pay(invoice, challenge_id)` → credential, or `spark_mpp_pay(invoice, challenge_id)` → credential when RLN outbound is low.
 
 ### Legacy L402
 
@@ -154,17 +154,17 @@ CoinGecko prices + Fear & Greed sentiment (alternative.me). Complementary to Bit
 
 | Operation | Tool |
 |-----------|------|
-| RGB asset swap (USDT/XAUT) | `rln_*` — Required for RGB |
-| Atomic HTLC swap (taker role) | `rln_atomic_taker` |
-| Pay KaleidoSwap deposit — primary | `rln_pay_invoice` (if has outbound) |
+| RGB asset swap (USDT/XAUT) | `wdk_*` — Required for RGB |
+| Atomic HTLC swap (taker role) | `wdk_atomic_taker` |
+| Pay KaleidoSwap deposit — primary | `wdk_pay_invoice` (if has outbound) |
 | Pay KaleidoSwap deposit — fallback | `spark_pay_lightning_invoice` |
-| Receive BTC from swap (RLN) | `rln_create_ln_invoice` |
+| Receive BTC from swap (RLN) | `wdk_create_ln_invoice` |
 | Receive BTC from swap (Spark) | `spark_create_lightning_invoice` |
 | Fee-free BTC transfer | `transfer` (WDK built-in, Spark) |
-| MPP micropayment — primary | `rln_mpp_pay` |
+| MPP micropayment — primary | `wdk_mpp_pay` |
 | MPP micropayment — fallback | `spark_mpp_pay` |
 | BTC bridge to L1 | `spark_withdraw` (cooperative exit) |
-| LSP channel purchase | `rln_connect_peer` + `kaleidoswap_lsp_*` + `rln_pay_invoice` |
+| LSP channel purchase | `wdk_connect_peer` + `kaleidoswap_lsp_*` + `wdk_pay_invoice` |
 | Live price check | `getCurrentPrice` (Bitfinex) or `get_price` (CoinGecko) |
 
 ---
@@ -173,10 +173,10 @@ CoinGecko prices + Fear & Greed sentiment (alternative.me). Complementary to Bit
 
 | Network | BTC | USDT (RGB) | XAUT (RGB) |
 |---------|-----|------------|------------|
-| Staging | `BTC` | `rgb:2JEUOrsc-JsWuPGF-3cr9SSv-mqqRmaz-8waf0gl-8vAcOXw` | resolve via `rln_list_assets` |
+| Staging | `BTC` | `rgb:2JEUOrsc-JsWuPGF-3cr9SSv-mqqRmaz-8waf0gl-8vAcOXw` | resolve via `wdk_list_assets` |
 | Mainnet | `BTC` | `rgb:i~xXdG4J-JfXE_QX-RRVCDbQ-ggISPWO-P2yxBGT-nQX19SQ` | `rgb:Vf25LAhx-tcikQu3-O3msZ7~-DcNF4YH-8FCe1FC-Brh2rIc` |
 
-**Always resolve RGB asset IDs dynamically** via `rln_list_assets` — never hardcode except `BTC`.
+**Always resolve RGB asset IDs dynamically** via `wdk_list_assets` — never hardcode except `BTC`.
 
 Spark tokens use different identifiers (`btkn1...`) — configured via `SPARK_USDT_TOKEN` env var.
 
@@ -185,9 +185,9 @@ Spark tokens use different identifiers (`btkn1...`) — configured via `SPARK_US
 ## Combined BTC Calculation
 
 ```
-total_btc_sat  = rln_lightning_balance_sat + spark_balance_sats   (from getBalance/rln_get_balances)
+total_btc_sat  = rln_lightning_balance_sat + spark_balance_sats   (from getBalance/wdk_get_balances)
 BTC_usd        = (total_btc_sat / 1e8) × btc_price
-USDT_usd       = usdt.settled + usdt.offchain_inbound              (from rln_get_asset_balance)
+USDT_usd       = usdt.settled + usdt.offchain_inbound              (from wdk_get_asset_balance)
 XAUT_usd       = xaut_amount × xaut_price
 total_usd      = BTC_usd + USDT_usd + XAUT_usd
 drift          = |current_pct - target_pct|

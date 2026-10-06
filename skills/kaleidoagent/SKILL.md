@@ -98,7 +98,7 @@ All tools come from one connection. No separate server processes needed.
 | `getBalance`, `getAddress`, `sendTransaction`, `transfer`, `sign`, `verify` | WDK built-in | Spark wallet standard ops |
 | `getCurrentPrice`, `getHistoricalPrice` | WDK Bitfinex | Live price data |
 | `spark_*` | Custom Spark | Lightning invoices, BTC bridge, fee-free transfers |
-| `rln_*` | Custom RLN | RGB assets, Lightning channels, atomic taker |
+| `wdk_*` | Custom RLN | RGB assets, Lightning channels, atomic taker |
 | `kaleidoswap_*` | KaleidoSwap DEX | RFQ quotes, atomic HTLC swaps, LSPS1 channels |
 | `mpp_*` / `l402_*` / `search_paid_apis` | MPP/L402 | Payment-gated API access + 402index.io discovery |
 | `get_price`, `get_market_data`, `get_ohlcv`, `get_sentiment` | CoinGecko | Market data + Fear & Greed |
@@ -112,7 +112,7 @@ Two WDK wallets, one process:
 | Wallet | Tools | Holds | Best For |
 |--------|-------|-------|----------|
 | **Spark L2** | `getBalance(spark)`, `spark_*` | BTC sats (fee-free L2) | Lightning payments, BTC bridge, zero-fee transfers |
-| **RLN** | `rln_*` | BTC (Lightning) + RGB assets (USDT, XAUT) | Atomic swaps, RGB token operations, channel mgmt |
+| **RLN** | `wdk_*` | BTC (Lightning) + RGB assets (USDT, XAUT) | Atomic swaps, RGB token operations, channel mgmt |
 
 ## Three Operating Loops
 
@@ -174,7 +174,7 @@ Full portfolio snapshot across both wallets.
 
 ## Risk Rules (ALWAYS enforce)
 
-- **dry_run=true** → describe what you *would* do — do NOT call `kaleidoswap_atomic_execute`, `rln_pay_invoice`, `rln_send_asset`, `spark_pay_lightning_invoice`, or `transfer`
+- **dry_run=true** → describe what you *would* do — do NOT call `kaleidoswap_atomic_execute`, `wdk_pay_invoice`, `wdk_send_asset`, `spark_pay_lightning_invoice`, or `transfer`
 - **max_swap_usd** → never exceed per-trade limit
 - **min_btc_reserve_sats** → never let **combined** (RLN + Spark) BTC fall below this
 - **max_concurrent_orders** → do not start a new swap while that many are still in flight
@@ -233,7 +233,7 @@ search_paid_apis(query: "bitcoin sentiment", protocol: "L402", health: "healthy"
 
 ```
 mpp_request_challenge(url) → {invoice, challenge_id, amount_sats}
-rln_mpp_pay(invoice, challenge_id) → {credential}
+wdk_mpp_pay(invoice, challenge_id) → {credential}
 mpp_submit_credential(url, credential) → {data}
 ```
 
@@ -272,10 +272,10 @@ mpp_submit_credential(url, credential) → {data}
 
 ## Safety Rules
 
-1. Never trade if `rln_get_node_info` fails
+1. Never trade if `wdk_get_node_info` fails
 2. Never start a new swap while a previous `kaleidoswap_atomic_status` is non-terminal
 3. On any tool error: log and skip — never retry in a tight loop
-4. RGB asset IDs vary by network — resolve from `rln_list_assets`, never hardcode except `BTC`
-5. Whitelist the HTLC with `rln_atomic_taker({ swapstring })` BEFORE `kaleidoswap_atomic_execute`
+4. RGB asset IDs vary by network — resolve from `wdk_list_assets`, never hardcode except `BTC`
+5. Whitelist the HTLC with `wdk_atomic_taker({ swapstring })` BEFORE `kaleidoswap_atomic_execute`
 6. Poll `kaleidoswap_atomic_status({ payment_hash })` to a terminal state; never assume success
 7. If `WDK_SEED` is not set, Spark tools (getBalance, spark_*) will fail — fall back gracefully to RLN-only

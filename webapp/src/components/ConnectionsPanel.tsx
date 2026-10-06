@@ -4,7 +4,7 @@ import { ConnectionState } from '../hooks/useAgentStatus'
 
 const rlnUrl = 'http://localhost:3001'
 const sparkNetwork = 'REGTEST'
-const kaleidoUrl = 'https://api.staging.kaleidoswap.com'
+const kaleidoUrl = 'https://api.signet.kaleidoswap.com'
 
 interface Props {
   connection: ConnectionState

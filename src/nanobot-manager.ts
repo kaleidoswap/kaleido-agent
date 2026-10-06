@@ -1,4 +1,4 @@
-import { access, cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { access, cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { closeSync, constants as fsConstants, openSync, readFileSync } from 'node:fs'
 import { execFile, spawn } from 'node:child_process'
 import { promisify } from 'node:util'
@@ -7,34 +7,45 @@ import type { AgentConfigFile } from './agent-config-store.js'
 import type { AIProviderName } from './providers/index.js'
 import type { AgentTask } from './tasks-store.js'
 import { writeCronJobs } from './nanobot-cron-sync.js'
+import { canonicalSkillName, listSkillSources, missingMindSkills, resolveSkillDir } from './skill-sources.js'
 
 const execFileAsync = promisify(execFile)
 
 const DEFAULT_GATEWAY_PORT = 18790
 
+const RLN_TOOLS = [
+  'get_node_info',
+  'get_balances',
+  'get_asset_balance',
+  'list_assets',
+  'get_address',
+  'create_rgb_invoice',
+  'create_ln_invoice',
+  'pay_invoice',
+  'send_btc',
+  'send_asset',
+  'list_channels',
+  'connect_peer',
+  'open_channel',
+  'close_channel',
+  'get_channel_id',
+  'list_payments',
+  'refresh_transfers',
+  'atomic_taker',
+  'list_swaps',
+  'get_swap',
+  'mpp_pay',
+] as const
+
+// kaleido-mcp serves every RLN tool as wdk_* and rln_*; local skills use wdk_*, @kaleidorg/mind skills use rln_*.
 const KALEIDO_MCP_ENABLED_TOOLS = [
-  // RLN tools (wdk_*; rln_* are legacy aliases)
-  'wdk_get_node_info',
-  'wdk_get_balances',
-  'wdk_get_asset_balance',
-  'wdk_list_assets',
-  'wdk_get_address',
-  'wdk_create_rgb_invoice',
-  'wdk_create_ln_invoice',
-  'wdk_pay_invoice',
-  'wdk_send_btc',
-  'wdk_send_asset',
-  'wdk_list_channels',
-  'wdk_connect_peer',
-  'wdk_open_channel',
-  'wdk_close_channel',
-  'wdk_get_channel_id',
-  'wdk_list_payments',
-  'wdk_refresh_transfers',
-  'wdk_atomic_taker',
-  'wdk_list_swaps',
-  'wdk_get_swap',
-  'wdk_mpp_pay',
+  ...RLN_TOOLS.map((name) => `wdk_${name}`),
+  ...RLN_TOOLS.map((name) => `rln_${name}`),
+  // Node lifecycle (read-only; state changes stay on the CLI)
+  'kaleido_node_list',
+  'kaleido_node_ps',
+  'kaleido_node_status',
+  'kaleido_node_info',
   // Spark tools
   'spark_get_balance',
   'spark_get_address',
@@ -61,6 +72,8 @@ const KALEIDO_MCP_ENABLED_TOOLS = [
   'kaleidoswap_lsp_estimate_fees',
   'kaleidoswap_lsp_create_order',
   'kaleidoswap_lsp_get_order',
+  'kaleidoswap_lsp_quote_asset_channel',
+  'kaleidoswap_lsp_create_asset_channel',
   // MPP / L402 tools
   'mpp_request_challenge',
   'mpp_submit_credential',
@@ -72,7 +85,7 @@ const KALEIDO_MCP_ENABLED_TOOLS = [
   'l402_get_ohlcv',
   'l402_get_sentiment',
   'search_paid_apis',
-] as const
+]
 
 const CONTROL_TOOL_NAMES = [
   'agent_get_status',
@@ -217,7 +230,8 @@ export class NanobotManager {
       errors.push(`nanobot binary not found: ${this.binary}`)
     }
 
-    const enabledSkills = new Set(this.getAgentConfig().skills?.enabled ?? [])
+    const enabledSkills = new Set((this.getAgentConfig().skills?.enabled ?? []).map(canonicalSkillName))
+    const localSkillsDir = resolve(this.projectRoot, 'skills')
     const availableTools = new Set<string>([
       ...CONTROL_TOOL_NAMES,
       ...KALEIDO_MCP_ENABLED_TOOLS,
@@ -225,9 +239,10 @@ export class NanobotManager {
     const skillToolRe = buildSkillToolRe([...availableTools])
 
     for (const skillName of enabledSkills) {
-      const skillPath = resolve(this.projectRoot, 'skills', skillName, 'SKILL.md')
+      const skillDir = resolveSkillDir(skillName, localSkillsDir)
       try {
-        const content = await readFile(skillPath, 'utf8')
+        if (!skillDir) throw new Error('not found')
+        const content = await readFile(join(skillDir, 'SKILL.md'), 'utf8')
         const required = new Set<string>((content.match(skillToolRe) ?? []).map((match) => match.trim()))
         const missing = [...required].filter((name) => !availableTools.has(name))
         if (missing.length > 0) {
@@ -238,7 +253,7 @@ export class NanobotManager {
       }
     }
 
-    const enabledTaskSkills = new Set(tasks.filter((task) => task.enabled).map((task) => task.skill))
+    const enabledTaskSkills = new Set(tasks.filter((task) => task.enabled).map((task) => canonicalSkillName(task.skill)))
     for (const skillName of enabledTaskSkills) {
       if (!enabledSkills.has(skillName)) {
         errors.push(`enabled task references disabled skill: ${skillName}`)
@@ -364,13 +379,16 @@ export class NanobotManager {
   }
 
   private async syncSkills(): Promise<void> {
-    const sourceSkillsDir = resolve(this.projectRoot, 'skills')
+    const localSkillsDir = resolve(this.projectRoot, 'skills')
     await rm(this.skillsDir, { recursive: true, force: true })
     await mkdir(this.skillsDir, { recursive: true })
-    const entries = await this.safeReadDir(sourceSkillsDir)
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue
-      await cp(join(sourceSkillsDir, entry.name), join(this.skillsDir, entry.name), { recursive: true, force: true })
+    const sources = listSkillSources(localSkillsDir)
+    for (const source of sources) {
+      await cp(source.dir, join(this.skillsDir, source.name), { recursive: true, force: true })
+    }
+    const missing = missingMindSkills(localSkillsDir)
+    if (missing.length > 0) {
+      process.stderr.write(`[nanobot] @kaleidorg/mind does not ship: ${missing.join(', ')} (upgrade the package)\n`)
     }
   }
 
@@ -519,14 +537,6 @@ export class NanobotManager {
       return true
     } catch {
       return false
-    }
-  }
-
-  private async safeReadDir(path: string) {
-    try {
-      return await readdir(path, { withFileTypes: true })
-    } catch {
-      return []
     }
   }
 

@@ -7,6 +7,7 @@ import { agentConfigStore, type AgentConfigFile } from './agent-config-store.js'
 import { configStore } from './config-store.js'
 import { NanobotManager } from './nanobot-manager.js'
 import { getStateDir, resolveStatePath } from './runtime-paths.js'
+import { listSkillSources } from './skill-sources.js'
 import { tasksStore } from './tasks-store.js'
 
 dotenv.config({ override: true })
@@ -38,6 +39,9 @@ async function main() {
     case 'sync-skills':
       await manager.sync(tasks)
       process.stdout.write(`Synced Nanobot workspace to ${manager.workspaceDir}\n`)
+      for (const source of listSkillSources(resolve(projectRoot, 'skills'))) {
+        process.stdout.write(`  ${source.name.padEnd(20)} ${source.origin}\n`)
+      }
       break
     case 'validate': {
       const result = await manager.validate(tasks)

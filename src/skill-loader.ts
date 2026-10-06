@@ -7,23 +7,19 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
-import { getSkillsDir } from './runtime-paths.js'
+import { getKaleidoApiUrl } from './runtime-paths.js'
+import { resolveSkillDir } from './skill-sources.js'
 
 const execAsync = promisify(exec)
-const SKILLS_DIR = getSkillsDir()
 
 // Matches !`any command here` — same syntax as Claude Code skill injections
 const INJECTION_RE = /!`([^`]+)`/g
 
 export class SkillLoader {
   async load(skillName: string): Promise<string> {
-    const skillPath = join(SKILLS_DIR, skillName, 'SKILL.md')
-    let content: string
-    try {
-      content = await readFile(skillPath, 'utf8')
-    } catch {
-      throw new Error(`Skill not found: "${skillName}" (expected at ${skillPath})`)
-    }
+    const skillDir = resolveSkillDir(skillName)
+    if (!skillDir) throw new Error(`Skill not found: "${skillName}"`)
+    const content = await readFile(join(skillDir, 'SKILL.md'), 'utf8')
     return this.injectBashOutputs(content, skillName)
   }
 
@@ -33,7 +29,7 @@ export class SkillLoader {
 
     const kaleidoBin = process.env.KALEIDO_BIN || 'kaleido'
     const nodeUrl = process.env.RLN_NODE_URL || 'http://localhost:3001'
-    const apiUrl = process.env.KALEIDOSWAP_API_URL || 'https://api.staging.kaleidoswap.com'
+    const apiUrl = getKaleidoApiUrl()
     const env = { ...process.env, KALEIDO_NODE_URL: nodeUrl, KALEIDO_API_URL: apiUrl }
 
     // Replace `kaleido` with the configured binary path in injections

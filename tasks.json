@@ -44,7 +44,7 @@
   {
     "name": "L402 News Trader",
     "description": "",
-    "skill": "mpp",
+    "skill": "paid-data",
     "schedule_sec": 3600,
     "allocated_btc_sat": 50000,
     "allocated_usdt": 10,

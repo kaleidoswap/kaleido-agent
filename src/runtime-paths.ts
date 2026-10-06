@@ -22,3 +22,10 @@ export function getSkillsDir(): string {
 export function resolveStatePath(...parts: string[]): string {
   return join(getStateDir(), ...parts)
 }
+
+export function getKaleidoApiUrl(): string {
+  if (process.env.KALEIDOSWAP_API_URL) return process.env.KALEIDOSWAP_API_URL
+  return process.env.KALEIDO_NETWORK === 'mainnet'
+    ? 'https://api.kaleidoswap.com'
+    : 'https://api.signet.kaleidoswap.com'
+}

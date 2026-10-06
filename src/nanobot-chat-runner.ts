@@ -42,7 +42,7 @@ function buildChatPrompt(history: ChatMessage[], dryRun: boolean): string {
     '- Supported action formats:',
     '<action>{"type":"swap","fromAsset":"BTC","toAsset":"USDT","amount":"0.001"}</action>',
     '<action>{"type":"navigate","view":"withdraw"}</action>',
-    '- Prefer the wallet-assistant, kaleidoswap, channel-manager, and mpp skills when relevant.',
+    '- Prefer the wallet-assistant, kaleido-trading, channel-manager, and paid-data skills when relevant.',
     '',
     'Conversation history:',
   ]

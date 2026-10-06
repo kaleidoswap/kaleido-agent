@@ -16,11 +16,11 @@ const SKILL_ICONS: Record<string, string> = {
   'kaleidoagent':      '🤖',
   'dca':               '📈',
   'portfolio-manager': '⚖️',
-  'kaleidoswap':       '🔄',
-  'mpp':               '💸',
+  'kaleido-trading':   '🔄',
+  'paid-data':         '💸',
   'wallet-assistant':  '💬',
   'channel-manager':   '🔌',
-  'node-manager':      '🖥️',
+  'kaleido-node':      '🖥️',
   'cross-l2':          '🌉',
 }
 
@@ -77,7 +77,7 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     icon: '💸',
     name: 'L402 News Trader',
     description: 'Buy/sell based on sentiment signals from L402-gated news feeds via MPP payments',
-    skill: 'mpp',
+    skill: 'paid-data',
     schedule_sec: 3600,
     allocated_btc_sat: 50000,
     allocated_usdt: 10,

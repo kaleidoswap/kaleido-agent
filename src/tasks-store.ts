@@ -7,6 +7,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { resolveStatePath } from './runtime-paths.js'
+import { canonicalSkillName } from './skill-sources.js'
 
 export interface AgentTask {
   id: string
@@ -28,7 +29,7 @@ const TASKS_PATH = process.env.TASKS_PATH ?? resolveStatePath('tasks.json')
 async function readTasks(): Promise<AgentTask[]> {
   try {
     const raw = await readFile(TASKS_PATH, 'utf8')
-    return JSON.parse(raw) as AgentTask[]
+    return (JSON.parse(raw) as AgentTask[]).map((task) => ({ ...task, skill: canonicalSkillName(task.skill) }))
   } catch {
     return []
   }

@@ -90,18 +90,27 @@ In `skill` mode, Nanobot manages all MCP connections and the agent uses the `kal
 
 ### Skills
 
-Skills are SKILL.md files loaded at runtime that give the agent its operational logic. They support `!`kaleido command`` bash injections that are executed and inlined before reaching the LLM.
+Skills are SKILL.md files loaded at runtime that give the agent its operational logic. They come from two places, merged into the Nanobot workspace on every sync (`npm run sync-skills`, gateway start):
 
-| Skill | Purpose |
-|-------|---------|
-| `portfolio-manager` | Portfolio drift → atomic swap execution with full risk checks |
-| `channel-manager` | Node health, RGB flush, LSPS1 channel purchasing |
-| `kaleidoagent` | Daily summary: portfolio snapshot, market data, trade history |
-| `kaleidoswap` | KaleidoSwap DEX operations reference |
-| `wallet-assistant` | Interactive wallet queries and operations via chat |
-| `dca` | Dollar-cost averaging strategy |
-| `cross-l2` | Cross-layer operations between Spark L2 and Lightning |
-| `mpp` | MPP / L402 payment-gated data access |
+- **`skills/`** — agent-specific skills: the scheduled loops, `!`kaleido command`` bash injections (executed and inlined before reaching the LLM), and dashboard action blocks.
+- **[`@kaleidorg/mind`](https://www.npmjs.com/package/@kaleidorg/mind)** — the shared, generic KaleidoSwap skills, installed as a dependency and copied from the package. A local skill with the same name wins. Set `KALEIDO_MIND_SKILLS_DIR` to point at a local checkout instead.
+
+| Skill | Source | Purpose |
+|-------|--------|---------|
+| `portfolio-manager` | `skills/` | Portfolio drift → atomic swap execution with full risk checks |
+| `channel-manager` | `skills/` | Node health, RGB flush, LSPS1 channel purchasing |
+| `kaleidoagent` | `skills/` | Daily summary: portfolio snapshot, market data, trade history |
+| `wallet-assistant` | `skills/` | Interactive wallet queries and operations via chat, with dashboard action blocks |
+| `cross-l2` | `skills/` | Cross-layer operations between Spark L2 and Lightning |
+| `kaleido-trading` | mind | Quotes and atomic swaps on KaleidoSwap |
+| `kaleido-lsps` | mind | Inbound and RGB asset channels from the KaleidoSwap LSP |
+| `kaleido-node` | mind | Node lifecycle: start, unlock, recover |
+| `rgb-lightning-node` | mind | Node info, channels, peers, invoices, swap whitelisting |
+| `paid-data` | mind | MPP / L402 payment-gated data access |
+| `dca` | mind | Dollar-cost averaging loop |
+| `bitrefill` | mind | Gift cards, top-ups and eSIMs via Bitrefill |
+
+The older names `kaleidoswap`, `mpp` and `node-manager` in an existing config or task are mapped to `kaleido-trading`, `paid-data` and `kaleido-node`.
 
 ### MCP Servers (Nanobot-managed)
 
@@ -313,8 +322,8 @@ docker compose --env-file .env.container \
   },
   "skills": {
     "enabled": [
-      "mpp", "cross-l2", "dca",
-      "kaleidoagent", "kaleidoswap",
+      "paid-data", "cross-l2", "dca",
+      "kaleidoagent", "kaleido-trading",
       "portfolio-manager", "channel-manager", "wallet-assistant"
     ]
   },
@@ -386,7 +395,7 @@ docker compose --env-file .env.container \
 | `AGENT_MODEL` | `claude-sonnet-4-6` | Model name |
 | `DRY_RUN` | `true` | `false` for live trading |
 | `WDK_SEED` | _(required)_ | BIP-39 mnemonic for WDK wallet |
-| `KALEIDOSWAP_API_URL` | `https://api.staging.kaleidoswap.com` | KaleidoSwap API |
+| `KALEIDOSWAP_API_URL` | `https://api.signet.kaleidoswap.com` (`https://api.kaleidoswap.com` when `KALEIDO_NETWORK=mainnet`) | KaleidoSwap API |
 | `RLN_NODE_URL` | `http://localhost:3001` | RLN node daemon URL |
 | `SPARK_NETWORK` | `REGTEST` | Spark network: `REGTEST` or `MAINNET` |
 | `SPARK_USDT_TOKEN` | _(optional)_ | RGB asset ID for USDT on Spark |
@@ -413,7 +422,7 @@ npm test                   # Unit tests (Vitest)
 npm run test:integration   # Integration tests (requires MCP servers)
 npm run coverage           # v8 coverage report
 
-npm run sync-skills        # Sync skills to Nanobot workspace
+npm run sync-skills        # Sync skills/ + @kaleidorg/mind skills to the Nanobot workspace
 npm run validate           # Validate Nanobot config
 npm run gateway:status     # Check Nanobot gateway status
 ```

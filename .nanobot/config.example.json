@@ -34,7 +34,7 @@
           "WDK_SEED": "your twelve word bip39 mnemonic seed phrase goes here",
           "SPARK_NETWORK": "MAINNET",
           "RLN_NODE_URL": "http://localhost:3001",
-          "KALEIDOSWAP_API_URL": "https://api.kaleidoswap.com"
+          "KALEIDOSWAP_API_URL": "https://api.signet.kaleidoswap.com"
         },
         "enabledTools": [
           "wdk_get_node_info",

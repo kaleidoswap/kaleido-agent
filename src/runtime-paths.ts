@@ -23,9 +23,14 @@ export function resolveStatePath(...parts: string[]): string {
   return join(getStateDir(), ...parts)
 }
 
+export const DEFAULT_KALEIDO_API_URL = 'https://api.signet.kaleidoswap.com'
+
 export function getKaleidoApiUrl(): string {
   if (process.env.KALEIDOSWAP_API_URL) return process.env.KALEIDOSWAP_API_URL
-  return process.env.KALEIDO_NETWORK === 'mainnet'
-    ? 'https://api.kaleidoswap.com'
-    : 'https://api.signet.kaleidoswap.com'
+  if (process.env.KALEIDO_NETWORK === 'mainnet') {
+    throw new Error(
+      'KALEIDO_NETWORK=mainnet requires KALEIDOSWAP_API_URL: there is no default public mainnet API, set it to your maker endpoint',
+    )
+  }
+  return DEFAULT_KALEIDO_API_URL
 }

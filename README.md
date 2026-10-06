@@ -395,7 +395,7 @@ docker compose --env-file .env.container \
 | `AGENT_MODEL` | `claude-sonnet-4-6` | Model name |
 | `DRY_RUN` | `true` | `false` for live trading |
 | `WDK_SEED` | _(required)_ | BIP-39 mnemonic for WDK wallet |
-| `KALEIDOSWAP_API_URL` | `https://api.signet.kaleidoswap.com` (`https://api.kaleidoswap.com` when `KALEIDO_NETWORK=mainnet`) | KaleidoSwap API |
+| `KALEIDOSWAP_API_URL` | `https://api.signet.kaleidoswap.com` (required when `KALEIDO_NETWORK=mainnet`; no public mainnet default) | KaleidoSwap API |
 | `RLN_NODE_URL` | `http://localhost:3001` | RLN node daemon URL |
 | `SPARK_NETWORK` | `REGTEST` | Spark network: `REGTEST` or `MAINNET` |
 | `SPARK_USDT_TOKEN` | _(optional)_ | RGB asset ID for USDT on Spark |

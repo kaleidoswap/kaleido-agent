@@ -4,7 +4,7 @@
  * Requires:
  *   ANTHROPIC_API_KEY   Claude API key
  *   RLN_NODE_URL        Running RLN node (default: http://localhost:3001)
- *   KALEIDOSWAP_API_URL KaleidoSwap API (default: https://api.staging.kaleidoswap.com)
+ *   KALEIDOSWAP_API_URL KaleidoSwap API (default: https://api.signet.kaleidoswap.com)
  *
  * Skip gracefully if ANTHROPIC_API_KEY is not set.
  */
@@ -22,7 +22,7 @@ const ROOT = resolve(__dirname, '../..')
 const HAS_API_KEY = !!process.env.ANTHROPIC_API_KEY
 const RLN_NODE_URL = process.env.RLN_NODE_URL ?? 'http://localhost:3001'
 const KALEIDOSWAP_API_URL =
-  process.env.KALEIDOSWAP_API_URL ?? 'https://api.staging.kaleidoswap.com'
+  process.env.KALEIDOSWAP_API_URL ?? 'https://api.signet.kaleidoswap.com'
 
 describe.skipIf(!HAS_API_KEY)('Integration: heartbeat loop', () => {
   let mcp: McpManager

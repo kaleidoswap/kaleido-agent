@@ -48,7 +48,7 @@ describe('ensureNodeRunning', () => {
     await ensureNodeRunning(
       {
         nodeUrl: 'http://localhost:3001',
-        apiUrl: 'https://api.staging.kaleidoswap.com',
+        apiUrl: 'https://api.signet.kaleidoswap.com',
         envName: 'signet',
         kaleidoBin: '/tmp/kaleido',
         waitTimeoutMs: 5_000,
@@ -59,7 +59,7 @@ describe('ensureNodeRunning', () => {
 
     expect(execFileImpl).toHaveBeenCalledWith(
       '/tmp/kaleido',
-      ['--json', '--agent', '--api-url', 'https://api.staging.kaleidoswap.com', 'node', 'up', 'signet'],
+      ['--json', '--agent', '--api-url', 'https://api.signet.kaleidoswap.com', 'node', 'up', 'signet'],
       expect.any(Object)
     )
     expect(sleep).toHaveBeenCalled()

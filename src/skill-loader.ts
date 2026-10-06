@@ -7,7 +7,7 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
-import { getSkillsDir } from './runtime-paths.js'
+import { getKaleidoApiUrl, getSkillsDir } from './runtime-paths.js'
 
 const execAsync = promisify(exec)
 const SKILLS_DIR = getSkillsDir()
@@ -33,7 +33,7 @@ export class SkillLoader {
 
     const kaleidoBin = process.env.KALEIDO_BIN || 'kaleido'
     const nodeUrl = process.env.RLN_NODE_URL || 'http://localhost:3001'
-    const apiUrl = process.env.KALEIDOSWAP_API_URL || 'https://api.staging.kaleidoswap.com'
+    const apiUrl = getKaleidoApiUrl()
     const env = { ...process.env, KALEIDO_NODE_URL: nodeUrl, KALEIDO_API_URL: apiUrl }
 
     // Replace `kaleido` with the configured binary path in injections

@@ -18,6 +18,7 @@ import {
   buildSkillModeUserPrompt,
 } from './prompts.js'
 import { skillLoader } from './skill-loader.js'
+import { getKaleidoApiUrl } from './runtime-paths.js'
 import type { AgentMode } from './agent-config-store.js'
 
 export type LoopType = string   // kept for backwards compat — now equals task ID
@@ -317,7 +318,7 @@ export class AgentRunner {
   private async execKaleidoCommand(command: string): Promise<string> {
     const bin = process.env.KALEIDO_BIN || 'kaleido'
     const nodeUrl = process.env.RLN_NODE_URL || 'http://localhost:3001'
-    const apiUrl = process.env.KALEIDOSWAP_API_URL || 'https://api.staging.kaleidoswap.com'
+    const apiUrl = getKaleidoApiUrl()
     // Split command string into args array — execFileAsync avoids shell injection
     const args = ['--json', ...command.split(/\s+/).filter(Boolean)]
     try {

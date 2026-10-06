@@ -4,7 +4,7 @@ description: >
   Pay for MPP (Machine Payments Protocol) protected resources using Lightning.
   Use when accessing any HTTP 402-gated API, premium data endpoints, or
   pay-per-call services that issue a WWW-Authenticate: Payment challenge.
-  Requires mpp-gateway-mcp and wdk-wallet-rln-mcp.
+  Requires kaleido-mcp.
 license: Apache-2.0
 metadata:
   author: kaleidoswap
@@ -18,10 +18,9 @@ MPP is the open standard for machine-to-machine payments built on HTTP 402.
 Servers gate resources behind a payment challenge; you pay via Lightning and
 submit proof to access the resource. No signup or API keys required.
 
-## Required MCP Servers
+## Required MCP Server
 
-- **mpp-gateway-mcp** — challenge probing, credential submission
-- **wdk-wallet-rln-mcp** — pays the Lightning invoice, returns credential
+- **kaleido-mcp** — challenge probing, credential submission, and Lightning payment
 
 ## Core Flow (3 steps)
 

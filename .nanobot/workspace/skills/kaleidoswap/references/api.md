@@ -62,46 +62,6 @@ Response: {
 }
 ```
 
-## REST Orders
-
-### POST /api/v1/swaps/orders
-Create a REST deposit-based swap order.
-
-```json
-Request: {
-  "rfq_id": "uuid",
-  "from_asset": { "asset_id": "BTC",       "layer": "BTC_LN", "amount": 100000000 },
-  "to_asset":   { "asset_id": "rgb:2J...", "layer": "RGB_LN" },
-  "receiver_address": "<rgb_invoice>",
-  "receiver_address_format": "RGB_INVOICE"
-}
-Response: {
-  "order_id": "uuid",
-  "deposit_address": { "address": "<bolt11_invoice>" }
-}
-```
-
-For RGB → BTC (receiver is a BOLT11):
-```json
-"receiver_address": "<bolt11_invoice>",
-"receiver_address_format": "BOLT11"
-```
-
-### POST /api/v1/swaps/orders/status
-```json
-Request:  { "order_id": "uuid" }
-Response: {
-  "order": {
-    "order_id": "uuid",
-    "status": "OPEN" | "PENDING_PAYMENT" | "PAID" | "EXECUTING" | "FILLED" | "EXPIRED" | "FAILED",
-    "from_amount": 100000000,
-    "to_amount": 65763000,
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:30Z"
-  }
-}
-```
-
 ## Atomic Swap
 
 ### POST /api/v1/swaps/init

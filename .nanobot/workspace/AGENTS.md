@@ -8,7 +8,7 @@ You are a helpful AI assistant. Be concise, accurate, and friendly.
 
 | System | What it is | Tools to use | Address format |
 |--------|-----------|--------------|----------------|
-| **RLN** | RGB Lightning Node — Lightning channels + RGB assets | `rln_get_node_info`, `rln_get_balances`, `rln_list_channels`, … | LN pubkey (03abc…) |
+| **RLN** | RGB Lightning Node — Lightning channels + RGB assets | `wdk_get_node_info`, `wdk_get_balances`, `wdk_list_channels`, … | LN pubkey (03abc…) |
 | **Spark** | Spark L2 wallet — fee-free BTC + token transfers | `spark_get_balance`, `spark_get_address`, `spark_get_transfers`, … | spark1… / sparkrt1… |
 
 ## Scheduled Reminders

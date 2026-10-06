@@ -119,10 +119,10 @@ export class KaleidoCliWalletBridge implements WalletBridge {
 
 const WALLET_PROMPT = [
   'Get current wallet balances. Call these tools:',
-  '1. rln_get_balances (with skip_sync: true)',
-  '2. rln_list_channels',
+  '1. wdk_get_balances (with skip_sync: true)',
+  '2. wdk_list_channels',
   '3. spark_get_balance',
-  '4. rln_list_assets, then rln_get_asset_balance for each asset',
+  '4. wdk_list_assets, then wdk_get_asset_balance for each asset',
   '',
   'Return ONLY strict JSON (no markdown, no explanation):',
   '{"rln":{"btc_onchain_sats":N,"lightning_balance_sat":N,"channel_count":N,"total_outbound_sat":N,"total_inbound_sat":N,"assets":[{"asset_id":"...","ticker":"...","precision":N,"spendable":N,"offchain_outbound":N,"offchain_inbound":N}]},"spark":{"balance_sats":N}}',

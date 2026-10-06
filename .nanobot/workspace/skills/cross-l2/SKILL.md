@@ -5,7 +5,7 @@ description: >
   Use when the user wants to move BTC or RGB assets between Lightning Network,
   Spark, and on-chain Bitcoin, or asks about cross-L2 strategies.
   This skill provides step-by-step guidance; execution uses kaleidoswap and wallet-assistant skills.
-  Requires kaleidoswap-mcp and wdk-wallet-rln-mcp.
+  Requires kaleido-mcp.
 license: Apache-2.0
 metadata:
   author: kaleidoswap

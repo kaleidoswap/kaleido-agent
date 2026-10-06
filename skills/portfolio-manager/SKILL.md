@@ -105,8 +105,8 @@ For risk rules → [references/risk.md](references/risk.md)
 ## Step 1: Assess Current State
 
 ```
-rln_get_node_info()             → verify node is online
-rln_get_balances()              → BTC offchain (outbound sats) + RGB asset balances
+wdk_get_node_info()             → verify node is online
+wdk_get_balances()              → BTC offchain (outbound sats) + RGB asset balances
 kaleidoswap_get_pairs()         → discover trading pairs + layers
 kaleidoswap_get_assets()        → resolve asset IDs + precisions by ticker
 ```
@@ -125,7 +125,7 @@ btc_price_usdt = quote.to_asset.amount_display / 0.001
 
 For each asset, compute USDT value:
 ```
-btc_sats      = offchain_outbound_sat   (from rln_get_balances)
+btc_sats      = offchain_outbound_sat   (from wdk_get_balances)
 btc_usdt      = (btc_sats / 1e8) × btc_price_usdt
 usdt_val      = usdt_raw / 10^usdt_precision
 xaut_usdt     = xaut_raw / 10^xaut_precision × xaut_price_usdt
@@ -164,7 +164,7 @@ Convert to from-asset display amount using the quote rate.
 **Always check before swapping (see risk.md):**
 - BTC balance after swap > `min_btc_reserve_sats`
 - BTC balance > `stop_loss_btc_sats` → else halt
-- Open orders < `max_concurrent_orders`
+- In-flight swaps < `max_concurrent_orders`
 - `dry_run` is false → else describe only
 
 ## Step 4: Execute the Swap
@@ -228,9 +228,9 @@ swap atomic-status --payment-hash <hash>
 See [references/risk.md](references/risk.md) for full details.
 
 **Quick reference:**
-1. Verify node is online before doing anything: `rln_get_node_info()`
+1. Verify node is online before doing anything: `wdk_get_node_info()`
 2. Halt all trading if BTC < `stop_loss_btc_sats`
 3. Skip if result puts BTC < `min_btc_reserve_sats`
 4. Cap each swap at `max_swap_usd`
-5. Skip cycle if open orders ≥ `max_concurrent_orders`
+5. Skip cycle if in-flight swaps ≥ `max_concurrent_orders`
 6. In `dry_run` mode: compute and log, never execute

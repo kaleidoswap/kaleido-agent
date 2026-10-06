@@ -82,10 +82,10 @@ Show the user: **amount in → amount out → effective rate**. Ask confirmation
    })
    → { swapstring, payment_hash }
 
-2. rln_atomic_taker({ swapstring })
+2. wdk_atomic_taker({ swapstring })
    → {}   (whitelist HTLC on RLN node — MUST happen before execute)
 
-3. rln_get_node_info()
+3. wdk_get_node_info()
    → { pubkey }   (needed as taker_pubkey)
 
 4. kaleidoswap_atomic_execute({

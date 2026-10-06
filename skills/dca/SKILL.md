@@ -77,7 +77,7 @@ If `price_aware.enabled: false` → always use configured `amount_usdt`.
 ## Step 4: Check Available Funds
 
 ```
-rln_get_balances()
+wdk_get_balances()
 ```
 
 Compute USDT balance. If usdt_balance < `amount_usdt`:

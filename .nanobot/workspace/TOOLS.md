@@ -23,18 +23,18 @@ The `kaleido` server is the single unified MCP that exposes all wallet, DEX, and
 
 - RLN node: `http://localhost:3001`
 - KaleidoSwap API (local): `http://localhost:8000`
-- KaleidoSwap API (staging): `https://api.staging.kaleidoswap.com`
+- KaleidoSwap API (signet): `https://api.signet.kaleidoswap.com` (`KALEIDO_NETWORK=signet`)
 - Nanobot gateway: `:18790`
 
-## Asset IDs (staging)
+## Asset IDs
 
 - BTC: `"BTC"` (always)
-- USDT: `rgb:2JEUOrsc-JsWuPGF-3cr9SSv-mqqRmaz-8waf0gl-8vAcOXw` (verify live — may rotate)
+- USDT: discover via `kaleidoswap_get_assets` by ticker (IDs differ per network)
 - XAUT: discover via `kaleidoswap_get_assets` by ticker
 
 ## Networks
 
-- RLN + KaleidoSwap: Bitcoin regtest (Bitfinex infra)
+- RLN + KaleidoSwap: same Bitcoin network (signet for testing, mainnet for production)
 - Spark: separate network (mainnet or spark-regtest)
 - **Never cross-pay** — invoices from one network are not payable from the other
 

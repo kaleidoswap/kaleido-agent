@@ -1,80 +1,77 @@
 # RLN (RGB Lightning Node) — Reference
 
-The RLN node is accessed through `wdk-wallet-rln-mcp`. It manages:
+The RLN node is accessed through `kaleido-mcp`. It manages:
 - BTC in Lightning channels
 - RGB assets (USDT, XAUT, etc.) in RGB-enabled LN channels
 - On-chain BTC receive addresses
 
 ## Key Tool Signatures
 
-### wdk_node_info()
+### wdk_get_node_info()
 ```json
 Response: {
-  "node_id": "03abc...",
-  "alias": "my-rln-node",
-  "status": "online",
-  "peers": 3,
-  "block_height": 850000
+  "pubkey": "03abc...",
+  "num_channels": 3,
+  "num_usable_channels": 2,
+  "local_balance_sat": 150000,
+  "num_peers": 3
 }
 ```
 
 ### wdk_get_balances()
 ```json
 Response: {
-  "btc": {
-    "offchain_outbound": 150000,   // sats available to send
-    "offchain_inbound": 50000,     // sats available to receive
-    "onchain": 0                    // onchain confirmed sats
+  "btc_onchain": {
+    "vanilla_spendable_sats": 0,
+    "colored_spendable_sats": 0
   },
-  "rgb": [
-    {
-      "asset_id": "rgb:...",
-      "ticker": "USDT",
-      "balance": 45000000,         // raw units (45 USDT with precision=6)
-      "precision": 6
-    }
-  ]
+  "lightning_balance_sat": 150000
 }
 ```
 
 ### wdk_list_channels()
 ```json
-Response: [{
-  "channel_id": "abc...",
-  "peer_id": "03...",
-  "peer_alias": "KaleidoSwap",
-  "capacity_sat": 500000,
-  "local_balance_sat": 150000,     // usable outbound
-  "remote_balance_sat": 350000,    // usable inbound
-  "active": true,
-  "rgb_assets": [{ "asset_id": "rgb:...", "ticker": "USDT", "local_amount": 45000000 }]
-}]
+Response: {
+  "channel_count": 2,
+  "total_outbound_msat": 150000000,
+  "total_inbound_msat": 350000000,
+  "channels": [{
+    "channel_id": "abc...",
+    "peer_pubkey": "03...",
+    "capacity_sat": 500000,
+    "local_balance_sat": 150000,
+    "remote_balance_sat": 350000,
+    "is_usable": true,
+    "rgb_assets": [{ "asset_id": "rgb:...", "ticker": "USDT", "local_amount": 45000000 }]
+  }]
+}
 ```
 
-### wdk_create_invoice({ amount_msat, description, expiry_secs? })
+### wdk_create_ln_invoice({ amount_msat?, description?, expiry_sec? })
 ```json
 Request: { "amount_msat": 10000000, "description": "Coffee payment" }
-Response: { "invoice": "lnbc...", "expires_at": "2024-01-01T00:10:00Z" }
+Response: { "invoice": "lnbc...", "payment_hash": "...", "expiry_sec": 3600 }
 ```
 `amount_msat` = amount in millisatoshis (1 sat = 1000 msat)
 
 ### wdk_pay_invoice({ invoice })
 ```json
 Request: { "invoice": "lnbc..." }
-Response: { "preimage": "abc...", "fee_msat": 1500 }
+Response: { "payment_hash": "...", "status": "succeeded" }
 ```
 
-### wdk_send_asset({ invoice, asset_id, amount })
+### wdk_send_asset({ asset_id, recipient_id, amount, transport_endpoints?, fee_rate? })
 ```json
-Request: { "invoice": "rgb1...", "asset_id": "rgb:...", "amount": 10000000 }
-Response: { "txid": "abc...", "status": "sent" }
+Request: { "asset_id": "rgb:...", "recipient_id": "rgb1...", "amount": 10000000 }
+Response: { "sent": true, "asset_id": "rgb:...", "recipient_id": "rgb1...", "amount_raw": 10000000, "txid": "abc..." }
 ```
 
-### wdk_open_channel({ peer_id, amount_sat, push_msat? })
+### wdk_create_rgb_invoice({ asset_id?, amount?, duration_seconds? })
 ```json
-Request: { "peer_id": "03abc...", "amount_sat": 200000 }
-Response: { "channel_id": "...", "txid": "...", "status": "pending" }
+Request: { "asset_id": "rgb:...", "amount": 10000000 }
+Response: { "invoice": "rgb1...", "recipient_id": "rgb1...", "expires_at": "2024-01-01T00:10:00Z" }
 ```
+Use `invoice` as `recipient_id` in `wdk_send_asset`.
 
 ## Amount Units
 

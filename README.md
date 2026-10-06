@@ -107,7 +107,7 @@ Skills are SKILL.md files loaded at runtime that give the agent its operational 
 
 | Server | Purpose | Key Tools |
 |--------|---------|-----------|
-| `kaleido` (`kaleido-mcp`) | Unified wallet + DEX interface | `spark_*`, `rln_*`, `kaleidoswap_*`, `mpp_*` |
+| `kaleido` (`kaleido-mcp`) | Unified wallet + DEX interface | `spark_*`, `wdk_*` (RLN), `kaleidoswap_*`, `kaleido_node_*`, `mpp_*` |
 | `kaleidoswap` | KaleidoSwap DEX REST API | Order placement, quotes, status |
 | `mpp_gateway` | MPP / L402 payment gateway | `mpp_*`, `l402_*`, `search_paid_apis` |
 | `kaleido_control` | Bridge to `:4242` control API | Task triggers, config updates from agent |
@@ -120,7 +120,7 @@ KaleidoAgent integrates WDK at two levels:
 
 **Spark L2 wallet** — `spark_get_balance`, `spark_pay_lightning_invoice`, `spark_transfer_token`, fee-free BTC L2 transfers
 
-**RLN node** — `rln_get_balances`, `rln_pay_invoice`, `rln_create_rgb_invoice`, Lightning channels with RGB asset support
+**RLN node** — `wdk_get_balances`, `wdk_pay_invoice`, `wdk_create_rgb_invoice`, Lightning channels with RGB asset support
 
 The agent uses these tools to:
 - Read multi-asset balances: combined BTC sats (RLN + Spark) + USDT RGB + XAUT RGB

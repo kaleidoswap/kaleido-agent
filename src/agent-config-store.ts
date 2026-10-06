@@ -1,4 +1,5 @@
 import { writeFileSync } from 'node:fs'
+import { canonicalSkillName } from './skill-sources.js'
 
 export interface PortfolioLspConfig {
   lsp_balance_sat: number
@@ -78,6 +79,9 @@ class AgentConfigStore {
   init(configPath: string, config: AgentConfigFile): void {
     this.configPath = configPath
     this.config = cloneConfig(config)
+    if (this.config.skills) {
+      this.config.skills.enabled = [...new Set(this.config.skills.enabled.map(canonicalSkillName))]
+    }
   }
 
   getConfig(): AgentConfigFile {

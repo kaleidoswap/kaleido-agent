@@ -13,28 +13,12 @@
       "source": "./skills/cross-l2",
       "sourceType": "local"
     },
-    "dca": {
-      "source": "./skills/dca",
-      "sourceType": "local"
-    },
-    "kaleidoswap": {
-      "source": "./skills/kaleidoswap",
-      "sourceType": "local"
-    },
-    "mpp": {
-      "source": "./skills/mpp",
-      "sourceType": "local"
-    },
     "portfolio-manager": {
       "source": "./skills/portfolio-manager",
       "sourceType": "local"
     },
     "wallet-assistant": {
       "source": "./skills/wallet-assistant",
-      "sourceType": "local"
-    },
-    "node-manager": {
-      "source": "./skills/node-manager",
       "sourceType": "local"
     }
   }

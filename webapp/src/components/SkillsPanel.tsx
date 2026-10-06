@@ -78,17 +78,23 @@ const SKILL_META: Record<string, {
     category: 'Trading',
     mcps: ['wdk_rln', 'wdk_spark', 'kaleidoswap'],
   },
-  'kaleidoswap': {
+  'kaleido-trading': {
     icon: '🔄',
-    description: 'Execute swaps via KaleidoSwap atomic HTLC protocol',
+    description: 'Quote and execute swaps via KaleidoSwap atomic HTLC protocol',
     category: 'Trading',
     mcps: ['wdk_rln', 'kaleidoswap'],
   },
-  'mpp': {
+  'paid-data': {
     icon: '💸',
-    description: 'L402 market-data driven trading — buy/sell on news & sentiment signals',
+    description: 'Fetch L402/MPP-gated data and discover paid APIs, paying over Lightning',
     category: 'Trading',
-    mcps: ['wdk_rln', 'kaleidoswap', 'l402'],
+    mcps: ['wdk_rln', 'l402'],
+  },
+  'bitrefill': {
+    icon: '🎁',
+    description: 'Buy gift cards, mobile top-ups and eSIMs with Bitcoin via Bitrefill',
+    category: 'Wallet',
+    mcps: [],
   },
   'wallet-assistant': {
     icon: '💬',
@@ -102,9 +108,21 @@ const SKILL_META: Record<string, {
     category: 'Wallet',
     mcps: ['wdk_rln', 'kaleidoswap'],
   },
-  'node-manager': {
+  'kaleido-lsps': {
+    icon: '🛰️',
+    description: 'Buy inbound and RGB asset channels from the KaleidoSwap LSP',
+    category: 'Wallet',
+    mcps: ['wdk_rln', 'kaleidoswap'],
+  },
+  'kaleido-node': {
     icon: '🖥️',
-    description: 'Monitor node health, flush pending RGB transfers, handle stuck payments',
+    description: 'Start, unlock and recover the RGB Lightning Node',
+    category: 'Infrastructure',
+    mcps: ['wdk_rln'],
+  },
+  'rgb-lightning-node': {
+    icon: '⚡',
+    description: 'Node info, channels, peers, invoices and swap whitelisting',
     category: 'Infrastructure',
     mcps: ['wdk_rln'],
   },

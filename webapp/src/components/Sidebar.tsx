@@ -61,12 +61,14 @@ function iconForSkill(skill: string): string {
   switch (skill) {
     case 'portfolio-manager':
     case 'dca':
-    case 'kaleidoswap':
-    case 'mpp':
+    case 'kaleido-trading':
+    case 'paid-data':
       return '⟳'
     case 'channel-manager':
     case 'wallet-assistant':
-    case 'node-manager':
+    case 'kaleido-node':
+    case 'rgb-lightning-node':
+    case 'kaleido-lsps':
     case 'cross-l2':
       return '♥'
     case 'kaleidoagent':

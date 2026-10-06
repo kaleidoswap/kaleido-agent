@@ -23,7 +23,6 @@
  */
 
 import http from 'node:http'
-import { readdir } from 'node:fs/promises'
 import { z } from 'zod'
 import { agentState } from './agent-state.js'
 import { configStore } from './config-store.js'
@@ -35,16 +34,15 @@ import type { Scheduler } from './scheduler.js'
 import type { McpManager } from './mcp-manager.js'
 import type { NanobotManager } from './nanobot-manager.js'
 import type { WalletBridge } from './wallet-bridge.js'
-import { getSkillsDir } from './runtime-paths.js'
+import { listSkillSources, type SkillOrigin } from './skill-sources.js'
 
 // ─── Skills helpers ──────────────────────────────────────────────────────────
-
-const SKILLS_DIR = getSkillsDir()
 
 interface SkillInfo {
   id: string
   name: string
   enabled: boolean
+  source: SkillOrigin
 }
 
 function formatSkillName(id: string): string {
@@ -56,18 +54,12 @@ function formatSkillName(id: string): string {
 
 async function listSkills(): Promise<SkillInfo[]> {
   const enabledSkills = agentConfigStore.getEnabledSkills()
-  try {
-    const entries = await readdir(SKILLS_DIR, { withFileTypes: true })
-    return entries
-      .filter((e) => e.isDirectory())
-      .map((e) => ({
-        id: e.name,
-        name: formatSkillName(e.name),
-        enabled: enabledSkills.includes(e.name),
-      }))
-  } catch {
-    return []
-  }
+  return listSkillSources().map((source) => ({
+    id: source.name,
+    name: formatSkillName(source.name),
+    enabled: enabledSkills.includes(source.name),
+    source: source.origin,
+  }))
 }
 
 // ---------------------------------------------------------------------------

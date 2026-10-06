@@ -90,15 +90,18 @@ make status   # curl /status (full state JSON)
     ├── AGENTS.md            # Operating instructions
     ├── TOOLS.md             # Available tools
     ├── HEARTBEAT.md         # Health check tasks
-    ├── skills/              # Synced from /skills
+    ├── skills/              # Synced from /skills + @kaleidorg/mind
     ├── memory/              # Persistent memory
     └── sessions/            # Chat sessions
 ```
 
 ### Skills (`/skills`)
 
-Markdown-based agent behaviors (SKILL.md + references/). 10 skills:
-kaleidoagent, portfolio-manager, channel-manager, wallet-assistant, kaleidoswap, mpp, cross-l2, dca, node-manager.
+Markdown-based agent behaviors (SKILL.md + references/). `skills/` keeps only agent-specific skills
+(loops, `!` bash injections, dashboard action blocks): kaleidoagent, portfolio-manager, channel-manager,
+wallet-assistant, cross-l2. Generic skills (kaleido-trading, kaleido-lsps, kaleido-node, rgb-lightning-node,
+paid-data, dca, bitrefill) come from the `@kaleidorg/mind` package; `src/skill-sources.ts` lists them and
+resolves names (local wins). Don't re-add copies of mind skills here — change them in kaleido-mind.
 
 ### Webapp (`/webapp`)
 
@@ -116,7 +119,7 @@ No code changes needed when switching between skill/mcp modes — same API contr
   "portfolio": { "targets": { "BTC": 70, "USDT": 20, "XAUT": 10 }, "dry_run": true, "trading_mode": "atomic" },
   "schedule": { "heartbeat_interval_sec": 300 },
   "nanobot": { "gateway_port": 18790, "heartbeat_interval_sec": 300, "wallet_fetch_method": "cli" },
-  "skills": { "enabled": ["portfolio-manager", "channel-manager", "kaleidoswap", ...] }
+  "skills": { "enabled": ["portfolio-manager", "channel-manager", "kaleido-trading", ...] }
 }
 ```
 

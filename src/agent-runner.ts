@@ -100,7 +100,7 @@ export class AgentRunner {
 
   /**
    * Run a task turn. taskId identifies the task (e.g. "heartbeat", "rebalance", or a UUID).
-   * skillName is the skill directory under skills/ (e.g. "channel-manager").
+   * skillName is a local or @kaleidorg/mind skill (e.g. "channel-manager").
    */
   async run(
     taskId: string,

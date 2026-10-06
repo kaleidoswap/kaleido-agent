@@ -7,23 +7,19 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
-import { getKaleidoApiUrl, getSkillsDir } from './runtime-paths.js'
+import { getKaleidoApiUrl } from './runtime-paths.js'
+import { resolveSkillDir } from './skill-sources.js'
 
 const execAsync = promisify(exec)
-const SKILLS_DIR = getSkillsDir()
 
 // Matches !`any command here` — same syntax as Claude Code skill injections
 const INJECTION_RE = /!`([^`]+)`/g
 
 export class SkillLoader {
   async load(skillName: string): Promise<string> {
-    const skillPath = join(SKILLS_DIR, skillName, 'SKILL.md')
-    let content: string
-    try {
-      content = await readFile(skillPath, 'utf8')
-    } catch {
-      throw new Error(`Skill not found: "${skillName}" (expected at ${skillPath})`)
-    }
+    const skillDir = resolveSkillDir(skillName)
+    if (!skillDir) throw new Error(`Skill not found: "${skillName}"`)
+    const content = await readFile(join(skillDir, 'SKILL.md'), 'utf8')
     return this.injectBashOutputs(content, skillName)
   }
 

@@ -4,7 +4,7 @@ description: >
   Cross-layer and cross-chain swap guidance for Bitcoin ecosystem assets.
   Use when the user wants to move BTC or RGB assets between Lightning Network,
   Spark, and on-chain Bitcoin, or asks about cross-L2 strategies.
-  This skill provides step-by-step guidance; execution uses kaleidoswap and wallet-assistant skills.
+  This skill provides step-by-step guidance; execution uses the kaleido-trading and wallet-assistant skills.
   Requires kaleido-mcp.
 license: Apache-2.0
 metadata:
@@ -38,7 +38,7 @@ This is the core KaleidoSwap flow. Both assets stay on Lightning Network.
 
 ```
 1. Get a quote: kaleidoswap_get_quote({ from: BTC/lightning, to: USDT/lightning })
-2. Execute atomic swap (see kaleidoswap skill)
+2. Execute atomic swap (see the kaleido-trading skill)
 3. Receive USDT in your RGB channel
 ```
 
@@ -99,7 +99,7 @@ When a user asks about cross-L2:
 1. **Ask what they have and where they want to end up**. Example: "I have BTC on Spark and want USDT I can spend."
 2. **Identify the best path** from the table above.
 3. **Explain the steps clearly** — especially multi-step flows where external tools are needed.
-4. **Execute the KaleidoSwap-native steps** using the kaleidoswap and wallet-assistant skills.
+4. **Execute the KaleidoSwap-native steps** using the kaleido-trading and wallet-assistant skills.
 5. **Advise on external steps** clearly — do not pretend to handle them if they're outside KaleidoSwap.
 
 ## Common User Questions

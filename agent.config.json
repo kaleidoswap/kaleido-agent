@@ -59,11 +59,11 @@
   },
   "skills": {
     "enabled": [
-      "mpp",
+      "paid-data",
       "cross-l2",
       "dca",
       "kaleidoagent",
-      "kaleidoswap",
+      "kaleido-trading",
       "portfolio-manager",
       "channel-manager",
       "wallet-assistant"

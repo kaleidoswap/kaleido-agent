@@ -12,7 +12,7 @@ dotenv.config({ override: true })
  *   ANTHROPIC_API_KEY     Claude API key
  *
  * Optional env vars:
- *   KALEIDOSWAP_API_URL   KaleidoSwap API (default: signet, or mainnet when KALEIDO_NETWORK=mainnet)
+ *   KALEIDOSWAP_API_URL   KaleidoSwap API (default: signet; required when KALEIDO_NETWORK=mainnet)
  *   RLN_NODE_URL          RLN daemon URL (default: http://localhost:3001)
  *   DRY_RUN               Set to "false" to enable live trading (default: true)
  *   CONFIG_PATH           Path to agent.config.json (default: ./agent.config.json)

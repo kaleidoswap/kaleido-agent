@@ -70,7 +70,7 @@ const RUN_KALEIDO_TOOL: McpToolDef = {
     'Do NOT include "kaleido" or "--json" — they are added automatically. ' +
     'Examples: "wallet balance", "asset list", "channel list", ' +
     '"market quote BTC/USDT --from-amount 100000 --from-layer BTC_LN", ' +
-    '"swap history --status PENDING --limit 5", ' +
+    '"swap node list", ' +
     '"payment send <invoice>", "payment invoice --amount-msat 1000000", ' +
     '"node status", "node info".',
   inputSchema: {

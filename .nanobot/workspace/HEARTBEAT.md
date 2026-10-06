@@ -8,7 +8,7 @@ Check the following in order. Use `kaleido_control` tools for all status queries
 - [ ] **Loop status** — `/status` — check last_run times for rebalance, heartbeat,
       daily_summary. Alert if any loop hasn't run in >2x its configured interval.
 - [ ] **Wallet snapshot** — report combined BTC, USDT, XAUT values from `/status`.
-- [ ] **Open orders** — flag any order stuck in pending for >30 min.
+- [ ] **In-flight swaps** — flag any atomic swap stuck in pending for >30 min.
 - [ ] **Channel liquidity** — alert if outbound_sat < min_outbound_liquidity_sat from config.
 
 ## Thresholds
@@ -22,12 +22,12 @@ Check the following in order. Use `kaleido_control` tools for all status queries
 - Agent process is down
 - A loop has not run in >2 intervals
 - BTC balance near stop_loss_btc_sats
-- An order is stuck
+- A swap is stuck
 
 ## When to Stay Quiet (reply HEARTBEAT_OK)
 
 - All loops healthy, last run < 2 intervals ago
-- Balances nominal, no open orders
+- Balances nominal, no stuck swaps
 - Nothing actionable found
 
 ## dry_run reminder

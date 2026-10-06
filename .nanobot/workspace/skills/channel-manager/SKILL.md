@@ -54,7 +54,7 @@ metadata:
 - `"wallet estimate-fee [--target-blocks <n>]"` — on-chain fee rate estimate
 
 **Swaps:**
-- `"swap history --status PENDING"` — open orders
+- `"swap node list"` — in-flight atomic swaps
 - `"asset fail-transfers"` — mark stuck transfers as failed
 
 ---

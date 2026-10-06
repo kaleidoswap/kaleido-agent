@@ -187,7 +187,7 @@ When `auto_buy_channel=true` and outbound drops below `min_outbound_liquidity_sa
 1. Run `node status` — confirm node reachable
 2. Run `channel list` — check outbound liquidity per channel
 3. Run `asset fail-transfers` — flush stuck RGB transfer states
-4. Check `swap history --status PENDING` for stuck orders
+4. Check `swap node list` for stuck swaps
 5. If outbound < `min_outbound_liquidity_sat` and `auto_buy_channel=true`: run LSPS1 channel purchase
 
 The agent reasons about *why* to act (drift magnitude, opportunity cost, risk limits) — not just *how* to execute.

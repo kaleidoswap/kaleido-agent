@@ -97,17 +97,14 @@ Skills are SKILL.md files loaded at runtime that give the agent its operational 
 
 | Skill | Source | Purpose |
 |-------|--------|---------|
-| `portfolio-manager` | `skills/` | Portfolio drift → atomic swap execution with full risk checks |
-| `channel-manager` | `skills/` | Node health, RGB flush, LSPS1 channel purchasing |
+| `portfolio-manager` | `skills/` | Portfolio drift → atomic swap execution with full risk checks; also runs `dca` tasks |
+| `channel-manager` | `skills/` | Node health, RGB flush, LSPS1 and RGB asset channel purchasing |
 | `kaleidoagent` | `skills/` | Daily summary: portfolio snapshot, market data, trade history |
 | `wallet-assistant` | `skills/` | Interactive wallet queries and operations via chat, with dashboard action blocks |
-| `cross-l2` | `skills/` | Cross-layer operations between Spark L2 and Lightning |
 | `kaleido-trading` | mind | Quotes and atomic swaps on KaleidoSwap |
-| `kaleido-lsps` | mind | Inbound and RGB asset channels from the KaleidoSwap LSP |
 | `kaleido-node` | mind | Node lifecycle: start, unlock, recover |
 | `rgb-lightning-node` | mind | Node info, channels, peers, invoices, swap whitelisting |
 | `paid-data` | mind | MPP / L402 payment-gated data access |
-| `dca` | mind | Dollar-cost averaging loop |
 | `bitrefill` | mind | Gift cards, top-ups and eSIMs via Bitrefill |
 
 The older names `kaleidoswap`, `mpp` and `node-manager` in an existing config or task are mapped to `kaleido-trading`, `paid-data` and `kaleido-node`.
@@ -322,7 +319,7 @@ docker compose --env-file .env.container \
   },
   "skills": {
     "enabled": [
-      "paid-data", "cross-l2", "dca",
+      "paid-data",
       "kaleidoagent", "kaleido-trading",
       "portfolio-manager", "channel-manager", "wallet-assistant"
     ]

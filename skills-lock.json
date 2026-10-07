@@ -9,10 +9,6 @@
       "source": "./skills/channel-manager",
       "sourceType": "local"
     },
-    "cross-l2": {
-      "source": "./skills/cross-l2",
-      "sourceType": "local"
-    },
     "portfolio-manager": {
       "source": "./skills/portfolio-manager",
       "sourceType": "local"

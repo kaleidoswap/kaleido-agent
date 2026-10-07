@@ -221,6 +221,15 @@ swap atomic-status --payment-hash <hash>
 }
 ```
 
+## DCA runs (task `dca`)
+
+A DCA task buys a fixed slice every run instead of correcting drift: skip
+Steps 2–3. The slice is the task's `allocation`; never exceed it or catch up
+missed runs. Report `"action": "skip"` when BTC after the slice would fall below
+`min_btc_reserve_sats`. Quote with `kaleidoswap_get_quote` in display units
+(e.g. `from_amount: 0.0002` for 0.0002 BTC), execute as in Step 4, and report
+`"action": "buy"` with the received amount.
+
 ## Safety Rules
 
 See [references/risk.md](references/risk.md) for full details.

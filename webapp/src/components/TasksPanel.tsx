@@ -21,7 +21,6 @@ const SKILL_ICONS: Record<string, string> = {
   'wallet-assistant':  '💬',
   'channel-manager':   '🔌',
   'kaleido-node':      '🖥️',
-  'cross-l2':          '🌉',
 }
 
 const INTERVAL_OPTIONS = [

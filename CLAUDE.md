@@ -99,8 +99,8 @@ make status   # curl /status (full state JSON)
 
 Markdown-based agent behaviors (SKILL.md + references/). `skills/` keeps only agent-specific skills
 (loops, `!` bash injections, dashboard action blocks): kaleidoagent, portfolio-manager, channel-manager,
-wallet-assistant, cross-l2. Generic skills (kaleido-trading, kaleido-lsps, kaleido-node, rgb-lightning-node,
-paid-data, dca, bitrefill) come from the `@kaleidorg/mind` package; `src/skill-sources.ts` lists them and
+wallet-assistant. Generic skills (kaleido-trading, kaleido-node, rgb-lightning-node,
+paid-data, bitrefill) come from the `@kaleidorg/mind` package; `src/skill-sources.ts` lists them and
 resolves names (local wins). Don't re-add copies of mind skills here — change them in kaleido-mind.
 
 ### Webapp (`/webapp`)

@@ -66,15 +66,9 @@ const SKILL_META: Record<string, {
     category: 'Trading',
     mcps: ['wdk_rln', 'kaleidoswap'],
   },
-  'dca': {
-    icon: '📈',
-    description: 'Dollar-cost average into BTC or other assets at regular intervals',
-    category: 'Trading',
-    mcps: ['wdk_rln', 'wdk_spark', 'kaleidoswap'],
-  },
   'portfolio-manager': {
     icon: '⚖️',
-    description: 'Monitor drift from target allocations and trigger rebalancing swaps',
+    description: 'Rebalance to target allocations and run DCA buys',
     category: 'Trading',
     mcps: ['wdk_rln', 'wdk_spark', 'kaleidoswap'],
   },
@@ -104,13 +98,7 @@ const SKILL_META: Record<string, {
   },
   'channel-manager': {
     icon: '🔌',
-    description: 'Manage Lightning channel liquidity and purchase channels via LSPS1',
-    category: 'Wallet',
-    mcps: ['wdk_rln', 'kaleidoswap'],
-  },
-  'kaleido-lsps': {
-    icon: '🛰️',
-    description: 'Buy inbound and RGB asset channels from the KaleidoSwap LSP',
+    description: 'Channel liquidity, LSPS1 and RGB asset channel purchases',
     category: 'Wallet',
     mcps: ['wdk_rln', 'kaleidoswap'],
   },
@@ -125,12 +113,6 @@ const SKILL_META: Record<string, {
     description: 'Node info, channels, peers, invoices and swap whitelisting',
     category: 'Infrastructure',
     mcps: ['wdk_rln'],
-  },
-  'cross-l2': {
-    icon: '🌉',
-    description: 'Move assets between RGB Lightning, Spark, and Arkade layers',
-    category: 'Infrastructure',
-    mcps: ['wdk_rln', 'wdk_spark'],
   },
 }
 

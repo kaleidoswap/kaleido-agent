@@ -12,8 +12,8 @@ importers:
         specifier: ^0.131.0
         version: 0.131.0(zod@4.6.5)
       '@kaleidorg/mind':
-        specifier: ^0.10.0
-        version: 0.10.0
+        specifier: ^0.10.2
+        version: 0.10.2
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.1
         version: 1.32.1(zod@4.6.5)
@@ -410,8 +410,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@kaleidorg/mind@0.10.0':
-    resolution: {integrity: sha512-obZn1fq3XXcEp0IyWgQvazjV5QCg6E7fXwZpbxMKVGdKEQrOYq5XHp5ZPgku+adybfYL0u+iYPzV1kqgKGab+g==}
+  '@kaleidorg/mind@0.10.2':
+    resolution: {integrity: sha512-4obvKx7+sfSB8Cg/Oqo/91GNEkyMicUvyEJ32ivzHGoLosLSKoEiKBOvdrawrPOdZb4kqggdRA/+fpYnwRRi5w==}
     peerDependencies:
       '@qvac/sdk': '>=0.20.0'
     peerDependenciesMeta:
@@ -1509,7 +1509,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@kaleidorg/mind@0.10.0': {}
+  '@kaleidorg/mind@0.10.2': {}
 
   '@modelcontextprotocol/sdk@1.32.1(zod@4.6.5)':
     dependencies:

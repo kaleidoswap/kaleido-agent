@@ -11,9 +11,7 @@ logs/
 .nanobot/workspace/sessions
 .nanobot/gateway.pid# Generic skills are copied from @kaleidorg/mind at sync time
 .nanobot/workspace/skills/kaleido-trading
-.nanobot/workspace/skills/kaleido-lsps
 .nanobot/workspace/skills/kaleido-node
 .nanobot/workspace/skills/rgb-lightning-node
 .nanobot/workspace/skills/paid-data
-.nanobot/workspace/skills/dca
 .nanobot/workspace/skills/bitrefill

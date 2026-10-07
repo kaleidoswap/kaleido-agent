@@ -51,6 +51,13 @@ describe('skill sources', () => {
     expect(resolveSkillDir('unknown', localDir)).toBeNull()
   })
 
+  it('maps skills merged in @kaleidorg/mind to the skill that now covers them', () => {
+    expect(canonicalSkillName('dca')).toBe('portfolio-manager')
+    expect(canonicalSkillName('kaleido-lsps')).toBe('channel-manager')
+    expect(canonicalSkillName('cross-l2')).toBe('kaleido-trading')
+    expect(resolveSkillDir('dca', localDir)).toBe(join(localDir, 'portfolio-manager'))
+  })
+
   it('reports mind skills the installed package lacks', () => {
     expect(missingMindSkills(localDir)).toContain('paid-data')
     expect(missingMindSkills(localDir)).not.toContain('kaleido-trading')

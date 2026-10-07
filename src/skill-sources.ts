@@ -11,11 +11,9 @@ import { getSkillsDir } from './runtime-paths.js'
 
 export const MIND_SKILLS = [
   'kaleido-trading',
-  'kaleido-lsps',
   'kaleido-node',
   'rgb-lightning-node',
   'paid-data',
-  'dca',
   'bitrefill',
 ] as const
 
@@ -23,6 +21,10 @@ const RENAMED_SKILLS: Record<string, string> = {
   kaleidoswap: 'kaleido-trading',
   mpp: 'paid-data',
   'node-manager': 'kaleido-node',
+  'kaleido-lsps': 'channel-manager',
+  'liquidity-optimizer': 'channel-manager',
+  dca: 'portfolio-manager',
+  'cross-l2': 'kaleido-trading',
 }
 
 export type SkillOrigin = 'local' | 'mind'

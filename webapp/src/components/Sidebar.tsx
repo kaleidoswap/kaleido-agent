@@ -68,8 +68,6 @@ function iconForSkill(skill: string): string {
     case 'wallet-assistant':
     case 'kaleido-node':
     case 'rgb-lightning-node':
-    case 'kaleido-lsps':
-    case 'cross-l2':
       return '♥'
     case 'kaleidoagent':
       return '☀'

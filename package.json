@@ -32,7 +32,7 @@
     "test:all": "vitest run",
     "test:watch": "vitest tests/unit",
     "coverage": "vitest run --coverage tests/unit",
-    "install:all": "npm install && npm --prefix webapp install"
+    "install:all": "pnpm install && npm --prefix webapp install"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

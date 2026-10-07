@@ -28,8 +28,8 @@ metadata:
 **Lightning channels:**
 !`kaleido --json channel list`
 
-**Open/pending swap orders:**
-!`kaleido --json --agent swap order history --status PENDING --limit 10`
+**In-flight atomic swaps:**
+!`kaleido --json swap node list`
 
 ---
 
@@ -56,9 +56,7 @@ metadata:
 - `"swap node execute --swapstring <s> --payment-secret <s> --taker-pubkey <pk>"` — finalize maker side
 - `"node taker pubkey"` — get taker pubkey
 
-**Order tracking:**
-- `"swap order history --status PENDING"` — open orders
-- `"swap order history --limit 20"` — recent swaps
+**Swap tracking:**
 - `"swap node list"` — list node-level atomic swaps
 
 **Asset management:**
@@ -173,7 +171,7 @@ Convert to from-asset display amount using the quote rate.
 
 ```
 swap execute BTC/USDT --from-amount <sats> --from-layer BTC_LN --to-layer RGB_LN --yes
-  → executes full flow: quote → order → atomic execute
+  → executes full flow: quote → atomic init → atomic execute
 
 swap atomic-status --payment-hash <hash>
   → poll until status Succeeded / Expired / Failed

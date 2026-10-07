@@ -22,8 +22,8 @@ metadata:
 **Lightning channels:**
 !`kaleido --json channel list`
 
-**Recent swap history (last 20):**
-!`kaleido --json --agent swap order history --limit 20`
+**Recent atomic swaps:**
+!`kaleido --json swap node list`
 
 **Market assets & pairs:**
 !`kaleido --json market assets`
@@ -45,12 +45,9 @@ metadata:
 - `"market assets"` — all tradeable assets with precision
 - `"market pairs"` — available trading pairs
 - `"market routes BTC/USDT"` — swap routes for a pair
-- `"market analytics"` — order statistics and volume data
 - `"market info"` — maker node info (pubkey, version)
 
 **Trade history:**
-- `"swap order history --limit 50"` — recent swaps
-- `"swap order history --status PENDING"` — open orders
 - `"swap node list"` — list node-level atomic swaps
 - `"asset transfers <ASSET_ID>"` — asset transfer history
 - `"payment list"` — Lightning payment history
@@ -127,7 +124,7 @@ Maintain target portfolio allocation. Swap most over-allocated → most under-al
 4.  market quote BTC/USDT --from-amount 100000   → BTC price in USDT
 5.  market quote XAUT/USDT --from-amount 1       → XAUT price in USDT
 6.  [calculate combined BTC value, allocation %, drift]
-7.  swap history --status PENDING          → skip if at max_concurrent_orders
+7.  swap node list                         → skip if in-flight swaps ≥ max_concurrent_orders
 8.  [choose swap direction]
 9.  [execute swap — see Swap Flows: swap execute or swap run]
 10. swap atomic-status --payment-hash <h>  → poll until Succeeded or Failed
@@ -153,7 +150,7 @@ Node health, liquidity check, RGB flush.
 2. channel list                   → outbound liquidity per channel
 3. asset fail-transfers           → flush stuck pending RGB transfers
                                      (or use `asset refresh [--asset-id <id>]` for per-asset refresh)
-4. swap history --status PENDING  → check for stuck orders
+4. swap node list                 → check for stuck swaps
 5. [if low outbound + auto_buy_channel → Channel Purchase Flow using lsp *]
 ```
 
@@ -166,10 +163,9 @@ Full portfolio snapshot across both wallets.
 2. asset list                             → RGB balances (USDT, XAUT)
 3. channel list                           → total outbound/inbound
 4. market quote BTC/USDT --from-amount 100000   → BTC price
-5. market analytics                       → order volume/statistics
-6. swap history --limit 50                → recent trade history
-7. payment list                           → Lightning payment history
-8. Output structured JSON report
+5. swap node list                         → recent atomic swaps
+6. payment list                           → Lightning payment history
+7. Output structured JSON report
 ```
 
 ## Risk Rules (ALWAYS enforce)
@@ -186,7 +182,7 @@ Full portfolio snapshot across both wallets.
 
 ```
 swap execute BTC/USDT --from-amount <sats> --from-layer BTC_LN --to-layer RGB_LN --yes
-  → handles: quote → order → maker-init → taker-whitelist → execute → status
+  → handles: quote → maker-init → taker-whitelist → execute → status
 swap atomic-status --payment-hash <hash>   ← poll if needed
 asset sync                                  ← after swap completes
 ```
